@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="universe_stream_background">#120A1A</color>
+    <color name="universe_stream_violet">#3D1E60</color>
+    <color name="universe_stream_cyan">#00E5FF</color>
+    <color name="icon_background">#120A1A</color>
+    <color name="splash_background">#120A1A</color>
+</resources>

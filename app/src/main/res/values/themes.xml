@@ -4,7 +4,11 @@
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowIsTranslucent">false</item>
-        <item name="android:windowBackground">#120A1A</item>
+        <item name="android:windowBackground">@color/universe_stream_background</item>
+    </style>
+
+    <style name="Theme.UniverseStream.Starting" parent="Theme.UniverseStream">
+        <item name="android:windowBackground">@drawable/splash_background</item>
     </style>
 
     <style name="Theme.UniverseStream.CastChooser" parent="Theme.AppCompat.Dialog">
