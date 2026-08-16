@@ -10,7 +10,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   ANDROID_API: '36'
@@ -80,17 +80,11 @@ jobs:
           "$ANDROID_HOME/build-tools/${BUILD_TOOLS}/apksigner" verify --verbose \
             app/build/outputs/apk/release/app-release.apk
 
-      - name: Upload signed APK artifact
-        uses: actions/upload-artifact@v4
+      - name: Publish APK to GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: universe-stream-release
-          if-no-files-found: error
-          path: app/build/outputs/apk/release/app-release.apk
-
-      - name: Upload mapping file when present
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: universe-stream-mapping
-          if-no-files-found: ignore
-          path: app/build/outputs/mapping/release/mapping.txt
+          tag_name: ci-build-${{ github.run_number }}
+          name: Universe Stream CI Build ${{ github.run_number }}
+          prerelease: true
+          generate_release_notes: false
+          files: app/build/outputs/apk/release/app-release.apk
