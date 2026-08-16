@@ -61,6 +61,7 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -81,6 +82,8 @@ import com.universestream.app.ui.components.extractProgressFraction
 import com.universestream.app.ui.interaction.TvButton
 import com.universestream.app.ui.interaction.TvClickableSurface
 import com.universestream.app.ui.components.shell.StatusPill
+import com.universestream.app.ui.design.AppWindowSizeClass
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.app.ui.screens.settings.BackupImportPreviewDialog
 import com.universestream.app.ui.theme.*
 import com.universestream.data.remote.stalker.StalkerAdvancedOptions
@@ -427,15 +430,24 @@ fun ProviderSetupScreen(
             .fillMaxSize()
             .background(Brush.verticalGradient(colors = listOf(BackgroundDeep, Background, Surface)))
     ) {
-        val isWide = maxWidth >= 700.dp
-        val hPad = if (isWide) 24.dp else 16.dp
+        val windowSizeClass = rememberAppWindowSizeClass()
+        val isTelevisionLayout = windowSizeClass == AppWindowSizeClass.Television
+        // A phone in landscape can report a large width in dp. Keep it touch-first
+        // unless it is a real tablet-sized surface; TV remains Rail/D-pad-first.
+        val isSidePanelLayout = isTelevisionLayout ||
+            (windowSizeClass == AppWindowSizeClass.Expanded && maxWidth >= 1080.dp)
+        val hPad = when {
+            isTelevisionLayout -> 24.dp
+            windowSizeClass == AppWindowSizeClass.Compact -> 12.dp
+            else -> 16.dp
+        }
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = hPad, vertical = 16.dp)
         ) {
-            if (isWide) {
+            if (isSidePanelLayout) {
                 Row(
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -563,7 +575,7 @@ fun ProviderSetupScreen(
                 }
             }
 
-            if (!uiState.isEditing && !isWide) {
+            if (!uiState.isEditing && !isSidePanelLayout) {
                 ImportOptionsButton(
                     text = stringResource(R.string.settings_restore_data),
                     onClick = { showImportOptionsDialog = true },
@@ -904,13 +916,17 @@ private fun ProviderFormContent(
     onSelectChannelLogoSourcePolicy: (ChannelLogoSourcePolicy) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scrollState = rememberScrollState()
+            val scrollState = rememberScrollState()
     val isTelevisionDevice = rememberIsTelevisionDevice()
+    val formPadding = if (isTelevisionDevice) 20.dp else 14.dp
+    val formSpacing = if (isTelevisionDevice) 12.dp else 10.dp
+    val formShape = RoundedCornerShape(if (isTelevisionDevice) 20.dp else 16.dp)
 
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        border = Border(border = BorderStroke(1.dp, SurfaceHighlight), shape = RoundedCornerShape(20.dp)),
+        shape = formShape,
+
+        border = Border(border = BorderStroke(1.dp, SurfaceHighlight), shape = formShape),
         colors = SurfaceDefaults.colors(containerColor = SurfaceElevated.copy(alpha = 0.95f))
     ) {
         Column(
@@ -918,8 +934,8 @@ private fun ProviderFormContent(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .imePadding()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(formPadding),
+            verticalArrangement = Arrangement.spacedBy(formSpacing)
         ) {
             // Playlist name ן¿½ always shown
             ProviderTextField(
@@ -2305,11 +2321,30 @@ private fun PolicyOptionRow(
 
 @Composable
 private fun FormErrors(validationError: String?, error: String?) {
-    validationError?.let {
-        Text(text = it, style = MaterialTheme.typography.bodyMedium, color = ErrorColor)
-    }
-    error?.let {
-        Text(text = it, style = MaterialTheme.typography.bodyMedium, color = ErrorColor)
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        validationError?.let {
+            Text(
+                text = it,
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.bodySmall,
+                color = ErrorColor,
+                textAlign = TextAlign.Start,
+                overflow = TextOverflow.Clip
+            )
+        }
+        error?.let {
+            Text(
+                text = it,
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.bodySmall,
+                color = ErrorColor,
+                textAlign = TextAlign.Start,
+                overflow = TextOverflow.Clip
+            )
+        }
     }
 }
 
@@ -2470,6 +2505,7 @@ private fun SourceTypeCard(
 
 // ??? Source type row ן¿½ narrow layout (top tabs) ???????????????????????????????
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SourceTypeTabRow(
     sourceType: SourceType,
@@ -2477,7 +2513,11 @@ private fun SourceTypeTabRow(
     onSelect: (SourceType) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         if (!isEditing || sourceType == SourceType.XTREAM) {
             TabButton(
                 text = androidx.compose.ui.res.stringResource(R.string.setup_xtream),
@@ -3015,7 +3055,8 @@ private fun ImportOptionsButton(
     TvClickableSurface(
         onClick = onClick,
         modifier = modifier
-            .height(if (compact) 38.dp else 44.dp)
+            .heightIn(min = 48.dp)
+            .height(48.dp)
             .onFocusEvent { isFocused = it.hasFocus }
             .semantics { contentDescription = text },
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
@@ -3164,7 +3205,10 @@ private fun TabButton(text: String, isSelected: Boolean, onClick: () -> Unit, ba
     var isFocused by remember { mutableStateOf(false) }
     Surface(
         onClick = onClick,
-        modifier = Modifier.onFocusEvent { isFocused = it.hasFocus }.mouseClickable(onClick = onClick),
+        modifier = Modifier
+            .heightIn(min = 48.dp)
+            .onFocusEvent { isFocused = it.hasFocus }
+            .mouseClickable(onClick = onClick),
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(10.dp)),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = if (isSelected) Primary.copy(alpha = 0.2f) else Surface,

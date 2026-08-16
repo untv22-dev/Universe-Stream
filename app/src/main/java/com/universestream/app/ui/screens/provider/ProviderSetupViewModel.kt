@@ -915,6 +915,9 @@ class ProviderSetupViewModel @Inject constructor(
             failure.hasCause<XtreamAuthenticationException>() ->
                 "Login failed - please check your credentials and server URL"
 
+            failure.findCause<XtreamRequestException>()?.statusCode == 404 ->
+                "Server returned HTTP 404 - enter the base Xtream URL (for example http://host:port), not a playlist, stream, or player_api.php URL"
+
             failure.findCause<XtreamRequestException>()?.statusCode in setOf(403, 408, 429) ->
                 "Server is temporarily busy - try syncing again in a moment"
 

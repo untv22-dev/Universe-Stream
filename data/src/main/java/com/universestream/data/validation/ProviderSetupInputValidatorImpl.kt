@@ -28,7 +28,7 @@ class ProviderSetupInputValidatorImpl @Inject constructor() : ProviderSetupInput
         httpUserAgent: String,
         httpHeaders: String
     ): Result<ValidatedXtreamProviderInput> {
-        val normalizedServerUrl = ProviderInputSanitizer.normalizeUrl(serverUrl)
+        val normalizedServerUrl = ProviderInputSanitizer.normalizeXtreamServerUrl(serverUrl)
         val normalizedUsername = ProviderInputSanitizer.normalizeUsername(username)
         val normalizedPassword = ProviderInputSanitizer.normalizePassword(password)
         val normalizedName = ProviderInputSanitizer.normalizeProviderName(name)

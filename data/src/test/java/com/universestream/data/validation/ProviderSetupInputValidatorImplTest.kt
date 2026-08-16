@@ -24,6 +24,21 @@ class ProviderSetupInputValidatorImplTest {
     }
 
     @Test
+    fun `validateXtream canonicalizes a pasted Xtream endpoint`() {
+        val result = validator.validateXtream(
+            serverUrl = "http://provider.example:8080/player_api.php?username=alice&password=secret",
+            username = "alice",
+            password = "secret",
+            allowBlankPassword = false,
+            name = "Premium"
+        )
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        assertThat((result as Result.Success).data.serverUrl)
+            .isEqualTo("http://provider.example:8080")
+    }
+
+    @Test
     fun `validateXtream allows blank password when editing existing providers`() {
         val result = validator.validateXtream(
             serverUrl = "https://example.com",

@@ -1,5 +1,7 @@
 package com.universestream.data.util
 
+import java.net.URI
+
 object ProviderInputSanitizer {
     const val MAX_PROVIDER_NAME_LENGTH = 80
     const val MAX_URL_LENGTH = 2048
@@ -54,6 +56,40 @@ object ProviderInputSanitizer {
             return prefix + raw.substring(protocolMatch.value.length)
         }
         return raw
+    }
+
+    /**
+     * Returns the server root expected by Xtream's `player_api.php` endpoint.
+     *
+     * Providers often send a complete `get.php`, `player_api.php`, `xmltv.php`,
+     * or stream URL to users. Passing that URL directly to the Xtream builder
+     * would append another endpoint path and commonly produces HTTP 404. Only
+     * known Xtream endpoint paths are stripped; ordinary custom base paths are
+     * preserved to avoid changing valid reverse-proxy installations.
+     */
+    fun normalizeXtreamServerUrl(input: String): String {
+        val raw = normalizeUrl(input).trim().trimEnd('/')
+        if (raw.isBlank()) return raw
+
+        val hasExplicitHttpScheme = URL_PROTOCOL_REGEX.containsMatchIn(raw)
+        val parseValue = if (hasExplicitHttpScheme) raw else "http://$raw"
+        val uri = runCatching { URI(parseValue) }.getOrNull() ?: return raw
+        val authority = uri.rawAuthority?.substringAfterLast('@')?.takeIf { it.isNotBlank() }
+            ?: return raw
+        val path = uri.rawPath.orEmpty()
+        val query = uri.rawQuery.orEmpty()
+        val knownEndpoint = path.substringAfterLast('/').lowercase() in KNOWN_XTREAM_ENDPOINTS
+        val credentialQuery = query.split('&').any { part ->
+            part.substringBefore('=').lowercase() in setOf("username", "password")
+        }
+        if (!knownEndpoint && !credentialQuery) return raw
+
+        val prefix = if (hasExplicitHttpScheme) {
+            raw.substringBefore("://").lowercase() + "://"
+        } else {
+            ""
+        }
+        return (prefix + authority).trimEnd('/')
     }
 
     suspend fun resolveUrlProtocol(url: String): String {
@@ -183,4 +219,13 @@ object ProviderInputSanitizer {
     private val MAC_ADDRESS_REGEX = Regex("^[0-9A-F]{2}(?::[0-9A-F]{2}){5}$")
     private val URL_PROTOCOL_REGEX = Regex("^https?://", RegexOption.IGNORE_CASE)
     private val URL_SCHEME_REGEX = Regex("^[a-zA-Z][a-zA-Z0-9+.-]*://")
+    private val KNOWN_XTREAM_ENDPOINTS = setOf(
+        "get.php",
+        "player_api.php",
+        "xmltv.php",
+        "playlist.m3u",
+        "playlist.m3u8",
+        "stream.m3u",
+        "stream.m3u8"
+    )
 }

@@ -57,6 +57,35 @@ class ProviderInputSanitizerTest {
     }
 
     @Test
+    fun `normalizeXtreamServerUrl strips known Xtream endpoint and query`() {
+        assertThat(
+            ProviderInputSanitizer.normalizeXtreamServerUrl(
+                "https://provider.example:8080/get.php?username=user&password=pass&type=m3u_plus"
+            )
+        ).isEqualTo("https://provider.example:8080")
+
+        assertThat(
+            ProviderInputSanitizer.normalizeXtreamServerUrl(
+                "http://provider.example:8080/player_api.php?username=user&password=pass"
+            )
+        ).isEqualTo("http://provider.example:8080")
+    }
+
+    @Test
+    fun `normalizeXtreamServerUrl preserves ordinary custom base paths`() {
+        assertThat(
+            ProviderInputSanitizer.normalizeXtreamServerUrl("https://provider.example/iptv")
+        ).isEqualTo("https://provider.example/iptv")
+    }
+
+    @Test
+    fun `normalizeXtreamServerUrl strips known endpoint from schemeless input`() {
+        assertThat(
+            ProviderInputSanitizer.normalizeXtreamServerUrl("provider.example:8080/xmltv.php")
+        ).isEqualTo("provider.example:8080")
+    }
+
+    @Test
     fun `httpsProbeAccepts only accepts 2xx responses`() {
         assertThat(ProviderInputSanitizer.httpsProbeAccepts(200)).isTrue()
         assertThat(ProviderInputSanitizer.httpsProbeAccepts(204)).isTrue()
