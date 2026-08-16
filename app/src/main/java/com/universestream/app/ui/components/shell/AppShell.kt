@@ -186,7 +186,8 @@ fun AppScreenScaffold(
                         .weight(1f)
                         .fillMaxWidth()
                         .padding(
-                            horizontal = spacing.screenGutter,
+                            start = spacing.screenGutter,
+                            end = spacing.screenGutter,
                             top = spacing.safeTop,
                             bottom = spacing.xs
                         )
