@@ -39,6 +39,7 @@ class XtreamProvider(
     companion object {
         private const val TAG = "XtreamProvider"
         private const val STREAM_SUMMARY_BATCH_SIZE = 500
+        private const val FALLBACK_EPG_LIMIT = 500
 
         /**
          * Offset-aware formatters for Xtream EPG textual timestamps.
@@ -494,16 +495,34 @@ class XtreamProvider(
 
     override suspend fun getEpg(channelId: String): Result<List<Program>> = try {
         val streamId = channelId.toLongOrNull() ?: 0
-        val response = api.getFullEpg(
-            XtreamUrlFactory.buildPlayerApiUrl(
-                serverUrl = serverUrl,
-                username = username,
-                password = password,
-                action = "get_simple_data_table",
-                extraQueryParams = mapOf("stream_id" to streamId.toString())
-            ),
-            requestProfile
-        )
+        val response = try {
+            api.getFullEpg(
+                XtreamUrlFactory.buildPlayerApiUrl(
+                    serverUrl = serverUrl,
+                    username = username,
+                    password = password,
+                    action = "get_simple_data_table",
+                    extraQueryParams = mapOf("stream_id" to streamId.toString())
+                ),
+                requestProfile
+            )
+        } catch (e: XtreamRequestException) {
+            if (e.statusCode != 404) throw e
+            Log.i(TAG, "Full Xtream EPG endpoint unavailable; falling back to get_short_epg")
+            api.getShortEpg(
+                XtreamUrlFactory.buildPlayerApiUrl(
+                    serverUrl = serverUrl,
+                    username = username,
+                    password = password,
+                    action = "get_short_epg",
+                    extraQueryParams = mapOf(
+                        "stream_id" to streamId.toString(),
+                        "limit" to FALLBACK_EPG_LIMIT.toString()
+                    )
+                ),
+                requestProfile
+            )
+        }
         Result.success(response.epgListings.mapNotNull { it.toDomainOrNull() })
     } catch (e: Exception) {
         Result.error(XtreamErrorFormatter.message("Failed to load EPG", e), e)

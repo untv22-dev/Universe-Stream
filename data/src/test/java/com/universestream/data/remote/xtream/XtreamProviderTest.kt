@@ -398,6 +398,36 @@ class XtreamProviderTest {
     }
 
     @Test
+    fun `getEpg falls back to short epg when full epg endpoint returns 404`() = runBlocking {
+        val provider = XtreamProvider(
+            providerId = 42,
+            api = FakeXtreamApiService(
+                shortEpg = XtreamEpgResponse(
+                    epgListings = listOf(
+                        XtreamEpgListing(
+                            id = "15",
+                            channelId = "15",
+                            title = "StreamCreed Fallback",
+                            description = "Short EPG response",
+                            startTimestamp = 1_710_000_000L,
+                            stopTimestamp = 1_710_003_600L
+                        )
+                    )
+                ),
+                fullEpgError = XtreamRequestException(404, "HTTP 404")
+            ),
+            serverUrl = "https://example.com",
+            username = "user",
+            password = "pass"
+        )
+
+        val programs = provider.getEpg("15").getOrNull().orEmpty()
+
+        assertThat(programs).hasSize(1)
+        assertThat(programs.single().title).isEqualTo("StreamCreed Fallback")
+    }
+
+    @Test
     fun `getVodStreams still loads when category prefetch fails`() = runBlocking {
         val provider = XtreamProvider(
             providerId = 42,
@@ -750,7 +780,8 @@ class XtreamProviderTest {
         private val seriesList: List<XtreamSeriesItem> = emptyList(),
         private val seriesInfo: XtreamSeriesInfoResponse = XtreamSeriesInfoResponse(),
         private val shortEpg: XtreamEpgResponse = XtreamEpgResponse(),
-        private val fullEpg: XtreamEpgResponse = XtreamEpgResponse()
+        private val fullEpg: XtreamEpgResponse = XtreamEpgResponse(),
+        private val fullEpgError: XtreamApiException? = null
     ) : XtreamApiService {
         override suspend fun authenticate(endpoint: String, requestProfile: HttpRequestProfile): XtreamAuthResponse {
             return authResponse
@@ -774,6 +805,9 @@ class XtreamProviderTest {
 
         override suspend fun getShortEpg(endpoint: String, requestProfile: HttpRequestProfile): XtreamEpgResponse = shortEpg
 
-        override suspend fun getFullEpg(endpoint: String, requestProfile: HttpRequestProfile): XtreamEpgResponse = fullEpg
+        override suspend fun getFullEpg(endpoint: String, requestProfile: HttpRequestProfile): XtreamEpgResponse {
+            fullEpgError?.let { throw it }
+            return fullEpg
+        }
     }
 }
