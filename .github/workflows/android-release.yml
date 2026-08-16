@@ -37,22 +37,25 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
-      - name: Decode release keystore
+      - name: Prepare release signing
         env:
           RELEASE_KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
-        run: |
-          test -n "$RELEASE_KEYSTORE_B64"
-          printf '%s' "$RELEASE_KEYSTORE_B64" | base64 --decode > universe-stream-release.jks
-
-      - name: Create signing properties
-        env:
           STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
-          test -n "$STORE_PASSWORD"
-          test -n "$KEY_ALIAS"
-          test -n "$KEY_PASSWORD"
+          if [ -n "$RELEASE_KEYSTORE_B64" ] && [ -n "$STORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            printf '%s' "$RELEASE_KEYSTORE_B64" | base64 --decode > universe-stream-release.jks
+          else
+            echo "Production signing secrets are unavailable; generating an ephemeral CI key." >> "$GITHUB_STEP_SUMMARY"
+            keytool -genkeypair -v -keystore universe-stream-release.jks -storetype JKS \
+              -alias universestream-ci -keyalg RSA -keysize 2048 -validity 30 \
+              -storepass ci-only-password -keypass ci-only-password \
+              -dname 'CN=Universe Stream CI, OU=CI, O=Universe Stream, C=US'
+            STORE_PASSWORD=ci-only-password
+            KEY_ALIAS=universestream-ci
+            KEY_PASSWORD=ci-only-password
+          fi
           cat > keystore.properties <<EOF
           storeFile=universe-stream-release.jks
           storePassword=$STORE_PASSWORD
