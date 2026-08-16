@@ -19,6 +19,7 @@ env:
 jobs:
   build-release:
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -68,9 +69,10 @@ jobs:
 
       - name: Build signed release APK
         run: |
-          ./gradlew --no-daemon --max-workers=2 \
-            -Dorg.gradle.jvmargs="-Xmx4g -Dfile.encoding=UTF-8" \
-            -Dkotlin.daemon.jvm.options="-Xmx1536m" \
+          ./gradlew --no-daemon --max-workers=1 --console=plain --info \
+            -Dorg.gradle.jvmargs="-Xmx3g -Dfile.encoding=UTF-8" \
+            -Dkotlin.daemon.jvm.options="-Xmx1024m" \
+            -Dorg.gradle.workers.max=1 \
             :app:assembleRelease --stacktrace
 
       - name: Verify APK signature
