@@ -24,6 +24,9 @@ import com.universestream.app.tv.WatchNextManager
 import com.universestream.app.tvinput.TvInputChannelSyncManager
 import com.universestream.app.ui.theme.UniverseStreamTheme
 import com.universestream.app.ui.time.LocalAppTimeFormat
+import com.universestream.app.ui.design.AppSpacing
+import com.universestream.app.ui.design.LocalAppSpacing
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.domain.repository.ChannelRepository
 import com.universestream.domain.repository.CombinedM3uRepository
 import com.universestream.domain.repository.FavoriteRepository
@@ -141,6 +144,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val appLanguage by preferencesRepository.appLanguage.collectAsState(initial = "system")
             val appTimeFormat by preferencesRepository.appTimeFormat.collectAsState(initial = com.universestream.domain.model.AppTimeFormat.SYSTEM)
+            val windowSizeClass = rememberAppWindowSizeClass()
             val currentContext = LocalContext.current
             
             val configuration = remember(appLanguage) {
@@ -180,7 +184,8 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(
                 LocalContext provides localizedContext,
                 LocalLayoutDirection provides layoutDirection,
-                LocalAppTimeFormat provides appTimeFormat
+                LocalAppTimeFormat provides appTimeFormat,
+                LocalAppSpacing provides AppSpacing.forWindowSizeClass(windowSizeClass)
             ) {
                 UniverseStreamTheme {
                     AppNavigation(mainActivity = this@MainActivity)

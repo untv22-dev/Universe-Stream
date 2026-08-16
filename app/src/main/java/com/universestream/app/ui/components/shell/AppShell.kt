@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -79,7 +80,10 @@ import com.universestream.app.navigation.toAppRoute
 import com.universestream.app.navigation.Routes
 import com.universestream.app.ui.design.AppColors
 import com.universestream.app.ui.design.AppMotion
+import com.universestream.app.ui.design.AppSpacing
+import com.universestream.app.ui.design.AppWindowSizeClass
 import com.universestream.app.ui.design.FocusSpec
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.app.ui.interaction.mouseClickable
 import com.universestream.app.ui.interaction.rememberTvInteractionSounds
 import com.universestream.app.ui.interaction.TvIconButton
@@ -88,6 +92,7 @@ import com.universestream.app.ui.design.LocalAppSpacing
 import com.universestream.domain.model.AppTopLevelDestination
 
 enum class AppNavigationChrome {
+    Auto,
     Rail,
     TopBar
 }
@@ -99,7 +104,7 @@ fun AppScreenScaffold(
     title: String,
     subtitle: String? = null,
     modifier: Modifier = Modifier,
-    navigationChrome: AppNavigationChrome = AppNavigationChrome.Rail,
+    navigationChrome: AppNavigationChrome = AppNavigationChrome.Auto,
     topBarVisible: Boolean = true,
     compactHeader: Boolean = false,
     showScreenHeader: Boolean = true,
@@ -108,7 +113,14 @@ fun AppScreenScaffold(
     contentPadding: PaddingValues = PaddingValues(),
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val spacing = LocalAppSpacing.current
+    val windowSizeClass = rememberAppWindowSizeClass()
+    val spacing = AppSpacing.forWindowSizeClass(windowSizeClass)
+    val resolvedChrome = when {
+        windowSizeClass == AppWindowSizeClass.Television -> AppNavigationChrome.Rail
+        navigationChrome == AppNavigationChrome.Rail -> AppNavigationChrome.Rail
+        else -> AppNavigationChrome.TopBar
+    }
+    val compactPhone = windowSizeClass == AppWindowSizeClass.Compact
 
     Box(
         modifier = modifier
@@ -123,7 +135,7 @@ fun AppScreenScaffold(
                 )
             )
     ) {
-        if (navigationChrome == AppNavigationChrome.Rail) {
+        if (resolvedChrome == AppNavigationChrome.Rail) {
             Row(modifier = Modifier.fillMaxSize()) {
                 DestinationRail(
                     currentRoute = currentRoute,
@@ -167,13 +179,57 @@ fun AppScreenScaffold(
                     }
                 }
             }
+        } else if (compactPhone) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = spacing.screenGutter,
+                            top = spacing.safeTop,
+                            bottom = spacing.xs
+                        )
+                ) {
+                    if (showScreenHeader) {
+                        AppScreenHeader(
+                            title = title,
+                            subtitle = subtitle,
+                            modifier = Modifier.fillMaxWidth(),
+                            compact = true
+                        )
+                        if (header != null) {
+                            Spacer(modifier = Modifier.height(spacing.sm))
+                            header()
+                        }
+                        Spacer(modifier = Modifier.height(spacing.sm))
+                    } else if (header != null) {
+                        header()
+                    }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(contentPadding)
+                    ) {
+                        content()
+                    }
+                }
+                BottomNavigationBar(
+                    currentRoute = currentRoute,
+                    onNavigate = onNavigate,
+                    actions = topBarActions,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = spacing.screenGutter, vertical = spacing.xs)
+                )
+            }
         } else {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(
-                        horizontal = 14.dp,
-                        vertical = 10.dp
+                        horizontal = spacing.screenGutter,
+                        vertical = spacing.safeTop
                     )
             ) {
                 if (topBarVisible) {
@@ -183,7 +239,7 @@ fun AppScreenScaffold(
                         actions = topBarActions,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(spacing.sm))
                 }
                 if (showScreenHeader) {
                     AppScreenHeader(
@@ -193,10 +249,10 @@ fun AppScreenScaffold(
                         compact = true
                     )
                     if (header != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(spacing.xs))
                         header()
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(spacing.xs))
                 } else if (header != null) {
                     header()
                 }
@@ -313,6 +369,57 @@ private fun TopNavigationBar(
             if (actions != null) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    content = actions
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BottomNavigationBar(
+    currentRoute: String,
+    onNavigate: (String) -> Unit,
+    actions: (@Composable RowScope.() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    val items = rememberDestinationItems()
+    val scrollState = rememberScrollState()
+    val focusRequesters = remember { mutableMapOf<String, FocusRequester>() }
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        colors = SurfaceDefaults.colors(containerColor = AppColors.Surface.copy(alpha = 0.96f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 64.dp)
+                .horizontalScroll(scrollState)
+                .padding(horizontal = 6.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items.forEach { item ->
+                val requester = focusRequesters.getOrPut(item.route) { FocusRequester() }
+                TopNavigationButton(
+                    label = stringResource(item.labelRes),
+                    icon = item.icon,
+                    selected = currentRoute.startsWith(item.route),
+                    focusRequester = requester,
+                    modifier = Modifier.heightIn(min = 48.dp),
+                    onClick = {
+                        if (!currentRoute.startsWith(item.route)) {
+                            onNavigate(item.route)
+                        }
+                    }
+                )
+            }
+            if (actions != null) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     content = actions
                 )
