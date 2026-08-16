@@ -46,6 +46,7 @@ class XtreamIndexWorker(
         val force = inputData.getBoolean(KEY_FORCE, false)
         val requestedProviderId = inputData.getLong(KEY_PROVIDER_ID, INVALID_PROVIDER_ID)
         val requestedSection = inputData.getString(KEY_SECTION)?.toContentTypeOrNull()
+        val prepareCategoryShells = inputData.getBoolean(KEY_PREPARE_CATEGORY_SHELLS, false)
 
         return try {
             val entryPoint = EntryPointAccessors.fromApplication(
@@ -57,6 +58,15 @@ class XtreamIndexWorker(
             } else {
                 entryPoint.providerDao().getAllSync()
                     .filter { provider -> provider.isActive && provider.type == ProviderType.XTREAM_CODES }
+            }
+
+            if (prepareCategoryShells) {
+                providers
+                    .filter { provider -> provider.type == ProviderType.XTREAM_CODES }
+                    .forEach { provider ->
+                        entryPoint.syncManager().prepareXtreamCategoryShells(provider.id)
+                    }
+                return Result.success()
             }
 
             var sawRetryableFailure = false
@@ -100,8 +110,10 @@ class XtreamIndexWorker(
         private const val KEY_PROVIDER_ID = "provider_id"
         private const val KEY_SECTION = "section"
         private const val KEY_FORCE = "force"
+        private const val KEY_PREPARE_CATEGORY_SHELLS = "prepare_category_shells"
         private const val INVALID_PROVIDER_ID = -1L
         private const val CATEGORY_SLICE_SIZE = 2
+        const val CATEGORY_SHELL_SECTION = "CATEGORY_SHELLS"
         private const val UNIQUE_WORK_PREFIX = "xtream-index-worker-"
         private const val UNIQUE_PERIODIC_WORK_NAME = "xtream-index-periodic-worker"
 
@@ -110,6 +122,7 @@ class XtreamIndexWorker(
             providerId: Long,
             section: String? = null,
             force: Boolean = false,
+            prepareCategoryShells: Boolean = false,
             initialDelaySeconds: Long = 0L
         ) {
             if (providerId <= 0L) return
@@ -118,6 +131,7 @@ class XtreamIndexWorker(
                     Data.Builder()
                         .putLong(KEY_PROVIDER_ID, providerId)
                         .putBoolean(KEY_FORCE, force)
+                        .putBoolean(KEY_PREPARE_CATEGORY_SHELLS, prepareCategoryShells)
                         .also { builder ->
                             section?.let { builder.putString(KEY_SECTION, it) }
                         }

@@ -425,6 +425,64 @@ class SyncManager @Inject constructor(
         }
     }
 
+    /**
+     * Prepares the VOD and Series category shells after onboarding. This is deliberately
+     * separate from the foreground Live TV onboarding path so a user can enter the app as
+     * soon as the first usable live catalog is committed.
+     */
+    fun scheduleXtreamCategoryShellSync(providerId: Long) {
+        runCatching {
+            XtreamIndexWorker.enqueue(
+                context = applicationContext,
+                providerId = providerId,
+                section = XtreamIndexWorker.CATEGORY_SHELL_SECTION,
+                force = false,
+                prepareCategoryShells = true,
+                initialDelaySeconds = 1L
+            )
+        }.onFailure { error ->
+            Log.w(TAG, "Failed to schedule Xtream category shell work for provider $providerId: ${sanitizeThrowableMessage(error)}")
+        }
+    }
+
+    suspend fun prepareXtreamCategoryShells(
+        providerId: Long,
+        onProgress: ((String) -> Unit)? = null
+    ) = withProviderLock(providerId) lock@{
+        val providerEntity = providerDao.getById(providerId)
+            ?: return@lock
+        if (providerEntity.type != ProviderType.XTREAM_CODES) return@lock
+
+        val provider = providerEntity
+            .copy(password = credentialCrypto.decryptIfNeeded(providerEntity.password))
+            .toDomain()
+        val useTextClassification = preferencesRepository.useXtreamTextClassification.first()
+        val enableBase64TextCompatibility = preferencesRepository.xtreamBase64TextCompatibility.first()
+        val api = createXtreamSyncProvider(provider, useTextClassification, enableBase64TextCompatibility)
+        val now = System.currentTimeMillis()
+
+        syncXtreamCategoryShell(
+            provider = provider,
+            api = api,
+            contentType = ContentType.MOVIE,
+            label = "Movies",
+            now = now,
+            onProgress = onProgress
+        ).onFailure { error ->
+            Log.w(TAG, "Background VOD category shell failed for provider $providerId: ${sanitizeThrowableMessage(error)}")
+        }
+        syncXtreamCategoryShell(
+            provider = provider,
+            api = api,
+            contentType = ContentType.SERIES,
+            label = "Series",
+            now = now,
+            onProgress = onProgress
+        ).onFailure { error ->
+            Log.w(TAG, "Background Series category shell failed for provider $providerId: ${sanitizeThrowableMessage(error)}")
+        }
+    }
+
     fun scheduleStalkerIndexSync(
         providerId: Long,
         section: ContentType? = null,
@@ -1140,74 +1198,29 @@ class SyncManager @Inject constructor(
         )
         scheduleXtreamIndexSync(provider.id, ContentType.LIVE)
 
-        // Transition VOD : signale a l'UI qu'on passe a la section Movies. Le total
-        // reel des categories VOD n'est connu qu'a l'interieur de `syncXtreamCategoryShell`,
-        // donc on emet en indetermine (total = 0). `itemsIndexed` cumule le LIVE deja importe.
+        // Live TV is the first usable catalog needed to enter the app. VOD and Series
+        // category shells can be fetched after navigation, so they must not block login.
         syncProgressBus.emit(
             com.universestream.domain.sync.SyncProgress(
                 section = com.universestream.domain.sync.Section.VOD,
                 current = 0,
                 total = 0,
-                currentLabel = "",
+                currentLabel = "Queued for background sync",
                 itemsIndexed = liveCount
             )
         )
-        val movieCategoryCount = syncXtreamCategoryShell(
-            provider = provider,
-            api = api,
-            contentType = ContentType.MOVIE,
-            label = "Movies",
-            now = now,
-            onProgress = onProgress
-        ).getOrElse { error ->
-            warnings += "Movies categories could not be loaded; movie indexing will retry later."
-            upsertXtreamIndexJob(
-                providerId = provider.id,
-                section = ContentType.MOVIE.name,
-                state = xtreamIndexFailureState(error),
-                now = now,
-                lastAttemptAt = now,
-                lastError = sanitizeThrowableMessage(error)
-            )
-            0
-        }
-        if (movieCategoryCount > 0) {
-            scheduleXtreamIndexSync(provider.id, ContentType.MOVIE)
-        }
-        // Transition SERIES : meme principe que VOD ci-dessus. `itemsIndexed` reste a
-        // `liveCount` car VOD ne stage pas d'items dans la base au moment du shell
-        // (le contenu detaille est rempli ulterieurement par XtreamIndexWorker).
         syncProgressBus.emit(
             com.universestream.domain.sync.SyncProgress(
                 section = com.universestream.domain.sync.Section.SERIES,
                 current = 0,
                 total = 0,
-                currentLabel = "",
+                currentLabel = "Queued for background sync",
                 itemsIndexed = liveCount
             )
         )
-        val seriesCategoryCount = syncXtreamCategoryShell(
-            provider = provider,
-            api = api,
-            contentType = ContentType.SERIES,
-            label = "Series",
-            now = now,
-            onProgress = onProgress
-        ).getOrElse { error ->
-            warnings += "Series categories could not be loaded; series indexing will retry later."
-            upsertXtreamIndexJob(
-                providerId = provider.id,
-                section = ContentType.SERIES.name,
-                state = xtreamIndexFailureState(error),
-                now = now,
-                lastAttemptAt = now,
-                lastError = sanitizeThrowableMessage(error)
-            )
-            0
-        }
-        if (seriesCategoryCount > 0) {
-            scheduleXtreamIndexSync(provider.id, ContentType.SERIES)
-        }
+        scheduleXtreamCategoryShellSync(provider.id)
+        val movieCategoryCount = 0
+        val seriesCategoryCount = 0
 
         if (trackInitialLiveOnboarding) {
             if (liveCount > 0 || movieCategoryCount > 0 || seriesCategoryCount > 0) {

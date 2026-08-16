@@ -322,15 +322,19 @@ class ProviderRepositoryImpl @Inject constructor(
                     newData.copy(id = newId).copy(password = "")
                 }
 
-                handleInitialOnboardingSync(
-                    providerData = providerData,
-                    syncResult = syncManager.sync(
-                        providerData.id,
-                        force = false,
-                        onProgress = onProgress,
-                        trackInitialLiveOnboarding = true
-                    ),
-                    syncFailurePrefix = "Provider login succeeded, but initial sync failed. The provider was saved and can be retried from Settings"
+                onProgress?.invoke("Saved. Loading your library in the background...")
+                syncManager.scheduleProviderSyncResume(providerData.id)
+                val savedProvider = providerData.copy(
+                    status = ProviderStatus.PARTIAL,
+                    isActive = false
+                )
+                val message = "Provider login succeeded. Live TV and library data will continue loading in the background."
+                Result.error(
+                    message,
+                    ProviderSavedWithSyncErrorException(
+                        provider = savedProvider,
+                        message = message
+                    )
                 )
             }
             is Result.Error -> Result.error(authResult.message, authResult.exception)
