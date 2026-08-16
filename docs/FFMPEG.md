@@ -1,6 +1,6 @@
 # FFmpeg Integration
 
-StreamVault bundles the Media3 FFmpeg audio decoder artifact for unsupported IPTV audio codecs.
+UniverseStream bundles the Media3 FFmpeg audio decoder artifact for unsupported IPTV audio codecs.
 
 Current product scope:
 

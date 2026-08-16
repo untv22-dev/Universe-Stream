@@ -176,7 +176,7 @@ All notable product changes are recorded in this document.
 
 ### Changed
 
-- Refreshed the Plugins screen with denser StreamVault-styled controls and a dedicated icon.
+- Refreshed the Plugins screen with denser UniverseStream-styled controls and a dedicated icon.
 - Expanded plugin API docs for manifests, installation, IPC, configuration, and UI integration.
 - Clarified the Google Drive maintainer guide for `drive.appdata` and production rollout.
 

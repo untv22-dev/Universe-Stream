@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.streamvault.data"
+    namespace = "com.universestream.data"
     compileSdk = 36
 
     defaultConfig {
