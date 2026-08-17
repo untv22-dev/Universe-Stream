@@ -75,7 +75,7 @@ jobs:
           timeout --signal=TERM --kill-after=60s 27m \
             ./gradlew --no-daemon --max-workers=1 --console=plain --info \
               -Dorg.gradle.jvmargs="-Xmx3g -Dfile.encoding=UTF-8" \
-              -Dkotlin.daemon.jvm.options="-Xmx1024m" \
+              -Dkotlin.daemon.jvm.options="-Xmx2g" \
               -Dorg.gradle.workers.max=1 \
               -Dorg.gradle.vfs.watch=false \
               :app:assembleRelease --stacktrace
