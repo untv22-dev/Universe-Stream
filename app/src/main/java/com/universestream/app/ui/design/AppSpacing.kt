@@ -12,7 +12,7 @@ data class AppSpacing(
     val xl: Dp = 32.dp,
     val xxl: Dp = 40.dp,
     val screenGutter: Dp = 56.dp,
-    val railWidth: Dp = 124.dp,
+    val railWidth: Dp = 220.dp,
     val sectionGap: Dp = 32.dp,
     val cardGap: Dp = 16.dp,
     val chipGap: Dp = 10.dp,

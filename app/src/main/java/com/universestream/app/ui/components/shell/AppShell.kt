@@ -26,6 +26,9 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
@@ -39,6 +42,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -50,6 +54,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.zIndex
+import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -812,6 +817,7 @@ private fun DestinationRail(
     val spacing = LocalAppSpacing.current
     val items = rememberDestinationItems()
     val focusRequesters = remember { mutableMapOf<String, FocusRequester>() }
+    val railScrollState = rememberScrollState()
 
     Box(
         modifier = modifier
@@ -835,6 +841,7 @@ private fun DestinationRail(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(railScrollState)
                 .padding(horizontal = 12.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -877,6 +884,8 @@ private fun RailButton(
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    val focusScope = rememberCoroutineScope()
     val scale by animateFloatAsState(
         targetValue = if (isFocused) FocusSpec.FocusedScale else 1f,
         animationSpec = AppMotion.FocusSpec,
@@ -887,6 +896,7 @@ private fun RailButton(
         onClick = onClick,
         modifier = modifier
             .focusRequester(focusRequester)
+            .bringIntoViewRequester(bringIntoViewRequester)
             .mouseClickable(
                 focusRequester = focusRequester,
                 onClick = onClick
@@ -896,7 +906,14 @@ private fun RailButton(
                 scaleX = scale
                 scaleY = scale
             }
-            .onFocusChanged { isFocused = it.isFocused },
+            .onFocusChanged {
+                isFocused = it.isFocused
+                if (it.isFocused) {
+                    focusScope.launch {
+                        bringIntoViewRequester.bringIntoView()
+                    }
+                }
+            },
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(18.dp)),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = if (selected) AppColors.BrandMuted else Color.Transparent,
