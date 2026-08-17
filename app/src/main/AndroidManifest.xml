@@ -59,7 +59,6 @@
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|screenLayout|smallestScreenSize"
             android:launchMode="singleTask"
             android:supportsPictureInPicture="true"
-            android:screenOrientation="landscape"
             android:windowSoftInputMode="adjustResize">
 
             <intent-filter>
