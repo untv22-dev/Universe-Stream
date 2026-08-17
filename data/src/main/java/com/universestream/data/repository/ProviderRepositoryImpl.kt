@@ -332,14 +332,10 @@ class ProviderRepositoryImpl @Inject constructor(
                     status = ProviderStatus.PARTIAL,
                     isActive = true
                 )
-                val message = "Provider login succeeded. Live TV and library data will continue loading in the background."
-                Result.error(
-                    message,
-                    ProviderSavedWithSyncErrorException(
-                        provider = savedProvider,
-                        message = message
-                    )
-                )
+                // Authentication and persistence have succeeded. Do not encode this as
+                // Result.Error: the setup UI must leave the provider screen immediately while
+                // WorkManager continues loading Live TV, Movies, Series, and EPG in background.
+                Result.success(savedProvider)
             }
             is Result.Error -> Result.error(authResult.message, authResult.exception)
             is Result.Loading -> Result.error("Unexpected loading state")
