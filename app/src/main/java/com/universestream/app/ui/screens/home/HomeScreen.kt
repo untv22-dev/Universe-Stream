@@ -66,6 +66,8 @@ import com.universestream.app.ui.components.ReorderTopBar
 import com.universestream.app.ui.components.shell.AppNavigationChrome
 import com.universestream.app.ui.components.shell.AppScreenScaffold
 import com.universestream.app.ui.design.FocusRestoreHost
+import com.universestream.app.ui.design.AppWindowSizeClass
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.app.ui.design.requestFocusSafely
 import androidx.activity.compose.BackHandler
 import com.universestream.app.ui.model.LiveTvQuickFilterVisibilityMode
@@ -163,6 +165,7 @@ fun HomeScreen(
     val isDenseMode = uiState.liveTvChannelMode != LiveTvChannelMode.COMFORTABLE
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val isTelevisionDevice = rememberIsTelevisionDevice()
+    val windowSizeClass = rememberAppWindowSizeClass()
     val sidebarWidth = if (screenWidth < 900.dp) {
         (screenWidth * 0.36f).coerceIn(188.dp, 220.dp)
     } else if (!isTelevisionDevice && screenWidth < 1280.dp) {
@@ -499,6 +502,17 @@ fun HomeScreen(
                         visibleCategories.isNotEmpty() &&
                         unlockedVisibleCategories.isEmpty()
 
+                if (windowSizeClass == AppWindowSizeClass.Compact) {
+                    MobileLiveTvContent(
+                        uiState = uiState,
+                        viewModel = viewModel,
+                        onChannelClick = onChannelClick,
+                        onNavigate = onNavigate,
+                        resolveProviderForChannel = resolveProviderForChannel,
+                        isCategoryLocked = isCategoryLocked,
+                        isChannelLocked = isChannelLocked
+                    )
+                } else {
                 LaunchedEffect(uiState.categories) {
                     val validIds = uiState.categories.mapTo(mutableSetOf()) { it.id }
                     categoryFocusRequesters.keys.retainAll(validIds)
@@ -1385,6 +1399,7 @@ fun HomeScreen(
                                 .fillMaxHeight()
                         )
                     }
+                }
                 }
                 }
             }
