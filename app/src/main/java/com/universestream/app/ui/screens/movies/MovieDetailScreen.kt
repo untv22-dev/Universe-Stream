@@ -530,6 +530,7 @@ private fun MovieDetailHeroText(
                     )
                 )
             }
+            }
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 TvButton(

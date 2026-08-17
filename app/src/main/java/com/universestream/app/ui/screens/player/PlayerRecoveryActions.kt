@@ -107,7 +107,7 @@ internal fun PlayerViewModel.fallbackToPreviousChannel(reason: String): Boolean 
 internal fun PlayerViewModel.scheduleZapBufferWatchdog(targetIndex: Int) {
     // Compact portrait must never leave the user on an unbounded buffering spinner.
     // TV keeps the existing user-controlled auto-revert behavior unchanged.
-    if (!zapAutoRevertEnabled && !fastZapSkipProbe) return
+    if (!zapAutoRevertEnabled && !shouldSkipProbeForFastZap()) return
     zapBufferWatchdogJob?.cancel()
     val requestVersion = prepareRequestVersion
     zapBufferWatchdogJob = viewModelScope.launch {
