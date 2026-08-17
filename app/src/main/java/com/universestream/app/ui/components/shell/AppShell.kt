@@ -862,7 +862,7 @@ private fun DestinationRail(
                     label = stringResource(item.labelRes),
                     icon = item.icon,
                     selected = currentRoute.startsWith(item.route),
-                    modifier = Modifier.focusRequester(requester),
+                    focusRequester = requester,
                     onClick = {
                         if (!currentRoute.startsWith(item.route)) {
                             onNavigate(item.route)
@@ -879,11 +879,11 @@ private fun RailButton(
     label: String,
     icon: ImageVector,
     selected: Boolean,
+    focusRequester: FocusRequester,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isFocused by remember { mutableStateOf(false) }
-    val focusRequester = remember { FocusRequester() }
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val focusScope = rememberCoroutineScope()
     val scale by animateFloatAsState(
