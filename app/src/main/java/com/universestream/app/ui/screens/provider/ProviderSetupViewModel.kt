@@ -912,8 +912,14 @@ class ProviderSetupViewModel @Inject constructor(
                 failure.hasCause<SSLException>() ->
                 "Secure connection failed - the server's TLS certificate is not trusted on this device"
 
-            failure.hasCause<XtreamAuthenticationException>() ->
-                "Login failed - please check your credentials and server URL"
+            failure.hasCause<XtreamAuthenticationException>() -> {
+                val status = failure.findCause<XtreamAuthenticationException>()?.statusCode
+                if (status == 403) {
+                    "Server rejected the login (HTTP 403) - verify the Xtream URL, credentials, and provider IP/device restrictions"
+                } else {
+                    "Login failed - please check your credentials and server URL"
+                }
+            }
 
             failure.findCause<XtreamRequestException>()?.statusCode == 404 ->
                 "Server returned HTTP 404 - enter the base Xtream URL (for example http://host:port), not a playlist, stream, or player_api.php URL"

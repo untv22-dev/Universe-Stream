@@ -188,7 +188,6 @@ class ProviderSyncWorker(
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .setRequiresBatteryNotLow(true)
                         .build()
                 )
                 .setBackoffCriteria(
@@ -210,7 +209,6 @@ class ProviderSyncWorker(
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .setRequiresBatteryNotLow(true)
                         .build()
                 )
                 .setInitialDelay(10, TimeUnit.SECONDS)
@@ -234,7 +232,6 @@ class ProviderSyncWorker(
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .setRequiresBatteryNotLow(true)
                         .build()
                 )
                 .setBackoffCriteria(

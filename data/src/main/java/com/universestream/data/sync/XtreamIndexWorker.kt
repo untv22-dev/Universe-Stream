@@ -190,7 +190,6 @@ class XtreamIndexWorker(
 
         private fun defaultConstraints(): Constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
-            .setRequiresBatteryNotLow(true)
             .build()
 
         private fun uniqueWorkName(providerId: Long, section: String?): String =
