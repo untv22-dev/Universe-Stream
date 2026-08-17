@@ -2,6 +2,8 @@ package com.universestream.app.ui.components.shell
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,10 +14,13 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,8 +40,11 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.universestream.app.R
 import com.universestream.app.ui.components.FocusedMarqueeText
+import com.universestream.app.ui.components.SearchInput
 import com.universestream.app.ui.design.AppColors
 import com.universestream.app.ui.design.FocusSpec
+import com.universestream.app.ui.design.AppWindowSizeClass
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.app.ui.interaction.TvClickableSurface
 import com.universestream.app.ui.interaction.TvButton
 import com.universestream.app.ui.interaction.TvIconButton
@@ -61,6 +69,19 @@ fun VodClassicSplitLayout(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
+    if (rememberAppWindowSizeClass() == AppWindowSizeClass.Compact) {
+        VodClassicMobileLayout(
+            railTitle = railTitle,
+            railSearchValue = railSearchValue,
+            onRailSearchValueChange = onRailSearchValueChange,
+            railSearchPlaceholder = railSearchPlaceholder,
+            categories = categories,
+            modifier = modifier,
+            content = content
+        )
+        return
+    }
+
     Row(
         modifier = modifier.fillMaxSize(),
         horizontalArrangement = Arrangement.spacedBy(20.dp)
@@ -140,6 +161,94 @@ fun VodClassicSplitLayout(
                 .fillMaxHeight()
                 .background(AppColors.Canvas, RoundedCornerShape(28.dp))
                 .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun VodClassicMobileLayout(
+    railTitle: String,
+    railSearchValue: String,
+    onRailSearchValueChange: (String) -> Unit,
+    railSearchPlaceholder: String,
+    categories: List<VodClassicCategoryOption>,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 2.dp, vertical = 2.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = railTitle,
+            style = MaterialTheme.typography.titleMedium,
+            color = AppColors.TextPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        SearchInput(
+            value = railSearchValue,
+            onValueChange = onRailSearchValueChange,
+            placeholder = railSearchPlaceholder,
+            modifier = Modifier.fillMaxWidth(),
+            onSearch = {}
+        )
+
+        if (categories.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                categories.forEach { category ->
+                    Box(
+                        modifier = Modifier
+                            .heightIn(min = 44.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(
+                                if (category.isSelected) AppColors.Brand.copy(alpha = 0.22f)
+                                else AppColors.SurfaceElevated
+                            )
+                            .clickable(onClick = category.onClick)
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = category.label,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = if (category.isSelected) AppColors.BrandStrong else AppColors.TextPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (category.count > 0) {
+                                Text(
+                                    text = category.count.toString(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = AppColors.TextSecondary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
         ) {
             content()
         }

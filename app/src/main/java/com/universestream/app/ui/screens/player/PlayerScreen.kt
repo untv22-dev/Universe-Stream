@@ -80,6 +80,8 @@ import com.universestream.app.MainActivity
 import com.universestream.app.cast.CastConnectionState
 import com.universestream.app.ui.components.PlayerRenderView
 import com.universestream.app.ui.design.requestFocusSafely
+import com.universestream.app.ui.design.AppWindowSizeClass
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.app.ui.notifications.rememberNotificationPermissionGate
 import com.universestream.app.ui.screens.player.overlay.ChannelInfoOverlay
 import com.universestream.app.ui.screens.player.overlay.ChannelVariantSelectionDialog
@@ -135,15 +137,22 @@ fun PlayerScreen(
     viewModel: PlayerViewModel = hiltViewModel()
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val windowSizeClass = rememberAppWindowSizeClass()
+    val isCompactMobile = windowSizeClass == AppWindowSizeClass.Compact
     val isTelevisionDevice = rememberIsTelevisionDevice()
-    val sideOverlayWidth = if (screenWidth < 700.dp) {
+    val compactOverlayMaxWidth = (screenWidth - 16.dp).coerceAtLeast(0.dp)
+    val sideOverlayWidth = if (isCompactMobile) {
+        minOf(compactOverlayMaxWidth, 336.dp)
+    } else if (screenWidth < 700.dp) {
         (screenWidth * 0.62f).coerceIn(220.dp, 300.dp)
     } else if (!isTelevisionDevice && screenWidth < 1280.dp) {
         (screenWidth * 0.4f).coerceIn(320.dp, 420.dp)
     } else {
         350.dp
     }
-    val epgOverlayWidth = if (screenWidth < 700.dp) {
+    val epgOverlayWidth = if (isCompactMobile) {
+        minOf(compactOverlayMaxWidth, 348.dp)
+    } else if (screenWidth < 700.dp) {
         (screenWidth * 0.68f).coerceIn(240.dp, 320.dp)
     } else if (!isTelevisionDevice && screenWidth < 1280.dp) {
         (screenWidth * 0.46f).coerceIn(360.dp, 500.dp)
@@ -218,6 +227,7 @@ fun PlayerScreen(
     val preventStandbyDuringPlayback by viewModel.preventStandbyDuringPlayback.collectAsStateWithLifecycle()
     val timeshiftUiState by viewModel.timeshiftUiState.collectAsStateWithLifecycle()
     val sleepTimerUiState by viewModel.sleepTimerUiState.collectAsStateWithLifecycle()
+
     val sleepTimerExitEvent by viewModel.sleepTimerExitEvent.collectAsStateWithLifecycle()
 
     var showTrackSelection by remember { mutableStateOf<TrackType?>(null) }
@@ -440,7 +450,8 @@ fun PlayerScreen(
             seriesId = seriesId,
             seasonNumber = seasonNumber,
             episodeNumber = episodeNumber,
-            episodeId = episodeId
+            episodeId = episodeId,
+            probeBeforePlayback = !(isCompactMobile && contentType == "LIVE")
         )
     }
 

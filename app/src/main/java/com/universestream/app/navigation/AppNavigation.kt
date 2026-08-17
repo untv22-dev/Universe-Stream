@@ -36,6 +36,8 @@ import com.universestream.app.ui.screens.provider.ProviderSetupScreen
 import com.universestream.app.ui.screens.series.SeriesScreen
 import com.universestream.app.ui.screens.settings.SettingsScreen
 import com.universestream.app.ui.screens.welcome.WelcomeScreen
+import com.universestream.app.ui.design.AppWindowSizeClass
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.app.ui.screens.downloads.DownloadsScreen
 import com.universestream.app.MainActivity
 import com.universestream.domain.model.AppLandingDestination
@@ -340,6 +342,7 @@ internal fun AppTopLevelDestination.toAppRoute(): String = when (this) {
 
 @Composable
 fun AppNavigation(mainActivity: MainActivity) {
+    val windowSizeClass = rememberAppWindowSizeClass()
     val navController = rememberNavController()
     val currentBackStackEntry = navController.currentBackStackEntryAsState().value
     val externalNavigationRequest = mainActivity.externalNavigationRequestFlow.collectAsStateWithLifecycle().value
@@ -376,6 +379,19 @@ fun AppNavigation(mainActivity: MainActivity) {
         }
     }
     var startupPlayerHandled by remember { mutableStateOf(false) }
+    var compactTabRootRoute by remember { mutableStateOf<String?>(null) }
+    val topLevelRoutes = remember(topLevelDestinations) {
+        topLevelDestinations.map { it.toAppRoute() }.toSet()
+    }
+
+    LaunchedEffect(windowSizeClass, currentBackStackEntry, topLevelRoutes) {
+        if (windowSizeClass == AppWindowSizeClass.Compact && compactTabRootRoute == null) {
+            val route = currentBackStackEntry?.destination?.route
+            if (route != null && route in topLevelRoutes) {
+                compactTabRootRoute = route
+            }
+        }
+    }
 
     fun navigateToStartupTarget(popUpRoute: String): Boolean {
         val route = startupRoute ?: return false
@@ -442,9 +458,28 @@ fun AppNavigation(mainActivity: MainActivity) {
     // each tab's full UI tree into saved state on every switch.
     fun tabNavigate(route: String) {
         val entry = navController.currentBackStackEntry ?: return
-        if (!entry.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
         val currentRoute = entry.destination?.route
         if (currentRoute == route || currentRoute?.startsWith("$route?") == true) return
+
+        if (windowSizeClass == AppWindowSizeClass.Compact) {
+            // Welcome is removed from the back stack after login, so graph.startDestinationId
+            // is not a valid popUp target anymore. Keep the first real tab as the Compact root.
+            // This preserves tab state without swallowing an IllegalArgumentException in a
+            // runCatching block and leaves the TV navigation path below unchanged.
+            val rootRoute = compactTabRootRoute
+            runCatching {
+                navController.navigate(route) {
+                    if (rootRoute != null) {
+                        popUpTo(rootRoute) { saveState = true }
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+            return
+        }
+
+        if (!entry.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
 
         navController.navigate(route) {
             popUpTo(navController.graph.startDestinationId) {

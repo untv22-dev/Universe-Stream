@@ -337,6 +337,7 @@ class PlayerViewModel @Inject constructor(
     internal var isVirtualCategory: Boolean = false
     internal var currentCombinedProfileMembers: List<CombinedM3uProfileMember> = emptyList()
     internal var combinedCategoriesById: Map<Long, CombinedCategory> = emptyMap()
+    private var fastZapSkipProbe = false
     private var lastObservedPlaybackState: PlaybackState = PlaybackState.IDLE
 
     internal var epgJob: Job? = null
@@ -1279,6 +1280,12 @@ class PlayerViewModel @Inject constructor(
         return isAmazonMediaTek && isHls
     }
 
+    internal fun setFastZapSkipProbeEnabled(enabled: Boolean) {
+        fastZapSkipProbe = enabled
+    }
+
+    internal fun shouldSkipProbeForFastZap(): Boolean = fastZapSkipProbe
+
     internal suspend fun preparePlayer(
         streamInfo: com.universestream.domain.model.StreamInfo,
         requestVersion: Long,
@@ -1434,13 +1441,15 @@ class PlayerViewModel @Inject constructor(
         seasonNumber: Int? = null,
         episodeNumber: Int? = null,
         episodeId: Long? = null,
-        showResumePrompt: Boolean = true
+        showResumePrompt: Boolean = true,
+        probeBeforePlayback: Boolean = true
     ) {
         val hasArchiveRequest = hasArchivePlaybackIdentity(
             contentType = contentType,
             archiveStartMs = archiveStartMs,
             archiveEndMs = archiveEndMs
         )
+        val effectiveProbeBeforePlayback = probeBeforePlayback
         val requestVersion = beginPlaybackSession()
         val shouldReloadPlaylist = applyPrepareSessionState(
             streamUrl = streamUrl,
@@ -1517,7 +1526,12 @@ class PlayerViewModel @Inject constructor(
                 currentStreamUrl = playbackLogicalUrl
                 currentContentId = playbackContentId
                 if (!isActivePlaybackSession(requestVersion, playbackLogicalUrl)) return@launch
-                if (!preparePlayer(streamInfo, requestVersion)) return@launch
+                if (!preparePlayer(
+                        streamInfo = streamInfo,
+                        requestVersion = requestVersion,
+                        probeBeforePlayback = effectiveProbeBeforePlayback
+                    )
+                ) return@launch
 
                 // Check for resume position after the player is fully prepared (VOD only).
                 // Doing this after preparePlayer ensures pause() acts on the live player instance,

@@ -6,6 +6,7 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -392,6 +393,16 @@ private fun BottomNavigationBar(
     modifier: Modifier = Modifier
 ) {
     val items = rememberDestinationItems()
+    if (rememberAppWindowSizeClass() == AppWindowSizeClass.Compact) {
+        CompactBottomNavigationBar(
+            items = items,
+            currentRoute = currentRoute,
+            onNavigate = onNavigate,
+            actions = actions,
+            modifier = modifier
+        )
+        return
+    }
     val scrollState = rememberScrollState()
     val focusRequesters = remember { mutableMapOf<String, FocusRequester>() }
 
@@ -427,6 +438,69 @@ private fun BottomNavigationBar(
             }
             if (actions != null) {
                 Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    content = actions
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompactBottomNavigationBar(
+    items: List<DestinationItem>,
+    currentRoute: String,
+    onNavigate: (String) -> Unit,
+    actions: (@Composable RowScope.() -> Unit)?,
+    modifier: Modifier = Modifier
+) {
+    val navigationScrollState = rememberScrollState()
+    Surface(
+        modifier = modifier.navigationBarsPadding(),
+        shape = RoundedCornerShape(18.dp),
+        colors = SurfaceDefaults.colors(containerColor = AppColors.Surface.copy(alpha = 0.98f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(navigationScrollState)
+                .padding(horizontal = 4.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            items.forEach { item ->
+                val selected = currentRoute.startsWith(item.route)
+                Column(
+                    modifier = Modifier
+                        .width(68.dp)
+                        .heightIn(min = 56.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable {
+                            if (!selected) onNavigate(item.route)
+                        }
+                        .padding(horizontal = 2.dp, vertical = 5.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = stringResource(item.labelRes),
+                        tint = if (selected) AppColors.Brand else AppColors.TextSecondary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = stringResource(item.labelRes),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (selected) AppColors.TextPrimary else AppColors.TextSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            if (actions != null) {
+                Row(
+                    modifier = Modifier.widthIn(min = 56.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     content = actions

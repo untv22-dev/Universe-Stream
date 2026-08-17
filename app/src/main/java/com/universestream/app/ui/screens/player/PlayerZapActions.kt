@@ -236,7 +236,12 @@ internal fun PlayerViewModel.changeChannel(index: Int, isAutoFallback: Boolean =
         val streamInfo = resolvePlaybackStreamInfo(channel.streamUrl, channel.id, channel.providerId, ContentType.LIVE)
             ?: return@launch
         if (!isActivePlaybackSession(requestVersion, channel.streamUrl)) return@launch
-        if (!preparePlayer(streamInfo, requestVersion)) return@launch
+        if (!preparePlayer(
+                streamInfo = streamInfo,
+                requestVersion = requestVersion,
+                probeBeforePlayback = !shouldSkipProbeForFastZap()
+            )
+        ) return@launch
         playerEngine.play()
 
         playerEngine.playbackState

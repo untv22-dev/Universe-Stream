@@ -78,6 +78,8 @@ import com.universestream.app.ui.screens.player.SleepTimerUiState
 import com.universestream.app.ui.time.LocalAppTimeFormat
 import com.universestream.app.ui.time.createTimeFormat
 import com.universestream.app.ui.theme.ErrorColor
+import com.universestream.app.ui.design.AppWindowSizeClass
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.app.ui.theme.Primary
 import com.universestream.domain.model.Channel
 import com.universestream.domain.model.Program
@@ -588,7 +590,12 @@ private fun PlayerBottomBar(
     modifier: Modifier = Modifier
 ) {
     val isVod = contentType != "LIVE" || isCatchUpPlayback
-    val bottomBarWidthFraction = if (isVod) 0.78f else 1f
+    val isCompact = rememberAppWindowSizeClass() == AppWindowSizeClass.Compact
+    val bottomBarWidthFraction = when {
+        isCompact -> 1f
+        isVod -> 0.78f
+        else -> 1f
+    }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -598,12 +605,22 @@ private fun PlayerBottomBar(
                 )
             )
             .padding(
-                horizontal = if (isVod) 14.dp else 32.dp,
-                vertical = if (isVod) 10.dp else 24.dp
+                horizontal = when {
+                    isCompact -> 8.dp
+                    isVod -> 14.dp
+                    else -> 32.dp
+                },
+                vertical = when {
+                    isCompact -> 8.dp
+                    isVod -> 10.dp
+                    else -> 24.dp
+                }
             )
     ) {
         Surface(
-            modifier = if (isVod) {
+            modifier = if (isCompact) {
+                Modifier.fillMaxWidth()
+            } else if (isVod) {
                 Modifier
                     .fillMaxWidth(bottomBarWidthFraction)
                     .widthIn(max = 980.dp)
@@ -611,7 +628,13 @@ private fun PlayerBottomBar(
             } else {
                 Modifier.fillMaxWidth()
             },
-            shape = RoundedCornerShape(if (isVod) 20.dp else 28.dp),
+            shape = RoundedCornerShape(
+                when {
+                    isCompact -> 16.dp
+                    isVod -> 20.dp
+                    else -> 28.dp
+                }
+            ),
             colors = SurfaceDefaults.colors(containerColor = Color(0xFF0C1624).copy(alpha = 0.92f))
         ) {
             Column(
@@ -626,8 +649,16 @@ private fun PlayerBottomBar(
                         )
                     )
                     .padding(
-                        horizontal = if (isVod) 14.dp else 24.dp,
-                        vertical = if (isVod) 12.dp else 22.dp
+                        horizontal = when {
+                            isCompact -> 10.dp
+                            isVod -> 14.dp
+                            else -> 24.dp
+                        },
+                        vertical = when {
+                            isCompact -> 10.dp
+                            isVod -> 12.dp
+                            else -> 22.dp
+                        }
                     )
             ) {
                 if (contentType == "LIVE") {
@@ -1025,8 +1056,9 @@ private fun PlayerVodInfo(
     onOpenExternalPlayer: () -> Unit
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val windowSizeClass = rememberAppWindowSizeClass()
     val isTelevisionDevice = rememberIsTelevisionDevice()
-    val compactControls = screenWidth < 700.dp
+    val compactControls = windowSizeClass == AppWindowSizeClass.Compact
     val tabletControls = !isTelevisionDevice && screenWidth >= 700.dp && screenWidth < 1280.dp
     val transportButtonSize = when {
         compactControls -> 42.dp
