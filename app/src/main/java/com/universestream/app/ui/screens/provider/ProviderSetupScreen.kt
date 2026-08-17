@@ -1339,6 +1339,8 @@ private fun AdvancedProviderOptionsSection(
     onUpdateStalkerRequestRule: (Int, StalkerRequestRuleUiState) -> Unit = { _, _ -> },
     onRemoveStalkerRequestRule: (Int) -> Unit = {}
 ) {
+    if (!uiState.isEditing) return
+
     var showAdvancedOptions by rememberSaveable(sourceType) { mutableStateOf(false) }
     val defaultEpgSyncMode = when (sourceType) {
         SourceType.STALKER -> ProviderEpgSyncMode.BACKGROUND
