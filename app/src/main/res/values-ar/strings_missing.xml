@@ -63,8 +63,13 @@
     </plurals>
     <string name="settings_multiview_respect_provider_connection_limit">احترام حد الاتصالات لدى المزوّد</string>
     <string name="settings_multiview_respect_provider_connection_limit_subtitle">يُبقي وضع تقسيم الشاشة والعرض المتعدد ضمن الحد الأقصى للاتصالات المسموح بها من المزوّد. عطّله فقط إذا كان مزوّدك يسمح بعدة بثوث من العنوان نفسه.</string>
-    <string name="settings_fast_retry_on_transient_failures" translatable="false">Fast retry on transient failures</string>
-    <string name="settings_fast_retry_on_transient_failures_subtitle" translatable="false">Use 500 ms retries for live playback failures instead of exponential backoff.</string>
+    <string name="settings_fast_retry_on_transient_failures">إعادة المحاولة السريعة عند الأعطال المؤقتة</string>
+    <string name="settings_fast_retry_on_transient_failures_subtitle">استخدم إعادة المحاولة كل 500 مللي ثانية لأعطال البث المباشر بدلاً من التراجع التدريجي.</string>
+    <string name="settings_live_translation_enabled">ترجمة الترجمة النصية للبث المباشر</string>
+    <string name="settings_live_translation_enabled_subtitle">ترجم الصوت المنطوق في القنوات المباشرة إلى ترجمة نصية باللغة الإنجليزية باستخدام خدمة Whisper المحلية.</string>
+    <string name="settings_live_translation_endpoint">عنوان خدمة الترجمة المباشرة</string>
+    <string name="settings_live_translation_endpoint_subtitle">العنوان الأساسي لخدمة الترجمة المحلية، والقيمة الافتراضية للمحاكي هي http://10.0.2.2:8765.</string>
+    <string name="settings_live_translation_endpoint_empty_error">لا يمكن أن يكون عنوان الترجمة المباشرة فارغًا.</string>
     <string name="settings_vod_duplicate_handling_mode">معالجة تكرارات الأفلام</string>
     <string name="settings_vod_duplicate_handling_mode_subtitle">اختر أن تبقى نسخ الأفلام منفصلة أو أن تظهر كنسخ متعددة لعنوان واحد.</string>
     <string name="settings_vod_duplicate_handling_show_all">عرض جميع النسخ</string>

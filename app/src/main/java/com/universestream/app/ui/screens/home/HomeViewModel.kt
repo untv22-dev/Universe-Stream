@@ -15,6 +15,7 @@ import com.universestream.app.ui.model.LiveTvChannelMode
 import com.universestream.app.ui.model.LiveTvQuickFilterVisibilityMode
 import com.universestream.data.preferences.PreferencesRepository
 import com.universestream.data.sync.SyncManager
+import com.universestream.data.sync.SyncRepairSection
 import com.universestream.domain.manager.ParentalControlManager
 import com.universestream.domain.model.ActiveLiveSource
 import com.universestream.domain.model.ActiveLiveSourceOption
@@ -549,28 +550,38 @@ class HomeViewModel @Inject constructor(
                         val defaultCat = defaultId?.let { id -> categories.find { it.id == id } }
                         val favoritesCat = categories.find { it.id == VirtualCategoryIds.FAVORITES }
 
-                        if (defaultCat != null) {
+                        val allChannelsCat = categories.find { it.id == ChannelRepository.ALL_CHANNELS_ID }
+                        if (defaultCat != null && defaultCat.count > 0) {
                             _uiState.update { it.copy(shouldAutoFocusFirstChannelOnEntry = true) }
                             selectCategory(defaultCat)
                         }
-                        else if (favoritesCat != null) selectCategory(favoritesCat)
+                        else if (favoritesCat != null && favoritesCat.count > 0) selectCategory(favoritesCat)
+                        else if (allChannelsCat != null) selectCategory(allChannelsCat)
                         else selectCategory(categories.first())
                     } else if (currentSelected != null) {
                         val reselectedCat = categories.find { it.id == currentSelected.id }
 
                         if (reselectedCat != null) {
-                            if (reselectedCat != currentSelected) {
+                            val emptyFavorites = reselectedCat.id == VirtualCategoryIds.FAVORITES && reselectedCat.count <= 0
+                            // Favorites may legitimately be empty while the provider is syncing.
+                            // Keep the user on the real aggregate surface so cached/new channels can appear there.
+                            val fallbackCategory = categories.find { it.id == ChannelRepository.ALL_CHANNELS_ID }
+                            if (emptyFavorites && fallbackCategory != null) {
+                                selectCategory(fallbackCategory)
+                            } else if (reselectedCat != currentSelected) {
                                 _uiState.update { it.copy(selectedCategory = reselectedCat) }
                             }
                         } else {
                             val defaultCat = defaultId?.let { id -> categories.find { it.id == id } }
                             val favoritesCat = categories.find { it.id == VirtualCategoryIds.FAVORITES }
+                            val allChannelsCat = categories.find { it.id == ChannelRepository.ALL_CHANNELS_ID }
 
-                            if (defaultCat != null) {
+                            if (defaultCat != null && defaultCat.count > 0) {
                                 _uiState.update { it.copy(shouldAutoFocusFirstChannelOnEntry = true) }
                                 selectCategory(defaultCat)
                             }
-                            else if (favoritesCat != null) selectCategory(favoritesCat)
+                            else if (favoritesCat != null && favoritesCat.count > 0) selectCategory(favoritesCat)
+                            else if (allChannelsCat != null) selectCategory(allChannelsCat)
                             else if (categories.isNotEmpty()) selectCategory(categories.first())
                         }
                     }
@@ -646,10 +657,16 @@ class HomeViewModel @Inject constructor(
                     val currentSelected = _uiState.value.selectedCategory
                     if (currentSelected == null && categories.isNotEmpty()) {
                         val favoritesCat = categories.find { it.id == VirtualCategoryIds.FAVORITES }
-                        if (favoritesCat != null) selectCategory(favoritesCat) else selectCategory(categories.first())
+                        val allChannelsCat = categories.find { it.id == ChannelRepository.ALL_CHANNELS_ID }
+                        if (favoritesCat != null && favoritesCat.count > 0) selectCategory(favoritesCat)
+                        else if (allChannelsCat != null) selectCategory(allChannelsCat)
+                        else selectCategory(categories.first())
                     } else if (currentSelected != null && categories.none { it.id == currentSelected.id }) {
                         val favoritesCat = categories.find { it.id == VirtualCategoryIds.FAVORITES }
-                        if (favoritesCat != null) selectCategory(favoritesCat) else if (categories.isNotEmpty()) selectCategory(categories.first())
+                        val allChannelsCat = categories.find { it.id == ChannelRepository.ALL_CHANNELS_ID }
+                        if (favoritesCat != null && favoritesCat.count > 0) selectCategory(favoritesCat)
+                        else if (allChannelsCat != null) selectCategory(allChannelsCat)
+                        else if (categories.isNotEmpty()) selectCategory(categories.first())
                     }
                 }
             } catch (e: CancellationException) {
@@ -870,6 +887,34 @@ class HomeViewModel @Inject constructor(
                         isLoading = false,
                         errorMessage = appContext.getString(R.string.home_error_load_failed)
                     )
+                }
+            }
+        }
+    }
+
+    fun retryLiveTv() {
+        val providerId = _uiState.value.provider?.id ?: return
+        viewModelScope.launch {
+            _uiState.update { state ->
+                state.copy(
+                    isLoading = state.filteredChannels.isEmpty(),
+                    errorMessage = null
+                )
+            }
+            val result = syncManager.retrySection(
+                providerId = providerId,
+                section = SyncRepairSection.LIVE
+            )
+            if (result is Result.Error) {
+                _uiState.update { state ->
+                    state.copy(
+                        isLoading = false,
+                        errorMessage = result.message
+                    )
+                }
+            } else {
+                _uiState.update { state ->
+                    state.copy(errorMessage = null)
                 }
             }
         }

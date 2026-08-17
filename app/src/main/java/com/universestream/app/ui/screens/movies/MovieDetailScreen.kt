@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -270,7 +271,9 @@ private fun MovieDetailContent(
                                         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(trailerUrl)))
                                     }
                                 }
-                            }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            compactLayout = true
                         )
                     }
                 } else {
@@ -396,7 +399,8 @@ private fun MovieDetailHeroText(
     onSelectVariant: (Long) -> Unit,
     playButtonFocusRequester: FocusRequester,
     onPlayTrailer: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    compactLayout: Boolean = false
 ) {
     val hasTrailer = !movie.youtubeTrailer.isNullOrBlank()
     Column(
@@ -438,7 +442,7 @@ private fun MovieDetailHeroText(
             isLoading = isLoadingExternalRatings
         )
 
-        MovieFactGrid(movie = movie)
+        MovieFactGrid(movie = movie, compact = compactLayout)
 
         MovieVersionSelector(
             variants = movie.variants,
@@ -446,7 +450,13 @@ private fun MovieDetailHeroText(
             onSelectVariant = onSelectVariant
         )
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (compactLayout) {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                maxItemsInEachRow = 2,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
             TvButton(
                 onClick = onPlay,
                 modifier = Modifier.focusRequester(playButtonFocusRequester),
@@ -519,6 +529,72 @@ private fun MovieDetailHeroText(
                         if (movie.isFavorite) R.string.favorites_remove else R.string.favorites_add
                     )
                 )
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                TvButton(
+                    onClick = onPlay,
+                    modifier = Modifier.focusRequester(playButtonFocusRequester),
+                    colors = ButtonDefaults.colors(
+                        containerColor = AppColors.Brand,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = if (hasResume) {
+                            stringResource(R.string.movie_detail_resume_from, formatPositionMs(resumePositionMs))
+                        } else {
+                            stringResource(R.string.movie_detail_play)
+                        }
+                    )
+                }
+                TvButton(
+                    onClick = onCopyUrl,
+                    colors = ButtonDefaults.colors(
+                        containerColor = AppColors.SurfaceEmphasis,
+                        contentColor = AppColors.TextPrimary
+                    )
+                ) { Text(stringResource(R.string.stream_url_copy)) }
+                TvButton(
+                    onClick = onDownload,
+                    colors = ButtonDefaults.colors(
+                        containerColor = AppColors.SurfaceEmphasis,
+                        contentColor = AppColors.TextPrimary
+                    )
+                ) { Text(stringResource(R.string.download_button_label)) }
+                TvButton(
+                    onClick = onCast,
+                    enabled = !isCasting,
+                    colors = ButtonDefaults.colors(
+                        containerColor = AppColors.SurfaceEmphasis,
+                        contentColor = AppColors.TextPrimary
+                    )
+                ) {
+                    Text(stringResource(if (isCasting) R.string.cast_launching else R.string.cast_button_label))
+                }
+                if (hasTrailer) {
+                    TvButton(
+                        onClick = onPlayTrailer,
+                        colors = ButtonDefaults.colors(
+                            containerColor = AppColors.SurfaceEmphasis,
+                            contentColor = AppColors.TextPrimary
+                        )
+                    ) { Text(stringResource(R.string.movie_detail_trailer)) }
+                }
+                TvIconButton(
+                    onClick = onToggleFavorite,
+                    colors = ButtonDefaults.colors(
+                        containerColor = if (movie.isFavorite) AppColors.Brand else AppColors.SurfaceEmphasis,
+                        contentColor = if (movie.isFavorite) Color.White else AppColors.TextSecondary
+                    )
+                ) {
+                    Icon(
+                        imageVector = if (movie.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = stringResource(
+                            if (movie.isFavorite) R.string.favorites_remove else R.string.favorites_add
+                        )
+                    )
+                }
             }
         }
 
@@ -595,35 +671,58 @@ private tailrec fun Context.findMainActivity(): MainActivity? = when (this) {
 }
 
 @Composable
-private fun MovieFactGrid(movie: Movie) {
+private fun MovieFactGrid(movie: Movie, compact: Boolean = false) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        MovieFactRow(label = stringResource(R.string.movie_detail_director), value = movie.director)
-        MovieFactRow(label = stringResource(R.string.movie_detail_release_date), value = movie.releaseDate)
-        MovieFactRow(label = stringResource(R.string.movie_detail_duration), value = movie.duration)
-        MovieFactRow(label = stringResource(R.string.movie_detail_genre), value = movie.genre)
-        MovieFactRow(label = stringResource(R.string.movie_detail_cast), value = movie.cast)
+        MovieFactRow(label = stringResource(R.string.movie_detail_director), value = movie.director, compact = compact)
+        MovieFactRow(label = stringResource(R.string.movie_detail_release_date), value = movie.releaseDate, compact = compact)
+        MovieFactRow(label = stringResource(R.string.movie_detail_duration), value = movie.duration, compact = compact)
+        MovieFactRow(label = stringResource(R.string.movie_detail_genre), value = movie.genre, compact = compact)
+        MovieFactRow(label = stringResource(R.string.movie_detail_cast), value = movie.cast, compact = compact)
     }
 }
 
 @Composable
 private fun MovieFactRow(
     label: String,
-    value: String?
+    value: String?,
+    compact: Boolean = false
 ) {
     val resolvedValue = value?.takeIf { it.isNotBlank() } ?: stringResource(R.string.movie_detail_unknown)
-    Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleMedium,
-            color = AppColors.TextPrimary,
-            modifier = Modifier.width(180.dp)
-        )
-        Text(
-            text = resolvedValue,
-            style = MaterialTheme.typography.bodyLarge,
-            color = AppColors.TextSecondary,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
+    if (compact) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+                color = AppColors.TextPrimary,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = resolvedValue,
+                style = MaterialTheme.typography.bodyLarge,
+                color = AppColors.TextSecondary,
+                modifier = Modifier.fillMaxWidth(),
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    } else {
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+                color = AppColors.TextPrimary,
+                modifier = Modifier.width(180.dp)
+            )
+            Text(
+                text = resolvedValue,
+                style = MaterialTheme.typography.bodyLarge,
+                color = AppColors.TextSecondary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }

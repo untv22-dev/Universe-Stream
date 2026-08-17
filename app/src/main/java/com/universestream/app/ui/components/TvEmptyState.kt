@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.universestream.app.ui.components.shell.AppMessageState
@@ -27,7 +28,9 @@ import com.universestream.app.ui.theme.OnSurfaceDim
 fun TvEmptyState(
     title: String,
     subtitle: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null
 ) {
     BoxWithConstraints(
         modifier = modifier.fillMaxSize(),
@@ -50,7 +53,14 @@ fun TvEmptyState(
             titleColor = OnSurface,
             subtitleColor = OnSurfaceDim,
             titleTextAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            subtitleTextAlign = androidx.compose.ui.text.style.TextAlign.Center
+            subtitleTextAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            action = if (actionLabel != null && onAction != null) {
+                {
+                    Button(onClick = onAction) {
+                        Text(actionLabel)
+                    }
+                }
+            } else null
         )
     }
 }

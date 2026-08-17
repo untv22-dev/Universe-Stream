@@ -28,6 +28,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ClickableSurfaceDefaults
@@ -37,6 +38,8 @@ import com.universestream.app.R
 import com.universestream.app.ui.components.dialogs.PremiumDialog
 import com.universestream.app.ui.components.dialogs.PremiumDialogActionButton
 import com.universestream.app.ui.components.dialogs.PremiumDialogFooterButton
+import com.universestream.app.ui.design.AppWindowSizeClass
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.app.ui.interaction.TvButton
 import com.universestream.app.ui.interaction.TvClickableSurface
 import com.universestream.app.ui.interaction.mouseClickable
@@ -108,6 +111,7 @@ internal fun ClickableSettingsRow(
     indent: Dp = 0.dp
 ) {
     val focusRequester = remember { FocusRequester() }
+    val compactPhone = rememberAppWindowSizeClass() == AppWindowSizeClass.Compact
     TvClickableSurface(
         onClick = { if (enabled) onClick() },
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(8.dp)),
@@ -124,23 +128,49 @@ internal fun ClickableSettingsRow(
                 onClick = { if (enabled) onClick() }
             )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 8.dp + indent, end = 8.dp, top = 12.dp, bottom = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (enabled) OnSurface else OnSurfaceDim
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (enabled) Primary else OnSurfaceDim
-            )
+        if (compactPhone) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp + indent, end = 8.dp, top = 12.dp, bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalAlignment = Alignment.End
+            ) {
+                Text(
+                    text = label,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (enabled) OnSurface else OnSurfaceDim,
+                    textAlign = TextAlign.End
+                )
+                Text(
+                    text = value,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (enabled) Primary else OnSurfaceDim,
+                    textAlign = TextAlign.End,
+                    maxLines = 4
+                )
+            }
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp + indent, end = 8.dp, top = 12.dp, bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (enabled) OnSurface else OnSurfaceDim
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (enabled) Primary else OnSurfaceDim
+                )
+            }
         }
     }
 }

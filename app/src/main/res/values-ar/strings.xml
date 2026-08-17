@@ -26,6 +26,9 @@
     <string name="home_incorrect_pin">رمز PIN غير صحيح</string>
     <string name="home_loading_categories">جارٍ تحميل الفئات…</string>
     <string name="home_loading_channels">جارٍ تحميل القنوات…</string>
+    <string name="home_live_retry">إعادة محاولة البث المباشر</string>
+    <string name="home_live_taking_longer">يستغرق البث المباشر وقتًا أطول من المتوقع</string>
+    <string name="home_live_retry_subtitle">لم يُرجع الاتصال أي قنوات. تم الحفاظ على مكتبتك المحفوظة بأمان.</string>
     <string name="home_categories_title">الفئات</string>
     <string name="home_search_categories">ابحث في الفئات…</string>
     <string name="home_quick_filters_title">فلاتر سريعة</string>

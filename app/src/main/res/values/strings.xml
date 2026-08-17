@@ -34,6 +34,9 @@
     <string name="home_incorrect_pin">Incorrect PIN</string>
     <string name="home_loading_categories">Loading categories...</string>
     <string name="home_loading_channels">Loading channels...</string>
+    <string name="home_live_retry">Retry Live TV</string>
+    <string name="home_live_taking_longer">Live TV is taking longer than expected</string>
+    <string name="home_live_retry_subtitle">The connection did not return channels. Your saved library was kept safe.</string>
     <string name="home_categories_title">Categories</string>
     <string name="home_search_categories">Search categories...</string>
     <string name="home_quick_filters_title">Quick filters</string>

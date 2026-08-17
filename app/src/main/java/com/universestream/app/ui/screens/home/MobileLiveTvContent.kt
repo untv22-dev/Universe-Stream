@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -78,12 +79,15 @@ fun MobileLiveTvContent(
     LaunchedEffect(uiState.isLoading, uiState.isCategoriesLoading, uiState.selectedCategory?.id) {
         loadingTimedOut = false
         if (uiState.isLoading && !uiState.isCategoriesLoading) {
-            kotlinx.coroutines.delay(45_000)
+            kotlinx.coroutines.delay(15_000)
             if (uiState.filteredChannels.isEmpty()) loadingTimedOut = true
         }
     }
 
-    val showLoading = uiState.isCategoriesLoading || (uiState.isLoading && !loadingTimedOut)
+    // Never hide real cached channels behind a synchronization placeholder.
+    // A cold start may still be loading categories while Room already has channels.
+    val hasCachedChannels = channels.isNotEmpty()
+    val showLoading = !hasCachedChannels && (uiState.isCategoriesLoading || (uiState.isLoading && !loadingTimedOut))
 
     Column(
         modifier = Modifier
@@ -159,18 +163,26 @@ fun MobileLiveTvContent(
 
         if (showLoading) {
             TvEmptyState(
-                title = "Loading channels",
-                subtitle = "Your library is syncing in the background."
+                title = stringResource(R.string.home_loading_channels),
+                subtitle = stringResource(R.string.home_live_retry_subtitle)
             )
-        } else if (uiState.errorMessage != null) {
+        } else if (!hasCachedChannels && (uiState.errorMessage != null || loadingTimedOut)) {
             TvEmptyState(
-                title = "Unable to load channels",
-                subtitle = uiState.errorMessage ?: "Try again after checking the connection."
+                title = if (loadingTimedOut) {
+                    stringResource(R.string.home_live_taking_longer)
+                } else {
+                    stringResource(R.string.home_error_load_failed)
+                },
+                subtitle = uiState.errorMessage ?: stringResource(R.string.home_live_retry_subtitle),
+                actionLabel = stringResource(R.string.home_live_retry),
+                onAction = viewModel::retryLiveTv
             )
-        } else if (channels.isEmpty()) {
+        } else if (!hasCachedChannels) {
             TvEmptyState(
-                title = "No channels found",
-                subtitle = "Choose another category or clear the search."
+                title = stringResource(R.string.home_no_channels_found),
+                subtitle = stringResource(R.string.home_no_channels_found_subtitle),
+                actionLabel = stringResource(R.string.home_live_retry),
+                onAction = viewModel::retryLiveTv
             )
         } else {
             LazyColumn(
