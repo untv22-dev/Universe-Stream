@@ -79,6 +79,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
@@ -115,6 +116,7 @@ private const val XTREAM_RECOVERY_ABORT_WARNING_SUFFIX =
 private const val XTREAM_AVOID_FULL_CATALOG_COOLDOWN_MILLIS = 6 * 60 * 60 * 1000L
 private const val XTREAM_MOVIE_REQUEST_TIMEOUT_MILLIS = 60_000L
 private const val XTREAM_SERIES_REQUEST_TIMEOUT_MILLIS = 60_000L
+private const val XTREAM_INITIAL_LIVE_ONBOARDING_TIMEOUT_MILLIS = 45_000L
 private const val XTREAM_SQLITE_LOOKUP_CHUNK_SIZE = 900
 private const val STALKER_GUIDE_PROGRAM_BATCH_SIZE = 500
 private const val XTREAM_ONBOARDING_PHASE_STARTING = "STARTING"
@@ -438,7 +440,7 @@ class SyncManager @Inject constructor(
                 section = XtreamIndexWorker.CATEGORY_SHELL_SECTION,
                 force = false,
                 prepareCategoryShells = true,
-                initialDelaySeconds = 1L
+                initialDelaySeconds = 0L
             )
         }.onFailure { error ->
             Log.w(TAG, "Failed to schedule Xtream category shell work for provider $providerId: ${sanitizeThrowableMessage(error)}")
@@ -461,25 +463,50 @@ class SyncManager @Inject constructor(
         val api = createXtreamSyncProvider(provider, useTextClassification, enableBase64TextCompatibility)
         val now = System.currentTimeMillis()
 
-        syncXtreamCategoryShell(
+        val movieShellResult = syncXtreamCategoryShell(
             provider = provider,
             api = api,
             contentType = ContentType.MOVIE,
             label = "Movies",
             now = now,
             onProgress = onProgress
-        ).onFailure { error ->
+        )
+        movieShellResult.onFailure { error ->
             Log.w(TAG, "Background VOD category shell failed for provider $providerId: ${sanitizeThrowableMessage(error)}")
+            upsertXtreamIndexJob(
+                providerId = providerId,
+                section = ContentType.MOVIE.name,
+                state = xtreamIndexFailureState(error),
+                now = System.currentTimeMillis(),
+                lastAttemptAt = System.currentTimeMillis(),
+                lastError = sanitizeThrowableMessage(error)
+            )
         }
-        syncXtreamCategoryShell(
+        if (movieShellResult.isSuccess) {
+            scheduleXtreamIndexSync(providerId, ContentType.MOVIE)
+        }
+
+        val seriesShellResult = syncXtreamCategoryShell(
             provider = provider,
             api = api,
             contentType = ContentType.SERIES,
             label = "Series",
             now = now,
             onProgress = onProgress
-        ).onFailure { error ->
+        )
+        seriesShellResult.onFailure { error ->
             Log.w(TAG, "Background Series category shell failed for provider $providerId: ${sanitizeThrowableMessage(error)}")
+            upsertXtreamIndexJob(
+                providerId = providerId,
+                section = ContentType.SERIES.name,
+                state = xtreamIndexFailureState(error),
+                now = System.currentTimeMillis(),
+                lastAttemptAt = System.currentTimeMillis(),
+                lastError = sanitizeThrowableMessage(error)
+            )
+        }
+        if (seriesShellResult.isSuccess) {
+            scheduleXtreamIndexSync(providerId, ContentType.SERIES)
         }
     }
 
@@ -721,73 +748,86 @@ class SyncManager @Inject constructor(
         epgSyncModeOverride: ProviderEpgSyncMode? = null,
         onProgress: ((String) -> Unit)? = null,
         trackInitialLiveOnboarding: Boolean = false
-    ): com.universestream.domain.model.Result<Unit> = withProviderLock(providerId) lock@{
-        try {
-            val providerEntity = providerDao.getById(providerId)
-                ?: return@lock com.universestream.domain.model.Result.error("Provider $providerId not found")
-
-            val provider = providerEntity
-                .copy(password = credentialCrypto.decryptIfNeeded(providerEntity.password))
-                .toDomain()
-                .let { resolvedProvider ->
-                    resolvedProvider.copy(
-                        xtreamFastSyncEnabled = movieFastSyncOverride ?: resolvedProvider.xtreamFastSyncEnabled,
-                        epgSyncMode = epgSyncModeOverride ?: resolvedProvider.epgSyncMode
-                    )
-                }
-            publishSyncState(providerId, SyncState.Syncing("Starting..."))
-
+    ): com.universestream.domain.model.Result<Unit> {
+        suspend fun runSyncCycle(): com.universestream.domain.model.Result<Unit> {
             try {
-                val outcome = withContext(Dispatchers.IO) {
-                    when (provider.type) {
-                        ProviderType.XTREAM_CODES -> syncXtreamIndexFirst(
-                            provider = provider,
-                            force = force,
-                            onProgress = onProgress,
-                            trackInitialLiveOnboarding = trackInitialLiveOnboarding,
-                            syncReason = if (trackInitialLiveOnboarding) {
-                                XtreamLiveSyncReason.INITIAL_ONBOARDING
-                            } else {
-                                XtreamLiveSyncReason.FOREGROUND
-                            }
+                val providerEntity = providerDao.getById(providerId)
+                    ?: return@runSyncCycle com.universestream.domain.model.Result.error("Provider $providerId not found")
+
+                val provider = providerEntity
+                    .copy(password = credentialCrypto.decryptIfNeeded(providerEntity.password))
+                    .toDomain()
+                    .let { resolvedProvider ->
+                        resolvedProvider.copy(
+                            xtreamFastSyncEnabled = movieFastSyncOverride ?: resolvedProvider.xtreamFastSyncEnabled,
+                            epgSyncMode = epgSyncModeOverride ?: resolvedProvider.epgSyncMode
                         )
-                        ProviderType.M3U -> syncM3u(provider, force, onProgress)
-                        ProviderType.STALKER_PORTAL -> syncStalker(provider, force, onProgress)
-                        ProviderType.JELLYFIN -> syncJellyfin(provider, force, onProgress)
                     }
-                }
-                providerDao.updateSyncTime(providerId, System.currentTimeMillis())
-                updateSyncStatusMetadata(
-                    providerId = providerId,
-                    status = if (outcome.partial) "PARTIAL" else "SUCCESS"
-                )
-                publishSyncState(providerId, if (outcome.partial) {
-                    SyncState.Partial("Sync completed with warnings", outcome.warnings)
-                } else {
-                    SyncState.Success()
-                })
-                com.universestream.domain.model.Result.success(Unit)
-            } catch (e: CancellationException) {
-                resetState(providerId)
-                throw e
-            } catch (e: Exception) {
-                val safeMessage = syncErrorSanitizer.userMessage(e, "Sync failed")
-                Log.e(TAG, "Sync failed for provider $providerId: ${syncErrorSanitizer.throwableMessage(e)}")
-                if (provider.type == ProviderType.XTREAM_CODES && trackInitialLiveOnboarding) {
-                    recordXtreamLiveOnboardingState(
-                        provider = provider,
-                        phase = XTREAM_ONBOARDING_PHASE_FAILED,
-                        lastError = sanitizeThrowableMessage(e)
+                publishSyncState(providerId, SyncState.Syncing("Starting..."))
+
+                try {
+                    val outcome = withContext(Dispatchers.IO) {
+                        when (provider.type) {
+                            ProviderType.XTREAM_CODES -> syncXtreamIndexFirst(
+                                provider = provider,
+                                force = force,
+                                onProgress = onProgress,
+                                trackInitialLiveOnboarding = trackInitialLiveOnboarding,
+                                syncReason = if (trackInitialLiveOnboarding) {
+                                    XtreamLiveSyncReason.INITIAL_ONBOARDING
+                                } else {
+                                    XtreamLiveSyncReason.FOREGROUND
+                                }
+                            )
+                            ProviderType.M3U -> syncM3u(provider, force, onProgress)
+                            ProviderType.STALKER_PORTAL -> syncStalker(provider, force, onProgress)
+                            ProviderType.JELLYFIN -> syncJellyfin(provider, force, onProgress)
+                        }
+                    }
+                    providerDao.updateSyncTime(providerId, System.currentTimeMillis())
+                    updateSyncStatusMetadata(
+                        providerId = providerId,
+                        status = if (outcome.partial) "PARTIAL" else "SUCCESS"
                     )
+                    publishSyncState(providerId, if (outcome.partial) {
+                        SyncState.Partial("Sync completed with warnings", outcome.warnings)
+                    } else {
+                        SyncState.Success()
+                    })
+                    com.universestream.domain.model.Result.success(Unit)
+                } catch (e: CancellationException) {
+                    resetState(providerId)
+                    throw e
+                } catch (e: Exception) {
+                    val safeMessage = syncErrorSanitizer.userMessage(e, "Sync failed")
+                    Log.e(TAG, "Sync failed for provider $providerId: ${syncErrorSanitizer.throwableMessage(e)}")
+                    if (provider.type == ProviderType.XTREAM_CODES && trackInitialLiveOnboarding) {
+                        recordXtreamLiveOnboardingState(
+                            provider = provider,
+                            phase = XTREAM_ONBOARDING_PHASE_FAILED,
+                            lastError = sanitizeThrowableMessage(e)
+                        )
+                    }
+                    updateSyncStatusMetadata(providerId = providerId, status = "ERROR")
+                    publishSyncState(providerId, SyncState.Error(safeMessage, e))
+                    com.universestream.domain.model.Result.error(safeMessage, e)
                 }
-                updateSyncStatusMetadata(providerId = providerId, status = "ERROR")
-                publishSyncState(providerId, SyncState.Error(safeMessage, e))
-                com.universestream.domain.model.Result.error(safeMessage, e)
+            } finally {
+                // D7 — reset systematique du bus a la fin du cycle (succes, exception, abort low-memory)
+                // pour eviter qu'un ecran ulterieur n'herite d'un etat de progression obsolete.
+                syncProgressBus.reset()
             }
-        } finally {
-            // D7 — reset systematique du bus a la fin du cycle (succes, exception, abort low-memory)
-            // pour eviter qu'un ecran ulterieur n'herite d'un etat de progression obsolete.
-            syncProgressBus.reset()
+        }
+
+        // Initial onboarding must not hold the provider-wide mutex: category shells,
+        // VOD/Series index workers, and EPG can then start while Live TV is bounded.
+        // Regular/manual sync remains serialized exactly as before.
+        return if (trackInitialLiveOnboarding) {
+            runSyncCycle()
+        } else {
+            withProviderLock(providerId) {
+                runSyncCycle()
+            }
         }
     }
 
@@ -988,6 +1028,34 @@ class SyncManager @Inject constructor(
             )
         }
 
+        if (trackInitialLiveOnboarding) {
+            syncProgressBus.emit(
+                com.universestream.domain.sync.SyncProgress(
+                    section = com.universestream.domain.sync.Section.VOD,
+                    current = 0,
+                    total = 0,
+                    currentLabel = "Queued for background sync",
+                    itemsIndexed = 0
+                )
+            )
+            syncProgressBus.emit(
+                com.universestream.domain.sync.SyncProgress(
+                    section = com.universestream.domain.sync.Section.SERIES,
+                    current = 0,
+                    total = 0,
+                    currentLabel = "Queued for background sync",
+                    itemsIndexed = 0
+                )
+            )
+            // Queue the other Xtream libraries before Live TV starts. The provider lock
+            // keeps requests serialized, but every job is ready to continue immediately
+            // after the bounded Live TV attempt finishes or times out.
+            scheduleXtreamCategoryShellSync(provider.id)
+            if (provider.epgSyncMode != ProviderEpgSyncMode.SKIP) {
+                scheduleBackgroundEpgSync(provider.id)
+            }
+        }
+
         upsertXtreamIndexJob(
             providerId = provider.id,
             section = ContentType.LIVE.name,
@@ -1038,16 +1106,33 @@ class SyncManager @Inject constructor(
                 )
             }
             progress(provider.id, onProgress, "Downloading Live TV...")
-            val liveSyncResult = syncXtreamLiveCatalog(
-                provider = provider,
-                api = api,
-                existingMetadata = metadata,
-                hiddenLiveCategoryIds = hiddenLiveCategoryIds,
-                onProgress = onProgress,
-                runtimeProfile = runtimeProfile,
-                trackInitialLiveOnboarding = trackInitialLiveOnboarding,
-                syncReason = syncReason
-            )
+            val liveSyncResult = if (trackInitialLiveOnboarding) {
+                withTimeoutOrNull(XTREAM_INITIAL_LIVE_ONBOARDING_TIMEOUT_MILLIS) {
+                    syncXtreamLiveCatalog(
+                        provider = provider,
+                        api = api,
+                        existingMetadata = metadata,
+                        hiddenLiveCategoryIds = hiddenLiveCategoryIds,
+                        onProgress = onProgress,
+                        runtimeProfile = runtimeProfile,
+                        trackInitialLiveOnboarding = true,
+                        syncReason = syncReason
+                    )
+                } ?: throw IOException(
+                    "Initial Live TV sync exceeded ${XTREAM_INITIAL_LIVE_ONBOARDING_TIMEOUT_MILLIS / 1_000L}s; continuing with the other libraries."
+                )
+            } else {
+                syncXtreamLiveCatalog(
+                    provider = provider,
+                    api = api,
+                    existingMetadata = metadata,
+                    hiddenLiveCategoryIds = hiddenLiveCategoryIds,
+                    onProgress = onProgress,
+                    runtimeProfile = runtimeProfile,
+                    trackInitialLiveOnboarding = false,
+                    syncReason = syncReason
+                )
+            }
             if (trackInitialLiveOnboarding) {
                 val stagedAcceptedCount = liveSyncResult.stagedAcceptedCount
                 recordXtreamLiveOnboardingState(
@@ -1167,11 +1252,14 @@ class SyncManager @Inject constructor(
             acceptedCount
         }
         val liveCount = liveOutcome.getOrElse { error ->
+            if (error is CancellationException) throw error
+            val safeError = sanitizeThrowableMessage(error)
+            warnings += "Live TV sync did not finish: $safeError. Continuing with Movies, Series, and EPG in the background."
             if (trackInitialLiveOnboarding) {
                 recordXtreamLiveOnboardingState(
                     provider = provider,
                     phase = XTREAM_ONBOARDING_PHASE_FAILED,
-                    lastError = sanitizeThrowableMessage(error),
+                    lastError = safeError,
                     runtimeProfile = runtimeProfile
                 )
             }
@@ -1181,9 +1269,9 @@ class SyncManager @Inject constructor(
                 state = xtreamIndexFailureState(error),
                 now = now,
                 lastAttemptAt = now,
-                lastError = sanitizeThrowableMessage(error)
+                lastError = safeError
             )
-            throw error
+            0
         }
         upsertXtreamIndexJob(
             providerId = provider.id,
@@ -1198,32 +1286,25 @@ class SyncManager @Inject constructor(
         )
         scheduleXtreamIndexSync(provider.id, ContentType.LIVE)
 
-        // Live TV is the first usable catalog needed to enter the app. VOD and Series
-        // category shells can be fetched after navigation, so they must not block login.
-        syncProgressBus.emit(
-            com.universestream.domain.sync.SyncProgress(
-                section = com.universestream.domain.sync.Section.VOD,
-                current = 0,
-                total = 0,
-                currentLabel = "Queued for background sync",
-                itemsIndexed = liveCount
-            )
-        )
-        syncProgressBus.emit(
-            com.universestream.domain.sync.SyncProgress(
-                section = com.universestream.domain.sync.Section.SERIES,
-                current = 0,
-                total = 0,
-                currentLabel = "Queued for background sync",
-                itemsIndexed = liveCount
-            )
-        )
-        scheduleXtreamCategoryShellSync(provider.id)
+        // Live TV is bounded during initial onboarding. VOD and Series were queued
+        // before this stage and continue as soon as the provider lock is released.
+        if (!trackInitialLiveOnboarding) {
+            scheduleXtreamCategoryShellSync(provider.id)
+        }
         val movieCategoryCount = 0
         val seriesCategoryCount = 0
 
         if (trackInitialLiveOnboarding) {
-            if (liveCount > 0 || movieCategoryCount > 0 || seriesCategoryCount > 0) {
+            if (liveOutcome.isFailure) {
+                recordXtreamLiveOnboardingState(
+                    provider = provider,
+                    phase = XTREAM_ONBOARDING_PHASE_FAILED,
+                    acceptedRowCount = liveCount,
+                    lastError = "Live TV did not finish before the onboarding timeout; other libraries were queued.",
+                    clearStagedSession = true,
+                    runtimeProfile = runtimeProfile
+                )
+            } else if (liveCount > 0 || movieCategoryCount > 0 || seriesCategoryCount > 0) {
                 val completedAt = System.currentTimeMillis()
                 recordXtreamLiveOnboardingState(
                     provider = provider,
@@ -1263,7 +1344,7 @@ class SyncManager @Inject constructor(
             now = now,
             lastAttemptAt = if (epgState == "QUEUED") now else 0L
         )
-        if (provider.epgSyncMode != ProviderEpgSyncMode.SKIP) {
+        if (!trackInitialLiveOnboarding && provider.epgSyncMode != ProviderEpgSyncMode.SKIP) {
             runCatching { scheduleBackgroundEpgSync(provider.id) }
                 .onFailure { error ->
                     Log.w(TAG, "Failed to schedule Xtream background EPG sync for provider ${provider.id}: ${sanitizeThrowableMessage(error)}")

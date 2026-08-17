@@ -100,11 +100,11 @@ class BackgroundEpgSyncWorker(
         private const val INVALID_PROVIDER_ID = -1L
         private const val UNIQUE_WORK_PREFIX = "background-epg-sync-"
         /**
-         * Default delay before the first background EPG sync runs after enqueue. This
-         * replaces the in-process [kotlinx.coroutines.delay] previously used by the
-         * provider repository, which kept a coroutine alive for the duration of the wait.
+         * Default delay before the first background EPG sync runs after enqueue. EPG is
+         * started immediately so a successful login downloads all libraries without a
+         * manual sync action; callers can still provide an explicit retry delay.
          */
-        private const val DEFAULT_INITIAL_DELAY_SECONDS = 30L
+        private const val DEFAULT_INITIAL_DELAY_SECONDS = 0L
 
         fun enqueue(
             context: Context,
