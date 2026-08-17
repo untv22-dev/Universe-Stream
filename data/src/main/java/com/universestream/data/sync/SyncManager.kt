@@ -750,7 +750,7 @@ class SyncManager @Inject constructor(
         trackInitialLiveOnboarding: Boolean = false
     ): com.universestream.domain.model.Result<Unit> {
         suspend fun runSyncCycle(): com.universestream.domain.model.Result<Unit> {
-            try {
+            return try {
                 val providerEntity = providerDao.getById(providerId)
                     ?: return@runSyncCycle com.universestream.domain.model.Result.error("Provider $providerId not found")
 
