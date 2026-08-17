@@ -72,6 +72,20 @@ class OkHttpXtreamApiService(
         val queryKeys: Set<String>
     )
 
+    /**
+     * Authentication must fail fast enough to give the user a useful retry path.
+     * Catalog requests keep their larger budgets; only player_api authentication
+     * uses this bounded client so a slow provider cannot hold the setup dialog.
+     */
+    private val authenticationClient: OkHttpClient by lazy {
+        client.newBuilder()
+            .connectTimeout(8L, SECONDS)
+            .readTimeout(15L, SECONDS)
+            .writeTimeout(8L, SECONDS)
+            .callTimeout(18L, SECONDS)
+            .build()
+    }
+
     private val heavyCatalogClient: OkHttpClient by lazy {
         client.newBuilder()
             .readTimeout(NetworkTimeoutConfig.XTREAM_HEAVY_READ_TIMEOUT_SECONDS, SECONDS)
@@ -91,7 +105,11 @@ class OkHttpXtreamApiService(
     override suspend fun authenticate(
         endpoint: String,
         requestProfile: HttpRequestProfile
-    ): XtreamAuthResponse = get(endpoint, requestProfile = requestProfile)
+    ): XtreamAuthResponse = get(
+        endpoint = endpoint,
+        requestProfile = requestProfile,
+        clientOverride = authenticationClient
+    )
 
     override suspend fun getLiveCategories(
         endpoint: String,
@@ -198,7 +216,8 @@ class OkHttpXtreamApiService(
     private suspend inline fun <reified T> get(
         endpoint: String,
         profile: RequestProfile = RequestProfile.STANDARD,
-        requestProfile: HttpRequestProfile = HttpRequestProfile()
+        requestProfile: HttpRequestProfile = HttpRequestProfile(),
+        clientOverride: OkHttpClient? = null
     ): T = withContext(Dispatchers.IO) {
         val descriptor = describeEndpoint(endpoint)
         val effectiveProfile = requestProfileFor(descriptor, profile)
@@ -209,7 +228,7 @@ class OkHttpXtreamApiService(
             .build()
             .withRequestProfile(effectiveRequestProfile)
         try {
-            val call = clientFor(effectiveProfile).newCall(request)
+            val call = (clientOverride ?: clientFor(effectiveProfile)).newCall(request)
             executeCancellable(call).use { response ->
                 if (!response.isSuccessful) {
                     val message = "HTTP ${response.code}"
