@@ -2392,50 +2392,52 @@ private fun SourceTypeSelectorPanel(
                     onClick = { onSelect(SourceType.XTREAM) }
                 )
             }
+            // New-provider onboarding is intentionally Xtream-first. The QR card
+            // in the form below is the only additional onboarding path. Legacy
+            // provider types remain visible when editing an existing provider.
             if (!isEditing || sourceType == SourceType.STALKER) {
-                SourceTypeCard(
-                    title = androidx.compose.ui.res.stringResource(R.string.setup_stalker),
-                    badge = androidx.compose.ui.res.stringResource(R.string.badge_beta),
-                    subtitle = androidx.compose.ui.res.stringResource(R.string.setup_info_stalker_body),
-                    selected = sourceType == SourceType.STALKER,
-                    enabled = !isEditing,
-                    onClick = { onSelect(SourceType.STALKER) }
-                )
+                if (isEditing && sourceType == SourceType.STALKER) {
+                    SourceTypeCard(
+                        title = androidx.compose.ui.res.stringResource(R.string.setup_stalker),
+                        badge = androidx.compose.ui.res.stringResource(R.string.badge_beta),
+                        subtitle = androidx.compose.ui.res.stringResource(R.string.setup_info_stalker_body),
+                        selected = true,
+                        enabled = false,
+                        onClick = {}
+                    )
+                }
             }
-            if (!isEditing || sourceType == SourceType.M3U_URL) {
+            if (isEditing && sourceType == SourceType.M3U_URL) {
                 SourceTypeCard(
                     title = androidx.compose.ui.res.stringResource(R.string.setup_tab_url),
                     subtitle = androidx.compose.ui.res.stringResource(R.string.setup_info_m3u_body),
-                    selected = sourceType == SourceType.M3U_URL,
-                    enabled = !isEditing,
-                    onClick = { onSelect(SourceType.M3U_URL) }
+                    selected = true,
+                    enabled = false,
+                    onClick = {}
                 )
             }
-            if (!isEditing || sourceType == SourceType.M3U_FILE) {
+            if (isEditing && sourceType == SourceType.M3U_FILE) {
                 SourceTypeCard(
                     title = androidx.compose.ui.res.stringResource(R.string.setup_tab_file),
                     subtitle = androidx.compose.ui.res.stringResource(R.string.setup_file_browse_hint),
-                    selected = sourceType == SourceType.M3U_FILE,
-                    enabled = !isEditing,
-                    onClick = { onSelect(SourceType.M3U_FILE) }
+                    selected = true,
+                    enabled = false,
+                    onClick = {}
                 )
             }
-            if (!isEditing || sourceType == SourceType.JELLYFIN) {
+            if (isEditing && sourceType == SourceType.JELLYFIN) {
                 SourceTypeCard(
                     title = androidx.compose.ui.res.stringResource(R.string.setup_tab_jellyfin),
                     subtitle = "Jellyfin media server",
-                    selected = sourceType == SourceType.JELLYFIN,
-                    enabled = !isEditing,
-                    onClick = { onSelect(SourceType.JELLYFIN) }
+                    selected = true,
+                    enabled = false,
+                    onClick = {}
                 )
             }
-            if (!isEditing) {
-                ImportOptionsButton(
-                    text = stringResource(R.string.settings_restore_data),
-                    onClick = onImportClick,
-                    compact = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
+            // Backup/import is intentionally kept out of the login screen. It is
+            // an advanced recovery action and remains available from Settings.
+            if (isEditing && sourceType == SourceType.XTREAM) {
+                Spacer(modifier = Modifier.height(1.dp))
             }
             Spacer(modifier = Modifier.weight(1f))
             Text(
@@ -2525,33 +2527,36 @@ private fun SourceTypeTabRow(
                 onClick = { if (!isEditing) onSelect(SourceType.XTREAM) }
             )
         }
-        if (!isEditing || sourceType == SourceType.STALKER) {
+        // During new-provider onboarding, Xtream is the only source tab.
+        // QR pairing is presented inside the Xtream form and remains available
+        // on both TV (D-pad) and touch layouts.
+        if (isEditing && sourceType == SourceType.STALKER) {
             TabButton(
                 text = androidx.compose.ui.res.stringResource(R.string.setup_stalker),
                 badge = androidx.compose.ui.res.stringResource(R.string.badge_beta),
-                isSelected = sourceType == SourceType.STALKER,
-                onClick = { if (!isEditing) onSelect(SourceType.STALKER) }
+                isSelected = true,
+                onClick = {}
             )
         }
-        if (!isEditing || sourceType == SourceType.M3U_URL) {
+        if (isEditing && sourceType == SourceType.M3U_URL) {
             TabButton(
                 text = androidx.compose.ui.res.stringResource(R.string.setup_tab_url),
-                isSelected = sourceType == SourceType.M3U_URL,
-                onClick = { if (!isEditing) onSelect(SourceType.M3U_URL) }
+                isSelected = true,
+                onClick = {}
             )
         }
-        if (!isEditing || sourceType == SourceType.M3U_FILE) {
+        if (isEditing && sourceType == SourceType.M3U_FILE) {
             TabButton(
                 text = androidx.compose.ui.res.stringResource(R.string.setup_tab_file),
-                isSelected = sourceType == SourceType.M3U_FILE,
-                onClick = { if (!isEditing) onSelect(SourceType.M3U_FILE) }
+                isSelected = true,
+                onClick = {}
             )
         }
-        if (!isEditing || sourceType == SourceType.JELLYFIN) {
+        if (isEditing && sourceType == SourceType.JELLYFIN) {
             TabButton(
                 text = androidx.compose.ui.res.stringResource(R.string.setup_tab_jellyfin),
-                isSelected = sourceType == SourceType.JELLYFIN,
-                onClick = { if (!isEditing) onSelect(SourceType.JELLYFIN) }
+                isSelected = true,
+                onClick = {}
             )
         }
     }
