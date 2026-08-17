@@ -1481,5 +1481,14 @@
     <string name="settings_remote_selection_global_default">استخدام الافتراضي العام: %1$s</string>
     <string name="settings_remote_dialog_title">إجراء %1$s</string>
     <string name="settings_remote_dialog_subtitle">اختر الإجراء الذي يقوم به هذا الزر الملوّن في %1$s.</string>
+    <string name="settings_provider_type_xtream">Xtream Codes</string>
+    <string name="settings_provider_type_m3u">قائمة M3U</string>
+    <string name="settings_provider_type_stalker">بوابة Stalker</string>
+    <string name="settings_provider_type_jellyfin">Jellyfin</string>
+    <string name="settings_provider_expiry_unknown">انتهاء الصلاحية: غير معروف</string>
+    <string name="settings_provider_expiry_never">لا توجد مدة انتهاء مسجلة</string>
+    <string name="settings_provider_expires">ينتهي: %1$s</string>
+    <string name="settings_provider_syncing">جارٍ المزامنة</string>
+    <string name="settings_provider_manage">اضغط للإدارة</string>
 </resources>
 

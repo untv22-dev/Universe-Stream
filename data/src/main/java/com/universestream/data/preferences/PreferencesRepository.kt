@@ -62,6 +62,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 @Singleton
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
 
+data class XtreamDraft(
+    val serverUrl: String,
+    val username: String,
+    val encryptedPassword: String
+)
+
 private fun sanitizePlaybackTimerMinutes(minutes: Int): Int = when (minutes) {
     0, 15, 30, 45, 60, 90, 120 -> minutes
     in Int.MIN_VALUE..7 -> 0
@@ -199,6 +205,9 @@ class PreferencesRepository @Inject constructor(
         val XTREAM_TEXT_CLASSIFICATION = booleanPreferencesKey("xtream_text_classification")
         val XTREAM_BASE64_TEXT_COMPATIBILITY = booleanPreferencesKey("xtream_base64_text_compatibility")
         val XTREAM_TEXT_IMPORT_GENERATION = longPreferencesKey("xtream_text_import_generation")
+        val XTREAM_DRAFT_SERVER_URL = stringPreferencesKey("xtream_draft_server_url")
+        val XTREAM_DRAFT_USERNAME = stringPreferencesKey("xtream_draft_username")
+        val XTREAM_DRAFT_PASSWORD_ENCRYPTED = stringPreferencesKey("xtream_draft_password_encrypted")
         val ZAP_AUTO_REVERT = booleanPreferencesKey("zap_auto_revert")
         val PREVENT_STANDBY_DURING_PLAYBACK = booleanPreferencesKey("prevent_standby_during_playback")
         val AUTO_PLAY_NEXT_EPISODE = booleanPreferencesKey("auto_play_next_episode")
@@ -280,6 +289,21 @@ class PreferencesRepository @Inject constructor(
 
     val lastActiveProviderId: Flow<Long?> = context.dataStore.data.map { preferences ->
         preferences[PreferencesKeys.LAST_ACTIVE_PROVIDER_ID]
+    }
+
+    val xtreamDraft: Flow<XtreamDraft?> = context.dataStore.data.map { preferences ->
+        val serverUrl = preferences[PreferencesKeys.XTREAM_DRAFT_SERVER_URL].orEmpty()
+        val username = preferences[PreferencesKeys.XTREAM_DRAFT_USERNAME].orEmpty()
+        val encryptedPassword = preferences[PreferencesKeys.XTREAM_DRAFT_PASSWORD_ENCRYPTED].orEmpty()
+        if (serverUrl.isBlank() && username.isBlank() && encryptedPassword.isBlank()) {
+            null
+        } else {
+            XtreamDraft(
+                serverUrl = serverUrl,
+                username = username,
+                encryptedPassword = encryptedPassword
+            )
+        }
     }
 
     val activeLiveSource: Flow<ActiveLiveSource?> = context.dataStore.data.map { preferences ->
@@ -513,6 +537,35 @@ class PreferencesRepository @Inject constructor(
     suspend fun setLastActiveProviderId(id: Long) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.LAST_ACTIVE_PROVIDER_ID] = id
+        }
+    }
+
+    suspend fun setXtreamDraft(serverUrl: String, username: String, encryptedPassword: String) {
+        context.dataStore.edit { preferences ->
+            val normalizedServerUrl = serverUrl.trim()
+            val normalizedUsername = username.trim()
+            val normalizedPassword = encryptedPassword.trim()
+            if (normalizedServerUrl.isBlank() && normalizedUsername.isBlank() && normalizedPassword.isBlank()) {
+                preferences.remove(PreferencesKeys.XTREAM_DRAFT_SERVER_URL)
+                preferences.remove(PreferencesKeys.XTREAM_DRAFT_USERNAME)
+                preferences.remove(PreferencesKeys.XTREAM_DRAFT_PASSWORD_ENCRYPTED)
+            } else {
+                preferences[PreferencesKeys.XTREAM_DRAFT_SERVER_URL] = normalizedServerUrl
+                preferences[PreferencesKeys.XTREAM_DRAFT_USERNAME] = normalizedUsername
+                if (normalizedPassword.isBlank()) {
+                    preferences.remove(PreferencesKeys.XTREAM_DRAFT_PASSWORD_ENCRYPTED)
+                } else {
+                    preferences[PreferencesKeys.XTREAM_DRAFT_PASSWORD_ENCRYPTED] = normalizedPassword
+                }
+            }
+        }
+    }
+
+    suspend fun clearXtreamDraft() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(PreferencesKeys.XTREAM_DRAFT_SERVER_URL)
+            preferences.remove(PreferencesKeys.XTREAM_DRAFT_USERNAME)
+            preferences.remove(PreferencesKeys.XTREAM_DRAFT_PASSWORD_ENCRYPTED)
         }
     }
 

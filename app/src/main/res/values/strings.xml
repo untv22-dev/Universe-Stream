@@ -1781,4 +1781,13 @@
     <string name="settings_remote_selection_global_default">Use global default: %1$s</string>
     <string name="settings_remote_dialog_title">%1$s action</string>
     <string name="settings_remote_dialog_subtitle">Choose what this colored button should do in %1$s.</string>
+    <string name="settings_provider_type_xtream">Xtream Codes</string>
+    <string name="settings_provider_type_m3u">M3U Playlist</string>
+    <string name="settings_provider_type_stalker">Stalker Portal</string>
+    <string name="settings_provider_type_jellyfin">Jellyfin</string>
+    <string name="settings_provider_expiry_unknown">Expiry unknown</string>
+    <string name="settings_provider_expiry_never">No expiry reported</string>
+    <string name="settings_provider_expires">Expires %1$s</string>
+    <string name="settings_provider_syncing">Syncing</string>
+    <string name="settings_provider_manage">Tap to manage</string>
 </resources>

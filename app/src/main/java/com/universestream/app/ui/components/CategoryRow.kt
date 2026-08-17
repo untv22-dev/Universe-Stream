@@ -21,6 +21,8 @@ import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.universestream.app.R
 import com.universestream.app.ui.components.shell.AppSectionHeader
+import com.universestream.app.ui.design.AppWindowSizeClass
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.app.ui.theme.FocusBorder
 import com.universestream.app.ui.theme.OnSurface
 import com.universestream.app.ui.theme.Primary
@@ -42,6 +44,7 @@ fun <T : Any> CategoryRow(
     itemContent: @Composable (T) -> Unit
 ) {
     val resolvedContentTypeSelector: (T) -> Any? = contentTypeSelector ?: { null }
+    val compactPhone = rememberAppWindowSizeClass() == AppWindowSizeClass.Compact
 
     Column(
         modifier = modifier
@@ -97,7 +100,11 @@ fun <T : Any> CategoryRow(
 
         LazyRow(
             modifier = Modifier.focusRestorer(),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
+            contentPadding = if (compactPhone) {
+                PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)
+            } else {
+                PaddingValues(horizontal = 20.dp, vertical = 10.dp)
+            },
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(

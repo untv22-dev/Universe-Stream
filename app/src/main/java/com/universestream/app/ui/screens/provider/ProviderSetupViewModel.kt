@@ -9,6 +9,8 @@ import com.universestream.data.remote.xtream.XtreamNetworkException
 import com.universestream.data.remote.xtream.XtreamParsingException
 import com.universestream.data.remote.xtream.XtreamRequestException
 import com.universestream.data.remote.xtream.XtreamResponseTooLargeException
+import com.universestream.data.preferences.PreferencesRepository
+import com.universestream.data.security.CredentialCrypto
 import com.universestream.data.security.CredentialDecryptionException
 import com.universestream.domain.manager.BackupConflictStrategy
 import com.universestream.domain.manager.DriveAuthState
@@ -63,6 +65,8 @@ class ProviderSetupViewModel @Inject constructor(
     private val importBackup: ImportBackup,
     private val driveBackupSyncManager: DriveBackupSyncManager,
     private val providerQrPairingManager: ProviderQrPairingManager,
+    private val preferencesRepository: PreferencesRepository,
+    private val credentialCrypto: CredentialCrypto,
 ) : ViewModel() {
 
     enum class OnboardingCompletion {
@@ -78,14 +82,35 @@ class ProviderSetupViewModel @Inject constructor(
         JELLYFIN
     }
 
+    data class XtreamDraftForm(
+        val serverUrl: String,
+        val username: String,
+        val password: String
+    )
+
     private val _uiState = MutableStateFlow(ProviderSetupState())
     val uiState: StateFlow<ProviderSetupState> = _uiState.asStateFlow()
     private val _knownLocalM3uUrls = MutableStateFlow<Set<String>>(emptySet())
     val knownLocalM3uUrls: StateFlow<Set<String>> = _knownLocalM3uUrls.asStateFlow()
+    private val _xtreamDraft = MutableStateFlow<XtreamDraftForm?>(null)
+    val xtreamDraft: StateFlow<XtreamDraftForm?> = _xtreamDraft.asStateFlow()
     val pairingState: StateFlow<ProviderQrPairingState> = providerQrPairingManager.state
     private var jellyfinQuickConnectJob: kotlinx.coroutines.Job? = null
 
     init {
+        viewModelScope.launch {
+            preferencesRepository.xtreamDraft.collect { storedDraft ->
+                _xtreamDraft.value = storedDraft?.let { draft ->
+                    XtreamDraftForm(
+                        serverUrl = draft.serverUrl,
+                        username = draft.username,
+                        password = runCatching {
+                            credentialCrypto.decryptIfNeeded(draft.encryptedPassword)
+                        }.getOrDefault("")
+                    )
+                }
+            }
+        }
         viewModelScope.launch {
             providerRepository.getActiveProvider().collect { provider ->
                 if (provider != null) {
@@ -386,6 +411,15 @@ class ProviderSetupViewModel @Inject constructor(
         }
     }
 
+    private suspend fun persistXtreamDraft(
+        serverUrl: String,
+        username: String,
+        password: String
+    ): Boolean = runCatching {
+        val encryptedPassword = credentialCrypto.encryptIfNeeded(password)
+        preferencesRepository.setXtreamDraft(serverUrl, username, encryptedPassword)
+    }.isSuccess
+
     fun loginXtream(
         serverUrl: String,
         username: String,
@@ -426,6 +460,7 @@ class ProviderSetupViewModel @Inject constructor(
                 onProgress = { msg -> _uiState.update { it.copy(syncProgress = msg) } }
             )) {
                 is ValidateAndAddProviderResult.Success -> {
+                    val credentialsSaved = persistXtreamDraft(serverUrl, username, password)
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -434,11 +469,13 @@ class ProviderSetupViewModel @Inject constructor(
                             createdProviderId = result.provider.id,
                             error = null,
                             validationError = null,
+                            completionWarning = if (credentialsSaved) null else "Provider saved, but credentials could not be remembered.",
                             syncProgress = null
                         )
                     }
                 }
                 is ValidateAndAddProviderResult.SavedWithWarning -> {
+                    val credentialsSaved = persistXtreamDraft(serverUrl, username, password)
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -447,7 +484,11 @@ class ProviderSetupViewModel @Inject constructor(
                             createdProviderId = result.provider.id,
                             error = null,
                             validationError = null,
-                            completionWarning = result.warning,
+                            completionWarning = if (credentialsSaved) {
+                                result.warning
+                            } else {
+                                "${result.warning}\nCredentials could not be remembered."
+                            },
                             syncProgress = null
                         )
                     }

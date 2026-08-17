@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,8 @@ import com.universestream.domain.model.ActiveLiveSource
 import com.universestream.domain.model.Category
 import com.universestream.domain.model.Channel
 import com.universestream.domain.model.Provider
+import com.universestream.domain.model.VirtualCategoryIds
+import com.universestream.domain.repository.ChannelRepository
 
 @Composable
 fun MobileLiveTvContent(
@@ -56,9 +59,31 @@ fun MobileLiveTvContent(
     val unlockedCategories = remember(visibleCategories, uiState.parentalControlLevel, uiState.unlockedCategoryIds) {
         visibleCategories.filterNot(isCategoryLocked)
     }
+    val allChannelsCategory = uiState.categories.firstOrNull { it.id == ChannelRepository.ALL_CHANNELS_ID }
     val selectedCategory = uiState.selectedCategory?.takeIf { !isCategoryLocked(it) }
     val selectedLabel = selectedCategory?.name ?: "All channels"
     val channels = uiState.filteredChannels
+    var loadingTimedOut by rememberSaveable(uiState.selectedCategory?.id) { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.categories, uiState.selectedCategory?.id, uiState.isCategoriesLoading) {
+        val current = uiState.selectedCategory
+        val shouldUseAllChannels = allChannelsCategory != null &&
+            !uiState.isCategoriesLoading &&
+            (current == null || (current.id == VirtualCategoryIds.RECENT && uiState.recentChannels.isEmpty()))
+        if (shouldUseAllChannels && current?.id != allChannelsCategory?.id) {
+            viewModel.selectCategory(allChannelsCategory!!)
+        }
+    }
+
+    LaunchedEffect(uiState.isLoading, uiState.isCategoriesLoading, uiState.selectedCategory?.id) {
+        loadingTimedOut = false
+        if (uiState.isLoading && !uiState.isCategoriesLoading) {
+            kotlinx.coroutines.delay(45_000)
+            if (uiState.filteredChannels.isEmpty()) loadingTimedOut = true
+        }
+    }
+
+    val showLoading = uiState.isCategoriesLoading || (uiState.isLoading && !loadingTimedOut)
 
     Column(
         modifier = Modifier
@@ -108,7 +133,10 @@ fun MobileLiveTvContent(
                 )
             }
             TvClickableSurface(
-                onClick = { viewModel.clearCategorySearchQuery() },
+                onClick = {
+                    allChannelsCategory?.let(viewModel::selectCategory)
+                    viewModel.clearCategorySearchQuery()
+                },
                 colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
                     containerColor = AppColors.SurfaceElevated,
                     focusedContainerColor = AppColors.SurfaceEmphasis
@@ -129,7 +157,7 @@ fun MobileLiveTvContent(
             style = MaterialTheme.typography.labelMedium
         )
 
-        if (uiState.isLoading) {
+        if (showLoading) {
             TvEmptyState(
                 title = "Loading channels",
                 subtitle = "Your library is syncing in the background."
@@ -181,6 +209,7 @@ fun MobileLiveTvContent(
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     TextButton(
                         onClick = {
+                            allChannelsCategory?.let(viewModel::selectCategory)
                             viewModel.clearCategorySearchQuery()
                             showCategoryPicker = false
                         },

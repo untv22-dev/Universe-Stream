@@ -40,6 +40,8 @@ import com.universestream.domain.model.Provider
 import androidx.compose.ui.res.stringResource
 import com.universestream.app.R
 import com.universestream.app.ui.design.requestFocusSafely
+import com.universestream.app.ui.design.AppWindowSizeClass
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -68,6 +70,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val windowSizeClass = rememberAppWindowSizeClass()
     val settingsNavFocusRequester = remember { FocusRequester() }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -270,8 +273,116 @@ fun SettingsScreen(
                 )
             }
         ) {
-            Row(modifier = Modifier.fillMaxSize()) {
-                SettingsNavigationRail(
+            if (windowSizeClass == AppWindowSizeClass.Compact) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    MobileSettingsCategoryBar(
+                        selectedCategory = dialogState.selectedCategory,
+                        onCategorySelected = { dialogState.selectedCategory = it }
+                    )
+                    if (dialogState.selectedCategory == 0) {
+                        MobileProvidersContent(
+                            uiState = uiState,
+                            onAddProvider = onAddProvider,
+                            onEditProvider = onEditProvider
+                        )
+                    } else {
+                        SettingsContentPane(
+                            uiState = uiState,
+                            viewModel = viewModel,
+                            context = context,
+                            screenLabels = screenLabels,
+                            dialogState = dialogState,
+                            providerState = providerState,
+                            onAddProvider = onAddProvider,
+                            onEditProvider = onEditProvider,
+                            onNavigateToParentalControl = onNavigateToParentalControl,
+                            onChooseRecordingFolder = {
+                                try {
+                                    recordingFolderLauncher.launch(null)
+                                } catch (e: ActivityNotFoundException) {
+                                    viewModel.showUserMessage(
+                                        context.getString(R.string.settings_backup_folder_picker_unavailable)
+                                    )
+                                }
+                            },
+                            onUseUsbRecordingStorage = usbStorageDir?.let { dir ->
+                                { viewModel.useUsbRecordingStorage(File(dir, "recordings").absolutePath) }
+                            },
+                            onCreateBackupUsb = usbStorageDir?.let { { createBackupToUsb() } },
+                            onRestoreBackupUsb = usbStorageDir?.let { { restoreBackupFromUsb() } },
+                            onCreateBackup = {
+                                val onFireTv = context.isFireTv()
+                                val primary: () -> Unit = if (onFireTv) {
+                                    { exportTreeLauncher.launch(null) }
+                                } else {
+                                    { createDocumentLauncher.launch("universestream_backup.json") }
+                                }
+                                val fallback: () -> Unit = if (onFireTv) {
+                                    { createDocumentLauncher.launch("universestream_backup.json") }
+                                } else {
+                                    { exportTreeLauncher.launch(null) }
+                                }
+                                try {
+                                    primary()
+                                } catch (e: ActivityNotFoundException) {
+                                    try {
+                                        fallback()
+                                    } catch (e2: ActivityNotFoundException) {
+                                        viewModel.showUserMessage(
+                                            context.getString(R.string.settings_backup_folder_picker_unavailable)
+                                        )
+                                    }
+                                }
+                            },
+                            onShareBackup = ::shareBackup,
+                            onViewCrashReport = viewModel::viewCrashReport,
+                            onShareCrashReport = ::shareCrashReport,
+                            onDeleteCrashReport = viewModel::deleteCrashReport,
+                            onRestoreBackup = {
+                                val onFireTv = context.isFireTv()
+                                val primary: () -> Unit = if (onFireTv) {
+                                    { importTreeLauncher.launch(null) }
+                                } else {
+                                    {
+                                        openDocumentLauncher.launch(
+                                            arrayOf("application/json", "text/json", "application/x-json", "application/octet-stream", "*/*")
+                                        )
+                                    }
+                                }
+                                val fallback: () -> Unit = if (onFireTv) {
+                                    {
+                                        openDocumentLauncher.launch(
+                                            arrayOf("application/json", "text/json", "application/x-json", "application/octet-stream", "*/*")
+                                        )
+                                    }
+                                } else {
+                                    { importTreeLauncher.launch(null) }
+                                }
+                                try {
+                                    primary()
+                                } catch (e: ActivityNotFoundException) {
+                                    try {
+                                        fallback()
+                                    } catch (e2: ActivityNotFoundException) {
+                                        viewModel.showUserMessage(
+                                            context.getString(R.string.settings_backup_folder_picker_unavailable)
+                                        )
+                                    }
+                                }
+                            },
+                            onDriveSignIn = { viewModel.beginDriveSignIn(driveSignInLauncher) },
+                            onDriveSignOut = viewModel::signOutDrive,
+                            onDrivePush = viewModel::pushToDrive,
+                            onDrivePull = viewModel::pullFromDrive,
+                            onOpenUri = uriHandler::openUri,
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(start = 12.dp, top = 10.dp, end = 12.dp, bottom = 24.dp)
+                        )
+                    }
+                }
+            } else {
+                Row(modifier = Modifier.fillMaxSize()) {
+                    SettingsNavigationRail(
                     selectedCategory = dialogState.selectedCategory,
                     focusRequester = settingsNavFocusRequester,
                     onCategorySelected = { dialogState.selectedCategory = it }
@@ -376,6 +487,7 @@ fun SettingsScreen(
                     onOpenUri = uriHandler::openUri,
                     modifier = Modifier.weight(1f)
                 )
+                }
             }
         }
 

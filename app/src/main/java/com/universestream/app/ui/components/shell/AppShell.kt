@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -395,7 +396,7 @@ private fun BottomNavigationBar(
     val focusRequesters = remember { mutableMapOf<String, FocusRequester>() }
 
     Surface(
-        modifier = modifier,
+        modifier = modifier.navigationBarsPadding(),
         shape = RoundedCornerShape(18.dp),
         colors = SurfaceDefaults.colors(containerColor = AppColors.Surface.copy(alpha = 0.96f))
     ) {
@@ -415,7 +416,8 @@ private fun BottomNavigationBar(
                     icon = item.icon,
                     selected = currentRoute.startsWith(item.route),
                     focusRequester = requester,
-                    modifier = Modifier.heightIn(min = 48.dp),
+                    modifier = Modifier.heightIn(min = 52.dp),
+                    useMouseSupport = false,
                     onClick = {
                         if (!currentRoute.startsWith(item.route)) {
                             onNavigate(item.route)
@@ -471,6 +473,7 @@ private fun TopNavigationButton(
     selected: Boolean,
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
+    useMouseSupport: Boolean = true,
     onClick: () -> Unit
 ) {
     var isFocused by remember { mutableStateOf(false) }
@@ -488,11 +491,17 @@ private fun TopNavigationButton(
         },
         modifier = modifier
             .focusRequester(focusRequester)
-            .mouseClickable(
-                focusRequester = focusRequester,
-                onClick = {
-                    sounds.playSelect()
-                    onClick()
+            .then(
+                if (useMouseSupport) {
+                    Modifier.mouseClickable(
+                        focusRequester = focusRequester,
+                        onClick = {
+                            sounds.playSelect()
+                            onClick()
+                        }
+                    )
+                } else {
+                    Modifier
                 }
             )
             .zIndex(if (isFocused) 1f else 0f) // Keep focused button on top

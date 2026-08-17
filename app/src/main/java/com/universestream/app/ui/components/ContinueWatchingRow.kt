@@ -32,6 +32,8 @@ import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.universestream.app.R
 import com.universestream.app.ui.components.rememberCrossfadeImageModel
+import com.universestream.app.ui.design.AppWindowSizeClass
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.app.ui.theme.AccentCyan
 import com.universestream.app.ui.theme.GradientOverlayBottom
 import com.universestream.app.ui.theme.SurfaceElevated
@@ -51,11 +53,14 @@ fun ContinueWatchingRow(
 ) {
     if (items.isEmpty()) return
 
+    val compactPhone = rememberAppWindowSizeClass() == AppWindowSizeClass.Compact
+    val rowHorizontalPadding = if (compactPhone) 12.dp else 20.dp
+
     Column(modifier = modifier.fillMaxWidth().suppressParentVerticalScroll()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 6.dp),
+                .padding(start = rowHorizontalPadding, end = rowHorizontalPadding, top = 10.dp, bottom = 5.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -68,15 +73,19 @@ fun ContinueWatchingRow(
 
         LazyRow(
             modifier = Modifier.focusRestorer(),
-            contentPadding = PaddingValues(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            contentPadding = PaddingValues(horizontal = rowHorizontalPadding),
+            horizontalArrangement = Arrangement.spacedBy(if (compactPhone) 6.dp else 8.dp)
         ) {
             items(
                 items = items,
                 key = { it.id },
                 contentType = { it.contentType }
             ) { history ->
-                ContinueWatchingTile(history = history, onClick = { onItemClick(history) })
+                ContinueWatchingTile(
+                    history = history,
+                    onClick = { onItemClick(history) },
+                    compactPhone = compactPhone
+                )
             }
         }
     }
@@ -85,7 +94,8 @@ fun ContinueWatchingRow(
 @Composable
 private fun ContinueWatchingTile(
     history: PlaybackHistory,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    compactPhone: Boolean
 ) {
     val progress = if (history.totalDurationMs > 0) {
         (history.resumePositionMs.toFloat() / history.totalDurationMs).coerceIn(0f, 1f)
@@ -95,8 +105,8 @@ private fun ContinueWatchingTile(
 
     FocusableCard(
         onClick = onClick,
-        width = 208.dp,
-        height = 117.dp
+        width = if (compactPhone) 156.dp else 208.dp,
+        height = if (compactPhone) 88.dp else 117.dp
     ) {
         Box(
             modifier = Modifier

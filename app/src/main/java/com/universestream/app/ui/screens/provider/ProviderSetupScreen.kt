@@ -156,6 +156,7 @@ fun ProviderSetupScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val knownLocalM3uUrls by viewModel.knownLocalM3uUrls.collectAsStateWithLifecycle()
     val pairingState by viewModel.pairingState.collectAsStateWithLifecycle()
+    val xtreamDraft by viewModel.xtreamDraft.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -166,6 +167,7 @@ fun ProviderSetupScreen(
     var serverUrl by rememberSaveable { mutableStateOf("") }
     var username by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    var hasRestoredXtreamDraft by rememberSaveable { mutableStateOf(false) }
     var httpUserAgent by rememberSaveable { mutableStateOf("") }
     var httpHeaders by rememberSaveable { mutableStateOf("") }
     var stalkerMacAddress by rememberSaveable { mutableStateOf("") }
@@ -285,6 +287,16 @@ fun ProviderSetupScreen(
 
     LaunchedEffect(editProviderId) {
         if (editProviderId != null) viewModel.loadProvider(editProviderId)
+    }
+
+    LaunchedEffect(xtreamDraft, editProviderId, uiState.isEditing) {
+        val draft = xtreamDraft ?: return@LaunchedEffect
+        if (editProviderId == null && !uiState.isEditing && !hasRestoredXtreamDraft) {
+            serverUrl = draft.serverUrl
+            username = draft.username
+            password = draft.password
+            hasRestoredXtreamDraft = true
+        }
     }
 
     LaunchedEffect(uiState.isEditing, uiState.existingProviderId) {
@@ -2703,8 +2715,15 @@ private fun ProviderTextField(
                     keyboardController?.hide()
                 }
             }
-            .mouseClickable(focusRequester = containerFocusRequester, onClick = ::activateInput)
-            .clickable(onClick = ::activateInput)
+            .then(
+                if (isTelevisionDevice) {
+                    Modifier
+                        .mouseClickable(focusRequester = containerFocusRequester, onClick = ::activateInput)
+                        .clickable(onClick = ::activateInput)
+                } else {
+                    Modifier.clickable(onClick = ::activateInput)
+                }
+            )
             .focusable()
             .padding(0.dp)
     ) {
@@ -2823,12 +2842,17 @@ private fun ProviderTextField(
                                 .semantics {
                                     contentDescription = passwordVisibilityDescription.orEmpty()
                                 }
-                                .clickable {
-                                    isPasswordVisible = !isPasswordVisible
-                                }
-                                .mouseClickable(focusRequester = visibilityToggleFocusRequester) {
-                                    isPasswordVisible = !isPasswordVisible
-                                }
+                                .then(
+                                    if (isTelevisionDevice) {
+                                        Modifier.mouseClickable(focusRequester = visibilityToggleFocusRequester) {
+                                            isPasswordVisible = !isPasswordVisible
+                                        }
+                                    } else {
+                                        Modifier.clickable {
+                                            isPasswordVisible = !isPasswordVisible
+                                        }
+                                    }
+                                )
                                 .focusable(enabled = !isTelevisionDevice || acceptsInput)
                         ) {
                             PasswordVisibilityGlyph(
