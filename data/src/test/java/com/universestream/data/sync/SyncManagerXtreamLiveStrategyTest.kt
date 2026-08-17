@@ -129,17 +129,19 @@ class SyncManagerXtreamLiveStrategyTest {
     }
 
     @Test
-    fun `initial low tier live sync attempts streamed full catalog first`() = runTest {
+    fun `initial live sync uses bounded categories instead of full catalog`() = runTest {
         val requestCount = AtomicInteger(0)
+        val requestedCategoryIds = mutableListOf<String?>()
         val httpService = OkHttpXtreamApiService(
             client = OkHttpClient.Builder()
                 .addInterceptor { chain ->
                     requestCount.incrementAndGet()
+                    requestedCategoryIds += chain.request().url.queryParameter("category_id")
                     val body = """
                         [
                           {
                             "num": "7",
-                            "name": "Thin Live",
+                            "name": "Category Live",
                             "stream_id": "777",
                             "stream_icon": "https://img.example.test/live.png",
                             "category_id": "12",
@@ -159,7 +161,9 @@ class SyncManagerXtreamLiveStrategyTest {
                 .build(),
             json = json
         )
-        val apiService = FakeXtreamApiService()
+        val apiService = FakeXtreamApiService(
+            liveCategories = listOf(XtreamCategory(categoryId = "12", categoryName = "News"))
+        )
         val provider = Provider(
             id = 42L,
             name = "Xtream",
@@ -209,9 +213,10 @@ class SyncManagerXtreamLiveStrategyTest {
         )
 
         assertThat(payload.catalogResult).isInstanceOf(CatalogStrategyResult.Success::class.java)
-        assertThat(payload.strategyFeedback.attemptedFullCatalog).isTrue()
-        assertThat(payload.strategyFeedback.preferredSegmentedFirst).isFalse()
+        assertThat(payload.strategyFeedback.attemptedFullCatalog).isFalse()
+        assertThat(payload.strategyFeedback.preferredSegmentedFirst).isTrue()
         assertThat(stagedChannels.map { it.streamId }).containsExactly(777L)
+        assertThat(requestedCategoryIds).containsExactly("12")
         assertThat(requestCount.get()).isEqualTo(1)
     }
 

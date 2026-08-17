@@ -49,13 +49,17 @@ internal suspend fun reconcileTargetedProviderStatus(
             } else {
                 ProviderStatus.ACTIVE
             }
-            if (!hasUsableLiveCatalogForActivation(
-                    provider.id,
-                    provider.type,
-                    channelDao,
-                    categoryDao,
-                    syncMetadataRepository
-                )) {
+            val hasUsableLiveCatalog = hasUsableLiveCatalogForActivation(
+                provider.id,
+                provider.type,
+                channelDao,
+                categoryDao,
+                syncMetadataRepository
+            )
+            // Xtream onboarding may complete authentication before the first catalog
+            // batches are committed. Keep it active and partial so Home does not send
+            // the user back to Add Provider while the automatic sync is retrying.
+            if (!hasUsableLiveCatalog && provider.type != ProviderType.XTREAM_CODES) {
                 providerDao.update(
                     provider.copy(
                         isActive = false,
@@ -68,7 +72,7 @@ internal suspend fun reconcileTargetedProviderStatus(
             providerDao.update(
                 provider.copy(
                     isActive = true,
-                    status = finalStatus,
+                    status = if (hasUsableLiveCatalog) finalStatus else ProviderStatus.PARTIAL,
                     lastSyncedAt = currentTimeMillis
                 )
             )

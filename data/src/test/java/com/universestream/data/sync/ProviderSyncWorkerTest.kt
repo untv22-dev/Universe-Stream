@@ -114,7 +114,7 @@ class ProviderSyncWorkerTest {
     }
 
     @Test
-    fun `targeted xtream resume success without committed live channels stays inactive partial`() = runTest {
+    fun `targeted xtream resume success without committed live channels stays active partial`() = runTest {
         val provider = ProviderEntity(
             id = 9L,
             name = "Xtream",
@@ -141,7 +141,7 @@ class ProviderSyncWorkerTest {
 
         val updatedProvider = argumentCaptor<ProviderEntity>()
         verify(providerDao).update(updatedProvider.capture())
-        assertThat(updatedProvider.firstValue.isActive).isFalse()
+        assertThat(updatedProvider.firstValue.isActive).isTrue()
         assertThat(updatedProvider.firstValue.status).isEqualTo(ProviderStatus.PARTIAL)
         assertThat(updatedProvider.firstValue.lastSyncedAt).isEqualTo(456L)
     }

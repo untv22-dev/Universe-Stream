@@ -322,11 +322,15 @@ class ProviderRepositoryImpl @Inject constructor(
                     newData.copy(id = newId).copy(password = "")
                 }
 
+                // Authentication is complete; make the provider visible to Home immediately.
+                // Catalog sync continues asynchronously and will promote PARTIAL to ACTIVE
+                // after usable content has been committed.
+                providerDao.setActive(providerData.id)
                 onProgress?.invoke("Saved. Loading your library in the background...")
                 syncManager.scheduleProviderSyncResume(providerData.id)
                 val savedProvider = providerData.copy(
                     status = ProviderStatus.PARTIAL,
-                    isActive = false
+                    isActive = true
                 )
                 val message = "Provider login succeeded. Live TV and library data will continue loading in the background."
                 Result.error(

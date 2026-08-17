@@ -94,7 +94,13 @@ internal class SyncManagerXtreamLiveStrategy(
             catalogResult = CatalogStrategyResult.EmptyValid("full"),
             categories = null
         )
-        val shouldAttemptFullCatalog = effectiveLiveSyncMethod == EffectiveXtreamLiveSyncMethod.STREAM_ALL &&
+        // The first login must become usable quickly. Some providers keep the full
+        // get_live_streams response open for a very long time, which leaves onboarding
+        // stuck at "Downloading Live TV..." with no persisted catalog. Use the bounded
+        // category requests for initial onboarding; full-catalog remains available for
+        // subsequent/background refreshes.
+        val shouldAttemptFullCatalog = !trackInitialLiveOnboarding &&
+            effectiveLiveSyncMethod == EffectiveXtreamLiveSyncMethod.STREAM_ALL &&
             hiddenLiveCategoryIds.isEmpty() &&
             runtimeProfile.shouldAttemptFullLiveCatalog(trackInitialLiveOnboarding)
         if (shouldAttemptFullCatalog) {
