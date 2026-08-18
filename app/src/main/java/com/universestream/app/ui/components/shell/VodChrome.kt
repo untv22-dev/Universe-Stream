@@ -40,6 +40,8 @@ import androidx.tv.material3.Text
 import com.universestream.app.ui.design.AppColors
 import com.universestream.app.ui.components.ChipRowItem
 import com.universestream.app.ui.components.ChipRowSection
+import com.universestream.app.ui.design.AppWindowSizeClass
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.app.ui.design.AppColors.Brand as Primary
 import com.universestream.app.ui.design.AppColors.Focus as FocusBorder
 import com.universestream.app.ui.design.AppColors.SurfaceElevated as SurfaceElevated
@@ -108,12 +110,20 @@ fun VodHeroStrip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // On a phone the tall hero eats a large part of the screen. Keep the full
+    // size for Television and tablets, but shrink height, padding and subtitle
+    // lines on phones (Compact width) so the strip reads as a compact resume
+    // button rather than a banner.
+    val isCompactPhone = rememberAppWindowSizeClass() == AppWindowSizeClass.Compact
+    val heroHeight = if (!isCompactPhone) 132.dp else 84.dp
+    val outerPadding = if (!isCompactPhone) 18.dp else 12.dp
+    val subtitleLines = if (!isCompactPhone) 2 else 1
     TvClickableSurface(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
-            .height(132.dp),
+            .height(heroHeight),
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(22.dp)),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = SurfaceHighlight,
@@ -130,26 +140,27 @@ fun VodHeroStrip(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
+                .padding(horizontal = 20.dp, vertical = outerPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = if (!isCompactPhone) MaterialTheme.typography.headlineSmall
+                        else MaterialTheme.typography.titleMedium,
                     color = TextPrimary,
-                    maxLines = 2,
+                    maxLines = if (!isCompactPhone) 2 else 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = OnSurfaceDim,
-                    maxLines = 2,
+                    maxLines = subtitleLines,
                     overflow = TextOverflow.Ellipsis
                 )
             }
