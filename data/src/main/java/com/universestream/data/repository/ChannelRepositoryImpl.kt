@@ -348,7 +348,16 @@ class ChannelRepositoryImpl @Inject constructor(
         val hiddenIds = values[4] as Set<Long>
         val filtered = applyVisibilityFilter(entities, level, unlockedCats, hideDecorativeRows)
             .filterNot { it.id in hiddenIds }
-        applyNumbering(buildPresentedChannels(filtered, settings, unlockedCats), settings.numberingMode)
+        val presented = applyNumbering(
+            buildPresentedChannels(filtered, settings, unlockedCats),
+            settings.numberingMode
+        )
+        Log.i(
+            "ChannelDiag",
+            "provider=$providerId daoRows=${entities.size} visibilityRows=${filtered.size} " +
+                "presentedRows=${presented.size} hideDecorative=$hideDecorativeRows"
+        )
+        presented
     }.flowOn(Dispatchers.Default)
 
     private fun decorativeAwareCategoryCountFlow(providerId: Long): Flow<List<CategoryCount>> =

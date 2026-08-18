@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -19,8 +20,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -64,7 +68,40 @@ fun MobileLiveTvContent(
     val selectedCategory = uiState.selectedCategory?.takeIf { !isCategoryLocked(it) }
     val selectedLabel = selectedCategory?.name ?: "All channels"
     val channels = uiState.filteredChannels
+    val channelListState = rememberLazyListState()
+    val hasMoreChannels by rememberUpdatedState(uiState.hasMoreChannels)
     var loadingTimedOut by rememberSaveable(uiState.selectedCategory?.id) { mutableStateOf(false) }
+
+    // Compact phones previously rendered only the initial DB page and never requested page 2.
+    // Keep this pagination trigger strictly inside the mobile renderer; the Television branch
+    // and the existing non-compact renderer remain unchanged.
+    LaunchedEffect(channelListState, uiState.selectedCategory?.id) {
+        snapshotFlow {
+            val layoutInfo = channelListState.layoutInfo
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            val totalItems = layoutInfo.totalItemsCount
+            Triple(totalItems, lastVisibleIndex, hasMoreChannels)
+        }
+            .distinctUntilChanged()
+            .collect { (totalItems, lastVisibleIndex, hasMore) ->
+                if (hasMore && totalItems > 0 && lastVisibleIndex >= totalItems - 5) {
+                    android.util.Log.i(
+                        "HomeDiag",
+                        "compact-load-more category=${uiState.selectedCategory?.id} " +
+                            "uiRows=$totalItems lastVisible=$lastVisibleIndex hasMore=$hasMore"
+                    )
+                    viewModel.loadMoreChannels()
+                }
+            }
+    }
+
+    LaunchedEffect(uiState.selectedCategory?.id, channels.size, uiState.hasMoreChannels) {
+        android.util.Log.i(
+            "HomeDiag",
+            "compact-ui category=${uiState.selectedCategory?.id} " +
+                "uiRows=${channels.size} hasMore=${uiState.hasMoreChannels}"
+        )
+    }
 
     LaunchedEffect(uiState.categories, uiState.selectedCategory?.id, uiState.isCategoriesLoading) {
         val current = uiState.selectedCategory
@@ -186,6 +223,7 @@ fun MobileLiveTvContent(
             )
         } else {
             LazyColumn(
+                state = channelListState,
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 contentPadding = PaddingValues(bottom = 20.dp)

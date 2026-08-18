@@ -111,6 +111,7 @@ class HomeViewModel @Inject constructor(
         val categoryId: Long
     )
     private val channelCache = mutableMapOf<ChannelCacheKey, List<Channel>>()
+    private var channelPageRequestCount = 0
     private val _channelBrowseLimit = MutableStateFlow(CHANNEL_PAGE_SIZE)
     private val _channelSearchLimit = MutableStateFlow(CHANNEL_SEARCH_PAGE_SIZE)
     private val _preferredInitialCategoryId = MutableStateFlow<Long?>(null)
@@ -753,6 +754,7 @@ class HomeViewModel @Inject constructor(
 
     private fun loadChannelsForCategory(category: Category) {
         loadChannelsJob?.cancel()
+        channelPageRequestCount = 0
         _channelBrowseLimit.value = CHANNEL_PAGE_SIZE
         _channelSearchLimit.value = CHANNEL_SEARCH_PAGE_SIZE
         loadChannelsJob = viewModelScope.launch {
@@ -1090,10 +1092,26 @@ class HomeViewModel @Inject constructor(
 
     fun loadMoreChannels() {
         val currentQuery = _uiState.value.channelSearchQuery.trim()
+        val categoryId = _uiState.value.selectedCategory?.id
         if (currentQuery.length < MIN_CHANNEL_SEARCH_QUERY_LENGTH) {
-            _channelBrowseLimit.update { it + CHANNEL_PAGE_SIZE }
+            val previousLimit = _channelBrowseLimit.value
+            val nextLimit = previousLimit + CHANNEL_PAGE_SIZE
+            channelPageRequestCount += 1
+            android.util.Log.i(
+                "HomeDiag",
+                "page-request category=$categoryId request=$channelPageRequestCount " +
+                    "previousLimit=$previousLimit nextLimit=$nextLimit queryLength=${currentQuery.length}"
+            )
+            _channelBrowseLimit.value = nextLimit
         } else {
-            _channelSearchLimit.update { it + CHANNEL_SEARCH_PAGE_SIZE }
+            val previousLimit = _channelSearchLimit.value
+            val nextLimit = previousLimit + CHANNEL_SEARCH_PAGE_SIZE
+            android.util.Log.i(
+                "HomeDiag",
+                "search-page-request category=$categoryId previousLimit=$previousLimit " +
+                    "nextLimit=$nextLimit queryLength=${currentQuery.length}"
+            )
+            _channelSearchLimit.value = nextLimit
         }
     }
 
