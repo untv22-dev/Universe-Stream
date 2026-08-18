@@ -18,7 +18,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -83,7 +85,8 @@ fun MobileLiveTvContent(
     }
 
     // On entry, land on the first real category instead of All channels.
-    // Only auto-selects when nothing is selected yet, so it never fights a user tap.
+    // Only auto-selects when nothing is selected yet, so it never fights a user tap
+    // or a saved selection the user deliberately left on.
     LaunchedEffect(uiState.isCategoriesLoading, stripCategories, uiState.selectedCategory?.id) {
         if (uiState.isCategoriesLoading) return@LaunchedEffect
         if (uiState.selectedCategory == null) {
@@ -100,6 +103,30 @@ fun MobileLiveTvContent(
     val isAllSelected = selectedId == ChannelRepository.ALL_CHANNELS_ID
     val channels = uiState.filteredChannels
     val channelListState = rememberLazyListState()
+
+    // All Channels can hold thousands of rows. Rendering them all at once is what
+    // makes that surface feel heavy, so cap how many are shown and grow the cap as
+    // the user scrolls. Real categories are small and render in full, so this only
+    // affects the aggregated surface. Purely client-side; the ViewModel already
+    // handed us the complete cached list, so no extra loads happen here.
+    val allChannelsPageSize = 300
+    var displayLimit by remember(selectedId) { mutableStateOf(allChannelsPageSize) }
+    val displayedChannels = remember(channels, displayLimit, isAllSelected) {
+        if (isAllSelected && channels.size > displayLimit) channels.take(displayLimit) else channels
+    }
+    LaunchedEffect(isAllSelected, channelListState, channels.size) {
+        if (!isAllSelected) return@LaunchedEffect
+        snapshotFlow {
+            val last = channelListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            last to channelListState.layoutInfo.totalItemsCount
+        }
+            .distinctUntilChanged()
+            .collect { (lastVisible, total) ->
+                if (total > 0 && lastVisible >= total - 10 && displayLimit < channels.size) {
+                    displayLimit = (displayLimit + allChannelsPageSize).coerceAtMost(channels.size)
+                }
+            }
+    }
 
     var loadingTimedOut by rememberSaveable(selectedId) { mutableStateOf(false) }
     LaunchedEffect(uiState.isLoading, uiState.isCategoriesLoading, selectedId) {
@@ -208,7 +235,7 @@ fun MobileLiveTvContent(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 contentPadding = PaddingValues(bottom = 20.dp)
             ) {
-                items(channels, key = { it.id }) { channel ->
+                items(displayedChannels, key = { it.id }) { channel ->
                     LiveChannelRowSurface(
                         channel = channel,
                         onClick = {
