@@ -4,30 +4,25 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.universestream.app.R
@@ -41,9 +36,23 @@ import com.universestream.domain.model.ActiveLiveSource
 import com.universestream.domain.model.Category
 import com.universestream.domain.model.Channel
 import com.universestream.domain.model.Provider
-import com.universestream.domain.model.VirtualCategoryIds
 import com.universestream.domain.repository.ChannelRepository
 
+/**
+ * Compact / phone Live TV screen.
+ *
+ * Layout intent (phone-only, Television path is never routed here):
+ *  - A real horizontal category strip at the top, the way native IPTV apps
+ *    present categories, so a user can move between categories with one tap
+ *    instead of opening a dialog.
+ *  - The first *real* category is selected on entry, not the aggregated
+ *    "All channels" surface, so a cold start renders a single reasonably
+ *    sized category instead of the full multi-thousand channel list.
+ *  - "All channels" stays available as the first chip, but it is a choice,
+ *    not the default.
+ *  - Channels for the selected category come back complete from Room via the
+ *    ViewModel's mobile database-first path, so no scroll pagination is needed.
+ */
 @Composable
 fun MobileLiveTvContent(
     uiState: HomeUiState,
@@ -54,77 +63,46 @@ fun MobileLiveTvContent(
     isCategoryLocked: (Category) -> Boolean,
     isChannelLocked: (Channel) -> Boolean
 ) {
-    var showCategoryPicker by rememberSaveable { mutableStateOf(false) }
-
-    // This call is intentionally located in the Compact-only renderer. It makes
-    // Mobile read the complete synchronised catalog from Room; Television and the
-    // existing non-compact Home renderer never enable this mode.
+    // Read the complete synchronised catalog from Room for the mobile renderer.
+    // Television and the existing non-compact Home renderer never enable this.
     LaunchedEffect(Unit) {
         viewModel.enableMobileDatabaseFirst()
     }
 
-    val visibleCategories = remember(uiState.categories, uiState.categorySearchQuery) {
-        uiState.categories
-            .distinctBy { it.id }
-            .filter {
-                uiState.categorySearchQuery.isBlank() ||
-                    it.name.contains(uiState.categorySearchQuery, ignoreCase = true)
-            }
-    }
-    val unlockedCategories = remember(visibleCategories, uiState.parentalControlLevel, uiState.unlockedCategoryIds) {
-        visibleCategories.filterNot(isCategoryLocked)
-    }
     val allChannelsCategory = uiState.categories.firstOrNull { it.id == ChannelRepository.ALL_CHANNELS_ID }
+
+    // Categories shown in the strip: real, unlocked categories, de-duplicated,
+    // with the aggregated "All channels" surface handled separately as a leading chip.
+    val stripCategories = remember(uiState.categories, uiState.parentalControlLevel, uiState.unlockedCategoryIds) {
+        uiState.categories
+            .asSequence()
+            .distinctBy { it.id }
+            .filter { it.id != ChannelRepository.ALL_CHANNELS_ID }
+            .filterNot(isCategoryLocked)
+            .toList()
+    }
+
+    // On entry, land on the first real category instead of All channels.
+    // Only auto-selects when nothing is selected yet, so it never fights a user tap.
+    LaunchedEffect(uiState.isCategoriesLoading, stripCategories, uiState.selectedCategory?.id) {
+        if (uiState.isCategoriesLoading) return@LaunchedEffect
+        if (uiState.selectedCategory == null) {
+            val firstReal = stripCategories.firstOrNull()
+            when {
+                firstReal != null -> viewModel.selectCategory(firstReal)
+                allChannelsCategory != null -> viewModel.selectCategory(allChannelsCategory)
+            }
+        }
+    }
+
     val selectedCategory = uiState.selectedCategory?.takeIf { !isCategoryLocked(it) }
-    val selectedLabel = selectedCategory?.name ?: "All channels"
+    val selectedId = selectedCategory?.id
+    val isAllSelected = selectedId == ChannelRepository.ALL_CHANNELS_ID
     val channels = uiState.filteredChannels
     val channelListState = rememberLazyListState()
-    val hasMoreChannels by rememberUpdatedState(uiState.hasMoreChannels)
-    var loadingTimedOut by rememberSaveable(uiState.selectedCategory?.id) { mutableStateOf(false) }
 
-    // Compact phones previously rendered only the initial DB page and never requested page 2.
-    // Keep this pagination trigger strictly inside the mobile renderer; the Television branch
-    // and the existing non-compact renderer remain unchanged.
-    LaunchedEffect(channelListState, uiState.selectedCategory?.id) {
-        snapshotFlow {
-            val layoutInfo = channelListState.layoutInfo
-            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            val totalItems = layoutInfo.totalItemsCount
-            Triple(totalItems, lastVisibleIndex, hasMoreChannels)
-        }
-            .distinctUntilChanged()
-            .collect { (totalItems, lastVisibleIndex, hasMore) ->
-                if (hasMore && totalItems > 0 && lastVisibleIndex >= totalItems - 5) {
-                    android.util.Log.i(
-                        "HomeDiag",
-                        "compact-load-more category=${uiState.selectedCategory?.id} " +
-                            "uiRows=$totalItems lastVisible=$lastVisibleIndex hasMore=$hasMore"
-                    )
-                    viewModel.loadMoreChannels()
-                }
-            }
-    }
-
-    LaunchedEffect(uiState.selectedCategory?.id, channels.size, uiState.hasMoreChannels) {
-        android.util.Log.i(
-            "MobileIptvDiag",
-            "compact-ui category=${uiState.selectedCategory?.id} " +
-                "uiRows=${channels.size} categories=${uiState.categories.distinctBy { it.id }.size} " +
-                "hasMore=${uiState.hasMoreChannels}"
-        )
-    }
-
-    LaunchedEffect(uiState.categories, uiState.selectedCategory?.id, uiState.isCategoriesLoading) {
-        val current = uiState.selectedCategory
-        val shouldUseAllChannels = allChannelsCategory != null &&
-            !uiState.isCategoriesLoading &&
-            (current == null || (current.id == VirtualCategoryIds.RECENT && uiState.recentChannels.isEmpty()))
-        if (shouldUseAllChannels && current?.id != allChannelsCategory?.id) {
-            viewModel.selectCategory(allChannelsCategory!!)
-        }
-    }
-
-    LaunchedEffect(uiState.isLoading, uiState.isCategoriesLoading, uiState.selectedCategory?.id) {
+    var loadingTimedOut by rememberSaveable(selectedId) { mutableStateOf(false) }
+    LaunchedEffect(uiState.isLoading, uiState.isCategoriesLoading, selectedId) {
         loadingTimedOut = false
         if (uiState.isLoading && !uiState.isCategoriesLoading) {
             kotlinx.coroutines.delay(15_000)
@@ -133,7 +111,6 @@ fun MobileLiveTvContent(
     }
 
     // Never hide real cached channels behind a synchronization placeholder.
-    // A cold start may still be loading categories while Room already has channels.
     val hasCachedChannels = channels.isNotEmpty()
     val showLoading = !hasCachedChannels && (uiState.isCategoriesLoading || (uiState.isLoading && !loadingTimedOut))
 
@@ -164,41 +141,33 @@ fun MobileLiveTvContent(
             }
         }
 
-        Row(
+        // Horizontal category strip. "All" is the leading chip; every real
+        // category follows. The selected chip is filled with the brand accent.
+        LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp)
         ) {
-            TvClickableSurface(
-                onClick = { showCategoryPicker = true },
-                modifier = Modifier.weight(1f),
-                colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
-                    containerColor = AppColors.SurfaceElevated,
-                    focusedContainerColor = AppColors.SurfaceEmphasis
-                )
-            ) {
-                Text(
-                    text = selectedLabel,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
-                    maxLines = 1,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = AppColors.TextPrimary
-                )
+            if (allChannelsCategory != null) {
+                item(key = "all-channels-chip") {
+                    CategoryChip(
+                        label = stringResource(R.string.home_all_channels),
+                        selected = isAllSelected,
+                        onClick = {
+                            viewModel.clearCategorySearchQuery()
+                            viewModel.selectCategory(allChannelsCategory)
+                        }
+                    )
+                }
             }
-            TvClickableSurface(
-                onClick = {
-                    allChannelsCategory?.let(viewModel::selectCategory)
-                    viewModel.clearCategorySearchQuery()
-                },
-                colors = androidx.tv.material3.ClickableSurfaceDefaults.colors(
-                    containerColor = AppColors.SurfaceElevated,
-                    focusedContainerColor = AppColors.SurfaceEmphasis
-                )
-            ) {
-                Text(
-                    text = "All",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 13.dp),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = AppColors.BrandStrong
+            items(stripCategories, key = { it.id }) { category ->
+                CategoryChip(
+                    label = category.name,
+                    selected = category.id == selectedId,
+                    onClick = {
+                        viewModel.clearCategorySearchQuery()
+                        viewModel.selectCategory(category)
+                    }
                 )
             }
         }
@@ -261,37 +230,27 @@ fun MobileLiveTvContent(
             }
         }
     }
+}
 
-    if (showCategoryPicker) {
-        AlertDialog(
-            onDismissRequest = { showCategoryPicker = false },
-            title = { androidx.compose.material3.Text("Choose category") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    TextButton(
-                        onClick = {
-                            allChannelsCategory?.let(viewModel::selectCategory)
-                            viewModel.clearCategorySearchQuery()
-                            showCategoryPicker = false
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) { androidx.compose.material3.Text("All channels") }
-                    unlockedCategories.forEach { category ->
-                        TextButton(
-                            onClick = {
-                                viewModel.selectCategory(category)
-                                showCategoryPicker = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) { androidx.compose.material3.Text(category.name) }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showCategoryPicker = false }) {
-                    androidx.compose.material3.Text("Close")
-                }
-            }
+@Composable
+private fun CategoryChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    TvClickableSurface(
+        onClick = onClick,
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = if (selected) AppColors.Brand else AppColors.SurfaceElevated,
+            focusedContainerColor = AppColors.SurfaceEmphasis
+        )
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            maxLines = 1,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (selected) AppColors.Surface else AppColors.TextPrimary
         )
     }
 }
