@@ -95,6 +95,9 @@ class ChannelRepositoryImpl @Inject constructor(
     override fun getChannelsByCategory(providerId: Long, categoryId: Long): Flow<List<Channel>> =
         observeChannels(channelFlow(providerId, categoryId), providerId)
 
+    override fun getChannelsByCategoryMobileOrdered(providerId: Long, categoryId: Long): Flow<List<Channel>> =
+        observeChannels(channelFlowMobileOrdered(providerId, categoryId), providerId)
+
     override fun getChannelsByCategoryPage(providerId: Long, categoryId: Long, limit: Int): Flow<List<Channel>> =
         observeChannels(channelFlowPage(providerId, categoryId, limit), providerId)
 
@@ -725,6 +728,13 @@ class ChannelRepositoryImpl @Inject constructor(
             channelDao.getByProvider(providerId)
         } else {
             channelDao.getByCategory(providerId, categoryId)
+        }
+
+    private fun channelFlowMobileOrdered(providerId: Long, categoryId: Long): Flow<List<ChannelBrowseEntity>> =
+        if (categoryId == ChannelRepository.ALL_CHANNELS_ID) {
+            channelDao.getByProviderMobileOrdered(providerId)
+        } else {
+            channelDao.getByCategoryMobileOrdered(providerId, categoryId)
         }
 
     private fun channelFlowPage(providerId: Long, categoryId: Long, limit: Int): Flow<List<ChannelBrowseEntity>> =

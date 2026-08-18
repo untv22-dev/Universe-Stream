@@ -195,6 +195,43 @@ abstract class ChannelDao {
     )
     abstract fun getByCategory(providerId: Long, categoryId: Long): Flow<List<ChannelBrowseEntity>>
 
+    // Mobile-only ordering variants. These add name and id as tie-breakers so
+    // providers that return num=0 for every channel still get a stable, readable
+    // order (e.g. bein 1/2/3) instead of insertion order. The Television browse
+    // path keeps using getByProvider/getByCategory above unchanged.
+    @Query(
+        """
+        SELECT c.id, c.stream_id, c.name, c.logo_url, c.group_title, c.category_id, c.category_name, c.stream_url,
+               c.epg_channel_id, c.number, c.catch_up_supported, c.catch_up_days, c.catchUpSource,
+               c.provider_id, p.guide_source_policy, p.channel_logo_source_policy, ec.icon_url AS epg_icon_url,
+               c.is_adult, c.is_user_protected, c.logical_group_id, c.error_count
+        FROM channels c
+        JOIN providers p ON p.id = c.provider_id
+        LEFT JOIN channel_epg_mappings cem ON cem.provider_channel_id = c.id AND cem.provider_id = c.provider_id
+        LEFT JOIN epg_channels ec ON ec.epg_source_id = cem.epg_source_id AND ec.xmltv_channel_id = cem.xmltv_channel_id
+        WHERE c.provider_id = :providerId
+        ORDER BY c.number ASC, c.name ASC, c.id ASC
+        """
+    )
+    abstract fun getByProviderMobileOrdered(providerId: Long): Flow<List<ChannelBrowseEntity>>
+
+    @Query(
+        """
+        SELECT c.id, c.stream_id, c.name, c.logo_url, c.group_title, c.category_id, c.category_name, c.stream_url,
+               c.epg_channel_id, c.number, c.catch_up_supported, c.catch_up_days, c.catchUpSource,
+               c.provider_id, p.guide_source_policy, p.channel_logo_source_policy, ec.icon_url AS epg_icon_url,
+               c.is_adult, c.is_user_protected, c.logical_group_id, c.error_count
+        FROM channels c
+        JOIN providers p ON p.id = c.provider_id
+        LEFT JOIN channel_epg_mappings cem ON cem.provider_channel_id = c.id AND cem.provider_id = c.provider_id
+        LEFT JOIN epg_channels ec ON ec.epg_source_id = cem.epg_source_id AND ec.xmltv_channel_id = cem.xmltv_channel_id
+        WHERE c.provider_id = :providerId AND c.category_id = :categoryId
+        ORDER BY c.number ASC, c.name ASC, c.id ASC
+        """
+    )
+    abstract fun getByCategoryMobileOrdered(providerId: Long, categoryId: Long): Flow<List<ChannelBrowseEntity>>
+
+
     @Query(
         """
         SELECT c.id, c.stream_id, c.name, c.logo_url, c.group_title, c.category_id, c.category_name, c.stream_url,

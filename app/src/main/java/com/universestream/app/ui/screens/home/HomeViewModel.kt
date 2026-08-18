@@ -882,7 +882,7 @@ class HomeViewModel @Inject constructor(
                             // No network request is made while scrolling and no page request is
                             // needed to reach rows beyond the historical 200-row presentation cap.
                             if (trimmedQuery.isBlank()) {
-                                channelRepository.getChannelsByCategory(providerId, category.id)
+                                channelRepository.getChannelsByCategoryMobileOrdered(providerId, category.id)
                             } else if (trimmedQuery.length < MIN_CHANNEL_SEARCH_QUERY_LENGTH) {
                                 flowOf(emptyList())
                             } else {

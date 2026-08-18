@@ -11,6 +11,11 @@ interface ChannelRepository {
     fun getChannelCount(providerId: Long): Flow<Int>
     fun getChannelCountByCategory(providerId: Long, categoryId: Long): Flow<Int>
     fun getChannelsByCategory(providerId: Long, categoryId: Long): Flow<List<Channel>>
+
+    // Mobile-only ordered variant: adds name/id tie-breakers so channels with
+    // no provider number still appear in a stable, readable order. TV keeps
+    // getChannelsByCategory.
+    fun getChannelsByCategoryMobileOrdered(providerId: Long, categoryId: Long): Flow<List<Channel>>
     fun getChannelsByCategoryPage(providerId: Long, categoryId: Long, limit: Int): Flow<List<Channel>>
     fun getChannelsByNumber(providerId: Long, categoryId: Long = ALL_CHANNELS_ID): Flow<List<Channel>>
     fun getChannelsWithoutErrors(providerId: Long, categoryId: Long = ALL_CHANNELS_ID): Flow<List<Channel>>
