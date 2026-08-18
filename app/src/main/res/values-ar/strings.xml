@@ -26,6 +26,7 @@
     <string name="home_incorrect_pin">رمز PIN غير صحيح</string>
     <string name="home_loading_categories">جارٍ تحميل الفئات…</string>
     <string name="home_loading_channels">جارٍ تحميل القنوات…</string>
+    <string name="home_live_loading">جارٍ تحميل القنوات المباشرة…</string>
     <string name="home_live_retry">إعادة محاولة البث المباشر</string>
     <string name="home_live_taking_longer">يستغرق البث المباشر وقتًا أطول من المتوقع</string>
     <string name="home_live_retry_subtitle">لم يُرجع الاتصال أي قنوات. تم الحفاظ على مكتبتك المحفوظة بأمان.</string>
@@ -784,6 +785,8 @@
     <string name="player_playback_label">التشغيل</string>
     <string name="player_more_controls">مزيد من عناصر التحكم</string>
     <string name="player_live_now">يُعرض الآن</string>
+    <string name="player_live_no_program">لا توجد معلومات عن البرنامج الحالي</string>
+    <string name="player_channel_count_format">%1$d قناة</string>
     <string name="player_live_channel">القناة %1$d</string>
     <string name="player_rewind">ترجيع</string>
     <string name="player_forward">تقديم سريع</string>

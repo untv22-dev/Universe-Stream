@@ -34,6 +34,7 @@
     <string name="home_incorrect_pin">Incorrect PIN</string>
     <string name="home_loading_categories">Loading categories...</string>
     <string name="home_loading_channels">Loading channels...</string>
+    <string name="home_live_loading">Loading live channels…</string>
     <string name="home_live_retry">Retry Live TV</string>
     <string name="home_live_taking_longer">Live TV is taking longer than expected</string>
     <string name="home_live_retry_subtitle">The connection did not return channels. Your saved library was kept safe.</string>
@@ -1154,6 +1155,8 @@
     <string name="player_av_sync_use_global">Use global</string>
     <string name="player_more_controls">More controls</string>
     <string name="player_live_now">Now Playing</string>
+    <string name="player_live_no_program">No current program information</string>
+    <string name="player_channel_count_format">%1$d channels</string>
     <string name="player_live_channel">Channel %1$d</string>
     <string name="player_rewind">Rewind</string>
     <string name="player_forward">Fast forward</string>
