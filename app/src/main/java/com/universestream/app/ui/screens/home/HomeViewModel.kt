@@ -112,6 +112,9 @@ class HomeViewModel @Inject constructor(
     )
     private val channelCache = mutableMapOf<ChannelCacheKey, List<Channel>>()
     private var channelPageRequestCount = 0
+    // Enabled only by MobileLiveTvContent (Compact). The Television/non-compact
+    // renderers keep the existing paged Room query and load-more behavior.
+    private var mobileDatabaseFirst = false
     private val _channelBrowseLimit = MutableStateFlow(CHANNEL_PAGE_SIZE)
     private val _channelSearchLimit = MutableStateFlow(CHANNEL_SEARCH_PAGE_SIZE)
     private val _preferredInitialCategoryId = MutableStateFlow<Long?>(null)
@@ -126,6 +129,23 @@ class HomeViewModel @Inject constructor(
     private var previewPlayerEngine: PlayerEngine? = null
     private var previewSessionVersion: Long = 0L
     private var combinedCategoriesById: Map<Long, CombinedCategory> = emptyMap()
+
+    /**
+     * Switches the Compact renderer to a complete DB-backed channel flow.
+     * This is deliberately opt-in from MobileLiveTvContent so Android TV and the
+     * existing non-compact renderer are not changed.
+     */
+    fun enableMobileDatabaseFirst() {
+        if (mobileDatabaseFirst) return
+        mobileDatabaseFirst = true
+        val selected = _uiState.value.selectedCategory
+        android.util.Log.i(
+            "MobileIptvDiag",
+            "db-first-enabled selectedCategory=${selected?.id} provider=${_uiState.value.provider?.id} " +
+                "combined=${_uiState.value.isCombinedLiveSource}"
+        )
+        selected?.let(::loadChannelsForCategory)
+    }
 
     private fun channelCacheKey(category: Category): ChannelCacheKey {
         val state = _uiState.value
@@ -536,6 +556,14 @@ class HomeViewModel @Inject constructor(
                     if (!showAll) ctx.copy(categories = ctx.categories.filter { it.id != ChannelRepository.ALL_CHANNELS_ID }) else ctx
                 }.collect { selectionContext ->
                     val categories = selectionContext.categories
+                    android.util.Log.i(
+                        "MobileIptvDiag",
+                        "category-snapshot provider=$providerId rawProvider=${_uiState.value.provider?.id == providerId} " +
+                            "final=${categories.size} distinct=${categories.distinctBy { it.id }.size} " +
+                            "virtual=${categories.count { it.isVirtual }} " +
+                            "allChannels=${categories.count { it.id == ChannelRepository.ALL_CHANNELS_ID }} " +
+                            "syncing=${_uiState.value.isSyncing}"
+                    )
                     val defaultId = selectionContext.defaultCategoryId
                     val preferredCategoryId = _preferredInitialCategoryId.value
                     val lastVisitedCategory = selectionContext.lastVisitedCategoryId?.let { lastVisitedId ->
@@ -849,7 +877,18 @@ class HomeViewModel @Inject constructor(
                     val providerId = _uiState.value.provider?.id ?: return@launch
                     queryFlow.flatMapLatest { query ->
                         val trimmedQuery = query.trim()
-                        if (trimmedQuery.isBlank()) {
+                        if (mobileDatabaseFirst && !_uiState.value.isCombinedLiveSource) {
+                            // Compact/mobile reads the already-synchronised catalog from Room.
+                            // No network request is made while scrolling and no page request is
+                            // needed to reach rows beyond the historical 200-row presentation cap.
+                            if (trimmedQuery.isBlank()) {
+                                channelRepository.getChannelsByCategory(providerId, category.id)
+                            } else if (trimmedQuery.length < MIN_CHANNEL_SEARCH_QUERY_LENGTH) {
+                                flowOf(emptyList())
+                            } else {
+                                channelRepository.searchChannelsByCategory(providerId, category.id, trimmedQuery)
+                            }
+                        } else if (trimmedQuery.isBlank()) {
                             _channelBrowseLimit.flatMapLatest { limit ->
                                 channelRepository.getChannelsByCategoryPage(providerId, category.id, limit)
                             }
@@ -904,15 +943,22 @@ class HomeViewModel @Inject constructor(
                     } else {
                         _channelSearchLimit.value
                     }
-                    val hasMore = when {
-                        currentQuery.isBlank() -> rawCategoryCount > currentLimit
-                        currentQuery.length >= MIN_CHANNEL_SEARCH_QUERY_LENGTH -> displayedChannels.size >= currentLimit
-                        else -> false
+                    val hasMore = if (mobileDatabaseFirst && !_uiState.value.isCombinedLiveSource && !category.isVirtual) {
+                        // The Compact renderer receives the complete Room result. Scrolling is
+                        // purely local; exposing hasMore here would reintroduce the old page loop.
+                        false
+                    } else {
+                        when {
+                            currentQuery.isBlank() -> rawCategoryCount > currentLimit
+                            currentQuery.length >= MIN_CHANNEL_SEARCH_QUERY_LENGTH -> displayedChannels.size >= currentLimit
+                            else -> false
+                        }
                     }
                     android.util.Log.i(
                         "HomeDiag",
                         "category=${category.id} dbCount=$rawCategoryCount limit=$currentLimit " +
-                            "displayed=${displayedChannels.size} hasMore=$hasMore queryLength=${currentQuery.length}"
+                            "displayed=${displayedChannels.size} hasMore=$hasMore queryLength=${currentQuery.length} " +
+                            "mobileDbFirst=$mobileDatabaseFirst combined=${_uiState.value.isCombinedLiveSource}"
                     )
                     _localChannels.value = displayedChannels
                     channelCache[channelCacheKey(category)] = displayedChannels
@@ -1091,6 +1137,13 @@ class HomeViewModel @Inject constructor(
     }
 
     fun loadMoreChannels() {
+        if (mobileDatabaseFirst) {
+            android.util.Log.i(
+                "MobileIptvDiag",
+                "load-more-ignored reason=complete-room-flow category=${_uiState.value.selectedCategory?.id}"
+            )
+            return
+        }
         val currentQuery = _uiState.value.channelSearchQuery.trim()
         val categoryId = _uiState.value.selectedCategory?.id
         if (currentQuery.length < MIN_CHANNEL_SEARCH_QUERY_LENGTH) {

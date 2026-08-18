@@ -55,11 +55,21 @@ fun MobileLiveTvContent(
     isChannelLocked: (Channel) -> Boolean
 ) {
     var showCategoryPicker by rememberSaveable { mutableStateOf(false) }
+
+    // This call is intentionally located in the Compact-only renderer. It makes
+    // Mobile read the complete synchronised catalog from Room; Television and the
+    // existing non-compact Home renderer never enable this mode.
+    LaunchedEffect(Unit) {
+        viewModel.enableMobileDatabaseFirst()
+    }
+
     val visibleCategories = remember(uiState.categories, uiState.categorySearchQuery) {
-        uiState.categories.filter {
-            uiState.categorySearchQuery.isBlank() ||
-                it.name.contains(uiState.categorySearchQuery, ignoreCase = true)
-        }
+        uiState.categories
+            .distinctBy { it.id }
+            .filter {
+                uiState.categorySearchQuery.isBlank() ||
+                    it.name.contains(uiState.categorySearchQuery, ignoreCase = true)
+            }
     }
     val unlockedCategories = remember(visibleCategories, uiState.parentalControlLevel, uiState.unlockedCategoryIds) {
         visibleCategories.filterNot(isCategoryLocked)
@@ -97,9 +107,10 @@ fun MobileLiveTvContent(
 
     LaunchedEffect(uiState.selectedCategory?.id, channels.size, uiState.hasMoreChannels) {
         android.util.Log.i(
-            "HomeDiag",
+            "MobileIptvDiag",
             "compact-ui category=${uiState.selectedCategory?.id} " +
-                "uiRows=${channels.size} hasMore=${uiState.hasMoreChannels}"
+                "uiRows=${channels.size} categories=${uiState.categories.distinctBy { it.id }.size} " +
+                "hasMore=${uiState.hasMoreChannels}"
         )
     }
 

@@ -89,6 +89,13 @@ internal class SyncManagerXtreamLiveStrategy(
         val visibleResolvedCategories = resolvedCategories
             ?.filterNot { category -> category.categoryId in hiddenLiveCategoryIds }
             ?.takeIf { it.isNotEmpty() }
+        Log.i(
+            "SyncDiag",
+            "Live categories provider=${provider.id} rawApi=${rawLiveCategories?.size ?: -1} " +
+                "resolved=${resolvedCategories?.size ?: -1} hidden=${hiddenLiveCategoryIds.size} " +
+                "visiblePreferred=${visibleResolvedCategories?.size ?: 0} " +
+                "rawRequest=${if (rawLiveCategories != null) "ok" else "failed"}"
+        )
 
         var fullPayload = CatalogSyncPayload<Channel>(
             catalogResult = CatalogStrategyResult.EmptyValid("full"),
@@ -360,8 +367,8 @@ internal class SyncManagerXtreamLiveStrategy(
             )
             Log.i(
                 "SyncDiag",
-                "Live sync provider=${provider.id} decoder=$decoderLabel raw=$streamedRawCount accepted=$acceptedCount " +
-                    "flushes=$flushCount elapsedMs=$fullChannelsElapsedMs"
+                    "Live sync provider=${provider.id} decoder=$decoderLabel raw=$streamedRawCount accepted=$acceptedCount " +
+                        "flushes=$flushCount elapsedMs=$fullChannelsElapsedMs categoriesPreferred=${resolvedCategories?.size ?: 0}"
             )
             if (acceptedCount == 0) {
                 return CatalogSyncPayload(
@@ -548,7 +555,8 @@ internal class SyncManagerXtreamLiveStrategy(
         Log.i(
             "SyncDiag",
             "Live category sync provider=${provider.id} categoriesRaw=${categories.size} successful=$successfulCategories " +
-                "empty=$emptyCategories failed=$failedCategories accepted=$stagedAcceptedCount"
+                "empty=$emptyCategories failed=$failedCategories accepted=$stagedAcceptedCount " +
+                "categoriesPreferred=${visibleResolvedCategories?.size ?: 0}"
         )
 
         return when {
