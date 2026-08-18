@@ -1126,6 +1126,7 @@
     <string name="player_unsafe_stream_url">This stream cannot be opened in an external player</string>
     <string name="player_external_launch_failed">External player failed to start</string>
     <string name="player_retry">Retry</string>
+    <string name="player_vod_startup_timeout">Video is taking longer than expected. You can retry the stream.</string>
     <string name="player_last_channel_action">Last Channel</string>
     <string name="player_try_alternate_stream">Try another path</string>
     <string name="player_open_guide_action">Open Guide</string>

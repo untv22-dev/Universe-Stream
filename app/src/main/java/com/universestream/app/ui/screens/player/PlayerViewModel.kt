@@ -126,6 +126,7 @@ class PlayerViewModel @Inject constructor(
         private const val TOKEN_RENEWAL_CHECK_INTERVAL_MS = 10_000L
         private const val LOW_BANDWIDTH_THRESHOLD_BPS = 500_000L
         private const val LOW_BANDWIDTH_DURATION_SECONDS = 30
+        private const val VOD_STARTUP_TIMEOUT_MS = 20_000L
         internal val PLAYBACK_TIMER_PRESETS_MINUTES = setOf(0, 15, 30, 45, 60, 90, 120)
         internal const val TIMER_TICK_MS = 1_000L
     }
@@ -359,6 +360,7 @@ class PlayerViewModel @Inject constructor(
     internal var zapOverlayJob: Job? = null
     internal var aspectRatioJob: Job? = null
     internal var zapBufferWatchdogJob: Job? = null
+    private var vodStartupWatchdogJob: Job? = null
     internal var autoPlayCountdownJob: Job? = null
     internal var zapAutoRevertEnabled: Boolean = true
     internal var autoPlayNextEpisodeEnabled: Boolean = true
@@ -503,6 +505,7 @@ class PlayerViewModel @Inject constructor(
                 if (state == PlaybackState.READY && readySideEffectsRequestVersion == prepareRequestVersion) {
                     recordFastZapStage("ready", prepareRequestVersion)
                     zapBufferWatchdogJob?.cancel()
+                    vodStartupWatchdogJob?.cancel()
                     dismissRecoveredNoticeIfPresent()
                     if (currentContentType == ContentType.LIVE) {
                         livePlaybackReadyForCurrentSession = true
@@ -798,6 +801,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun handlePlaybackError(error: PlayerError) {
+        vodStartupWatchdogJob?.cancel()
         val requestVersion = prepareRequestVersion
         val playbackUrl = resolvePlaybackIdentityUrl(
             currentResolvedPlaybackUrl = currentResolvedPlaybackUrl,
@@ -1061,6 +1065,7 @@ class PlayerViewModel @Inject constructor(
 
     internal fun beginPlaybackSession(): Long {
         recoveryJob?.cancel()
+        vodStartupWatchdogJob?.cancel()
         thumbnailPreloadJob?.cancel()
         stopLiveTranslationSession()
         hasRetriedXtreamAuthRefresh = false
@@ -1070,6 +1075,28 @@ class PlayerViewModel @Inject constructor(
         readySideEffectsRequestVersion = null
         playerEngine.setScrubbingMode(false)
         return ++prepareRequestVersion
+    }
+
+    private fun scheduleVodStartupWatchdog(requestVersion: Long, playbackUrl: String) {
+        vodStartupWatchdogJob?.cancel()
+        vodStartupWatchdogJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(VOD_STARTUP_TIMEOUT_MS)
+            if (!isActivePlaybackSession(requestVersion, playbackUrl)) return@launch
+            val state = playerEngine.playbackState.value
+            val positionMs = playerEngine.currentPosition.value
+            if (state == PlaybackState.READY || positionMs > 0L) return@launch
+            android.util.Log.w(
+                "PlayerVM",
+                "vod-startup-timeout request=$requestVersion state=${state.name} positionMs=$positionMs"
+            )
+            setLastFailureReason("VOD startup timeout")
+            showPlayerNotice(
+                message = appContext.getString(com.universestream.app.R.string.player_vod_startup_timeout),
+                recoveryType = PlayerRecoveryType.BUFFER_TIMEOUT,
+                actions = buildRecoveryActions(PlayerRecoveryType.BUFFER_TIMEOUT),
+                isRetryNotice = true
+            )
+        }
     }
 
     internal fun clearSeriesEpisodeContext() {
@@ -1574,6 +1601,9 @@ class PlayerViewModel @Inject constructor(
                         probeBeforePlayback = effectiveProbeBeforePlayback
                     )
                 ) return@launch
+                if (currentContentType != ContentType.LIVE) {
+                    scheduleVodStartupWatchdog(requestVersion, playbackLogicalUrl)
+                }
 
                 // Check for resume position after the player is fully prepared (VOD only).
                 // Doing this after preparePlayer ensures pause() acts on the live player instance,

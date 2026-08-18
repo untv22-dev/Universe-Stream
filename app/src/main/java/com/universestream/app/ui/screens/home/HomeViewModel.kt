@@ -105,6 +105,12 @@ class HomeViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), com.universestream.domain.model.RemoteShortcutPreferences())
 
     private val _localChannels = MutableStateFlow<List<Channel>>(emptyList())
+    private data class ChannelCacheKey(
+        val providerId: Long?,
+        val combinedProfileId: Long?,
+        val categoryId: Long
+    )
+    private val channelCache = mutableMapOf<ChannelCacheKey, List<Channel>>()
     private val _channelBrowseLimit = MutableStateFlow(CHANNEL_PAGE_SIZE)
     private val _channelSearchLimit = MutableStateFlow(CHANNEL_SEARCH_PAGE_SIZE)
     private val _preferredInitialCategoryId = MutableStateFlow<Long?>(null)
@@ -119,6 +125,15 @@ class HomeViewModel @Inject constructor(
     private var previewPlayerEngine: PlayerEngine? = null
     private var previewSessionVersion: Long = 0L
     private var combinedCategoriesById: Map<Long, CombinedCategory> = emptyMap()
+
+    private fun channelCacheKey(category: Category): ChannelCacheKey {
+        val state = _uiState.value
+        return ChannelCacheKey(
+            providerId = state.provider?.id,
+            combinedProfileId = (state.activeLiveSource as? ActiveLiveSource.CombinedM3uSource)?.profileId,
+            categoryId = category.id
+        )
+    }
 
     init {
         loadAllProviders()
@@ -693,13 +708,18 @@ class HomeViewModel @Inject constructor(
             }
         }
         clearPreview()
-        _localChannels.value = emptyList()
+        val cachedChannels = channelCache[channelCacheKey(category)].orEmpty()
+        _localChannels.value = cachedChannels
+        android.util.Log.i(
+            "HomePerf",
+            "category-select categoryId=${category.id} cachedRows=${cachedChannels.size}"
+        )
         _uiState.update {
             it.copy(
                 selectedCategory = category,
-                filteredChannels = emptyList(),
-                hasChannels = false,
-                isLoading = true,
+                filteredChannels = cachedChannels,
+                hasChannels = cachedChannels.isNotEmpty(),
+                isLoading = cachedChannels.isEmpty(),
                 errorMessage = null
             )
         }
@@ -736,6 +756,8 @@ class HomeViewModel @Inject constructor(
         _channelBrowseLimit.value = CHANNEL_PAGE_SIZE
         _channelSearchLimit.value = CHANNEL_SEARCH_PAGE_SIZE
         loadChannelsJob = viewModelScope.launch {
+            val loadStartedAt = android.os.SystemClock.elapsedRealtime()
+            var firstEmissionLogged = false
             try {
                 _uiState.update {
                     it.copy(
@@ -870,6 +892,15 @@ class HomeViewModel @Inject constructor(
                         _channelSearchLimit.value
                     }
                     _localChannels.value = displayedChannels
+                    channelCache[channelCacheKey(category)] = displayedChannels
+                    if (!firstEmissionLogged) {
+                        firstEmissionLogged = true
+                        android.util.Log.i(
+                            "HomePerf",
+                            "first-channel-emission categoryId=${category.id} rows=${displayedChannels.size} " +
+                                "elapsedMs=${android.os.SystemClock.elapsedRealtime() - loadStartedAt}"
+                        )
+                    }
                     _uiState.update {
                         it.copy(
                             hasChannels = displayedChannels.isNotEmpty(),

@@ -768,6 +768,7 @@
     <string name="player_error_drm">منعت رخصة DRM أو متطلبات أمان الجهاز التشغيل</string>
     <string name="player_error_unknown">خطأ تشغيل غير معروف</string>
     <string name="player_retry">إعادة المحاولة</string>
+    <string name="player_vod_startup_timeout">يستغرق تشغيل الفيديو وقتًا أطول من المتوقع. يمكنك إعادة محاولة البث.</string>
     <string name="player_last_channel_action">القناة الأخيرة</string>
     <string name="player_try_alternate_stream">جرّب مسارًا آخر</string>
     <string name="player_open_guide_action">فتح الدليل</string>

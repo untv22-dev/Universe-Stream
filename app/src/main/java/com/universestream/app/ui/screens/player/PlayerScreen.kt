@@ -136,9 +136,11 @@ fun PlayerScreen(
     onNavigate: ((String) -> Unit)? = null,
     viewModel: PlayerViewModel = hiltViewModel()
 ) {
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
     val windowSizeClass = rememberAppWindowSizeClass()
     val isCompactMobile = windowSizeClass == AppWindowSizeClass.Compact
+    val isCompactPortrait = isCompactMobile && configuration.screenWidthDp <= configuration.screenHeightDp
     val isTelevisionDevice = rememberIsTelevisionDevice()
     val compactOverlayMaxWidth = (screenWidth - 16.dp).coerceAtLeast(0.dp)
     val compactPortraitVideoHeight = screenWidth * (9f / 16f)
@@ -901,7 +903,7 @@ fun PlayerScreen(
             playerEngine = playerEngine,
             resizeMode = aspectRatio.toPlayerSurfaceResizeMode(),
             surfaceType = renderSurfaceType,
-            modifier = if (isCompactMobile && !isInPictureInPictureMode) {
+            modifier = if (isCompactPortrait && !isInPictureInPictureMode) {
                 Modifier
                     .fillMaxWidth()
                     .height(compactPortraitVideoHeight)
@@ -914,7 +916,7 @@ fun PlayerScreen(
         // Buffering indicator
         if (playbackState == PlaybackState.BUFFERING) {
             Box(
-                modifier = if (isCompactMobile && !isInPictureInPictureMode) {
+                modifier = if (isCompactPortrait && !isInPictureInPictureMode) {
                     Modifier
                         .fillMaxWidth()
                         .height(compactPortraitVideoHeight)
@@ -953,7 +955,7 @@ fun PlayerScreen(
             exit = fadeOut(),
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = if (isCompactMobile && !isInPictureInPictureMode) 24.dp else 116.dp)
+                .padding(top = if (isCompactPortrait && !isInPictureInPictureMode) 24.dp else 116.dp)
         ) {
             PlayerNoticeBanner(
                 notice = playerNotice,
@@ -1031,7 +1033,7 @@ fun PlayerScreen(
             timeshiftUiState = timeshiftUiState,
             playButtonFocusRequester = playButtonFocusRequester,
             quickActionsFocusRequester = quickActionsFocusRequester,
-            modifier = if (isCompactMobile && !isInPictureInPictureMode) {
+            modifier = if (isCompactPortrait && !isInPictureInPictureMode) {
                 Modifier
                     .fillMaxSize()
                     .padding(top = compactPortraitVideoHeight)
