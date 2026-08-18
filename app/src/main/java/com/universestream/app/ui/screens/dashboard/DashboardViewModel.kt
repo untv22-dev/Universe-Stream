@@ -90,6 +90,11 @@ class DashboardViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
+    // Room-backed shelves emit their onStart empty values before the cached rows arrive.
+    // Retain the last usable snapshot so navigation/lifecycle churn cannot blank Home.
+    private var lastRenderedNonEmptyState: DashboardUiState? = null
+    private var mobileRetentionEnabled = false
+
     private val _recordingChannelIds = MutableStateFlow<Set<Long>>(emptySet())
     val recordingChannelIds: StateFlow<Set<Long>> = _recordingChannelIds.asStateFlow()
 
@@ -156,9 +161,49 @@ class DashboardViewModel @Inject constructor(
                     }
                 }
                 .collect { state ->
-                    _uiState.value = state
+                    val hasContent = state.hasRenderableContent()
+                    val retained = lastRenderedNonEmptyState.takeIf { mobileRetentionEnabled }
+                    val sameSource = retained?.provider?.id == state.provider?.id &&
+                        retained?.currentCombinedProfileId == state.currentCombinedProfileId
+                    val visibleState = when {
+                        hasContent -> state
+                        sameSource && retained != null -> state.copy(
+                            homeDashboardShelves = retained.homeDashboardShelves,
+                            favoriteChannels = retained.favoriteChannels,
+                            recentChannels = retained.recentChannels,
+                            continueWatching = retained.continueWatching,
+                            continueWatchingSeries = retained.continueWatchingSeries,
+                            continueWatchingMovies = retained.continueWatchingMovies,
+                            continueWatchingSeriesItems = retained.continueWatchingSeriesItems,
+                            continueWatchingDegraded = retained.continueWatchingDegraded,
+                            favoriteMovies = retained.favoriteMovies,
+                            favoriteSeries = retained.favoriteSeries,
+                            recentMovies = retained.recentMovies,
+                            recentSeries = retained.recentSeries,
+                            topRatedMovies = retained.topRatedMovies,
+                            recommendedMovies = retained.recommendedMovies,
+                            lastLiveCategory = retained.lastLiveCategory,
+                            liveShortcuts = retained.liveShortcuts,
+                            feature = retained.feature,
+                            stats = retained.stats,
+                            providerWarnings = state.providerWarnings.ifEmpty { retained.providerWarnings },
+                            updateNotice = state.updateNotice ?: retained.updateNotice,
+                            isLoading = false
+                        )
+                        mobileRetentionEnabled && state.provider != null -> state.copy(isLoading = true)
+                        else -> state
+                    }
+                    if (hasContent && state.provider != null) {
+                        lastRenderedNonEmptyState = state
+                    }
+                    _uiState.value = visibleState
                 }
         }
+    }
+
+    internal fun setMobileRetentionEnabled(enabled: Boolean) {
+        mobileRetentionEnabled = enabled
+        if (!enabled) lastRenderedNonEmptyState = null
     }
 
     private fun observeDashboard(
@@ -866,6 +911,24 @@ data class DashboardUiState(
     val userMessage: String? = null,
     val isLoading: Boolean = true
 )
+
+private fun DashboardUiState.hasRenderableContent(): Boolean =
+    stats.liveChannelCount > 0 ||
+        stats.movieLibraryCount > 0 ||
+        stats.seriesLibraryCount > 0 ||
+        favoriteChannels.isNotEmpty() ||
+        recentChannels.isNotEmpty() ||
+        continueWatching.isNotEmpty() ||
+        continueWatchingSeries.isNotEmpty() ||
+        continueWatchingMovies.isNotEmpty() ||
+        continueWatchingSeriesItems.isNotEmpty() ||
+        favoriteMovies.isNotEmpty() ||
+        favoriteSeries.isNotEmpty() ||
+        recentMovies.isNotEmpty() ||
+        recentSeries.isNotEmpty() ||
+        topRatedMovies.isNotEmpty() ||
+        recommendedMovies.isNotEmpty() ||
+        liveShortcuts.isNotEmpty()
 
 data class DashboardUpdateNotice(
     val latestVersionName: String,

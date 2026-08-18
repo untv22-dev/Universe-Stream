@@ -141,6 +141,7 @@ fun PlayerScreen(
     val isCompactMobile = windowSizeClass == AppWindowSizeClass.Compact
     val isTelevisionDevice = rememberIsTelevisionDevice()
     val compactOverlayMaxWidth = (screenWidth - 16.dp).coerceAtLeast(0.dp)
+    val compactPortraitVideoHeight = screenWidth * (9f / 16f)
     val sideOverlayWidth = if (isCompactMobile) {
         minOf(compactOverlayMaxWidth, 336.dp)
     } else if (screenWidth < 700.dp) {
@@ -900,15 +901,29 @@ fun PlayerScreen(
             playerEngine = playerEngine,
             resizeMode = aspectRatio.toPlayerSurfaceResizeMode(),
             surfaceType = renderSurfaceType,
-            modifier = Modifier.fillMaxSize()
+            modifier = if (isCompactMobile && !isInPictureInPictureMode) {
+                Modifier
+                    .fillMaxWidth()
+                    .height(compactPortraitVideoHeight)
+                    .align(Alignment.TopCenter)
+            } else {
+                Modifier.fillMaxSize()
+            }
         )
 
         // Buffering indicator
         if (playbackState == PlaybackState.BUFFERING) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 64.dp),
+                modifier = if (isCompactMobile && !isInPictureInPictureMode) {
+                    Modifier
+                        .fillMaxWidth()
+                        .height(compactPortraitVideoHeight)
+                        .align(Alignment.TopCenter)
+                } else {
+                    Modifier
+                        .fillMaxSize()
+                        .padding(top = 64.dp)
+                },
                 contentAlignment = Alignment.TopCenter
             ) {
                 Row(
@@ -938,7 +953,7 @@ fun PlayerScreen(
             exit = fadeOut(),
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 116.dp)
+                .padding(top = if (isCompactMobile && !isInPictureInPictureMode) 24.dp else 116.dp)
         ) {
             PlayerNoticeBanner(
                 notice = playerNotice,
@@ -1016,7 +1031,13 @@ fun PlayerScreen(
             timeshiftUiState = timeshiftUiState,
             playButtonFocusRequester = playButtonFocusRequester,
             quickActionsFocusRequester = quickActionsFocusRequester,
-            modifier = Modifier.fillMaxSize(),
+            modifier = if (isCompactMobile && !isInPictureInPictureMode) {
+                Modifier
+                    .fillMaxSize()
+                    .padding(top = compactPortraitVideoHeight)
+            } else {
+                Modifier.fillMaxSize()
+            },
             onClose = viewModel::toggleControls,
             onTogglePlayPause = { if (isPlaying) viewModel.pause() else viewModel.play() },
             onSeekBackward = viewModel::seekBackward,

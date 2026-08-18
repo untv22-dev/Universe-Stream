@@ -338,6 +338,8 @@ class PlayerViewModel @Inject constructor(
     internal var currentCombinedProfileMembers: List<CombinedM3uProfileMember> = emptyList()
     internal var combinedCategoriesById: Map<Long, CombinedCategory> = emptyMap()
     private var fastZapSkipProbe = false
+    private var fastZapTraceStartedAtElapsedMs = 0L
+    private var fastZapTraceRequestVersion = -1L
     private var lastObservedPlaybackState: PlaybackState = PlaybackState.IDLE
 
     internal var epgJob: Job? = null
@@ -491,11 +493,15 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch {
             activePlayerEngineFlow.flatMapLatest { it.playbackState }.collect { state ->
                 _playerDiagnostics.update { it.copy(playbackStateLabel = state.name.replace('_', ' ')) }
+                if (state == PlaybackState.BUFFERING) {
+                    recordFastZapStage("buffering", prepareRequestVersion)
+                }
                 if (state == PlaybackState.ENDED && lastObservedPlaybackState != PlaybackState.ENDED) {
                     handlePlaybackEnded()
                 }
                 lastObservedPlaybackState = state
                 if (state == PlaybackState.READY && readySideEffectsRequestVersion == prepareRequestVersion) {
+                    recordFastZapStage("ready", prepareRequestVersion)
                     zapBufferWatchdogJob?.cancel()
                     dismissRecoveredNoticeIfPresent()
                     if (currentContentType == ContentType.LIVE) {
@@ -515,6 +521,16 @@ class PlayerViewModel @Inject constructor(
                     }
                 }
             }
+        }
+        viewModelScope.launch {
+            activePlayerEngineFlow.flatMapLatest { it.playerStats }
+                .map { it.ttffMs }
+                .distinctUntilChanged()
+                .collect { ttffMs ->
+                    if (ttffMs > 0L) {
+                        recordFastZapStage("first-frame", prepareRequestVersion, "ttffMs=$ttffMs")
+                    }
+                }
         }
         viewModelScope.launch {
             activePlayerEngineFlow.flatMapLatest { it.retryStatus }.collect { status ->
@@ -1284,6 +1300,29 @@ class PlayerViewModel @Inject constructor(
         fastZapSkipProbe = enabled
     }
 
+    internal fun beginFastZapTrace(requestVersion: Long, channelIndex: Int, channelId: Long) {
+        if (!fastZapSkipProbe) return
+        fastZapTraceStartedAtElapsedMs = SystemClock.elapsedRealtime()
+        fastZapTraceRequestVersion = requestVersion
+        android.util.Log.i(
+            "PlayerVM",
+            "zap stage=click request=$requestVersion index=$channelIndex channelId=$channelId"
+        )
+    }
+
+    internal fun recordFastZapStage(stage: String, requestVersion: Long, details: String = "") {
+        if (!fastZapSkipProbe || requestVersion != fastZapTraceRequestVersion) return
+        val elapsedMs = (SystemClock.elapsedRealtime() - fastZapTraceStartedAtElapsedMs).coerceAtLeast(0L)
+        android.util.Log.i(
+            "PlayerVM",
+            "zap stage=$stage request=$requestVersion elapsedMs=$elapsedMs" +
+                details.takeIf { it.isNotBlank() }?.let { " $it" }.orEmpty()
+        )
+        if (stage == "first-frame") {
+            fastZapTraceRequestVersion = -1L
+        }
+    }
+
     internal fun shouldSkipProbeForFastZap(): Boolean = fastZapSkipProbe
 
     internal suspend fun preparePlayer(
@@ -1470,6 +1509,9 @@ class PlayerViewModel @Inject constructor(
             preferredVideoDecoderMode = preferredVideoDecoderMode,
             preferredSurfaceMode = preferredSurfaceMode
         )
+        // PlayerScreen passes false only for Compact live playback. Keep TV on the
+        // existing probe path while allowing subsequent mobile zaps to skip the probe.
+        fastZapSkipProbe = contentType.equals("LIVE", ignoreCase = true) && !effectiveProbeBeforePlayback
 
         if (!hasArchiveRequest) {
             viewModelScope.launch {

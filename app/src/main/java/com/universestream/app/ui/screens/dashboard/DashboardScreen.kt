@@ -105,8 +105,13 @@ fun DashboardScreen(
     val recordingChannelIds by viewModel.recordingChannelIds.collectAsStateWithLifecycle()
     val scheduledChannelIds by viewModel.scheduledChannelIds.collectAsStateWithLifecycle()
     val provider = uiState.provider
+    val isTelevisionDevice = rememberIsTelevisionDevice()
     val snackbarHostState = remember { SnackbarHostState() }
     var showHomeCustomizationDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isTelevisionDevice) {
+        viewModel.setMobileRetentionEnabled(!isTelevisionDevice)
+    }
 
     LaunchedEffect(uiState.userMessage) {
         uiState.userMessage?.let { message ->

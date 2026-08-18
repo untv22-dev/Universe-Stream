@@ -53,7 +53,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -189,12 +188,6 @@ class MoviesViewModel @Inject constructor(
                             hiddenCategoryIds = dependencies.hiddenCategoryIds,
                             categorySortMode = dependencies.categorySortMode,
                             query = query
-                        )
-                    }
-                    .distinctUntilChangedBy { params ->
-                        params.copy(
-                            providerCategoryCounts = emptyMap(),
-                            libraryCount = 0
                         )
                     }
                 }

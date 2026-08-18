@@ -220,6 +220,7 @@ internal fun PlayerViewModel.changeChannel(index: Int, isAutoFallback: Boolean =
     pendingCatchUpUrls = emptyList()
     updateStreamClass("Primary")
     currentChannelFlow.value = channel
+    beginFastZapTrace(requestVersion, index, channel.id)
     refreshCurrentChannelRecording()
     displayChannelNumberFlow.value = resolveChannelNumber(channel, index)
     recentChannelsFlow.update { channels -> channels.filterNot { it.id == channel.id } }
@@ -235,13 +236,16 @@ internal fun PlayerViewModel.changeChannel(index: Int, isAutoFallback: Boolean =
     viewModelScope.launch {
         val streamInfo = resolvePlaybackStreamInfo(channel.streamUrl, channel.id, channel.providerId, ContentType.LIVE)
             ?: return@launch
+        recordFastZapStage("url-resolved", requestVersion)
         if (!isActivePlaybackSession(requestVersion, channel.streamUrl)) return@launch
+        recordFastZapStage("prepare-start", requestVersion)
         if (!preparePlayer(
                 streamInfo = streamInfo,
                 requestVersion = requestVersion,
                 probeBeforePlayback = !shouldSkipProbeForFastZap()
             )
         ) return@launch
+        recordFastZapStage("media-prepared", requestVersion)
         playerEngine.play()
 
         playerEngine.playbackState
