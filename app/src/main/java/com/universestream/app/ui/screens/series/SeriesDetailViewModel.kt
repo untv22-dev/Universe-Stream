@@ -112,6 +112,18 @@ class SeriesDetailViewModel @Inject constructor(
         try {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
+            // Show the cached series row from Room right away (poster, title, plot,
+            // rating) so the screen renders instead of a blank "loading details"
+            // state. Seasons and episodes still come from the server call below and
+            // fill in place once they arrive.
+            val cachedSeries = seriesRepository.getSeriesById(requestedSeriesId)
+            if (cachedSeries != null) {
+                val cachedFavorite = favoriteRepository.isFavorite(providerId, cachedSeries.id, ContentType.SERIES)
+                _uiState.update {
+                    it.copy(isLoading = false, series = cachedSeries.copy(isFavorite = cachedFavorite), error = null)
+                }
+            }
+
             when (val result = seriesRepository.getSeriesDetails(providerId, requestedSeriesId, knownPresentationHint)) {
                 is Result.Success -> {
                     val isFavoriteDeferred = viewModelScope.async {
@@ -134,18 +146,19 @@ class SeriesDetailViewModel @Inject constructor(
                 }
                 is Result.Error -> {
                     _uiState.update {
-                        it.copy(isLoading = false, error = result.message)
+                        // Keep any cached row already shown; only surface the error if we have nothing.
+                        it.copy(isLoading = false, error = if (it.series == null) result.message else null)
                     }
                 }
                 is Result.Loading -> {
-                    _uiState.update { it.copy(isLoading = true) }
+                    _uiState.update { it.copy(isLoading = it.series == null) }
                 }
             }
         } catch (e: Exception) {
             _uiState.update {
                 it.copy(
-                    isLoading = false,
-                    error = e.message ?: "Failed to load series details"
+                    isLoading = it.series == null,
+                    error = if (it.series == null) (e.message ?: "Failed to load series details") else null
                 )
             }
         }

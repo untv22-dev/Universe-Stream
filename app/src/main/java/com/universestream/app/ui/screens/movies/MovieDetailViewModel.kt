@@ -98,6 +98,17 @@ class MovieDetailViewModel @Inject constructor(
                         return@launch
                     }
 
+                // Show the cached row from Room right away so the screen renders with
+                // poster, title, year and rating instead of a blank "loading details"
+                // state. The server call below then enriches it (plot, duration, etc.)
+                // in place. Basics are already on hand from the list the user came from.
+                if (movieRow != null) {
+                    val isFavorite = favoriteRepository.isFavorite(effectiveProviderId, movieRow.id, ContentType.MOVIE)
+                    _uiState.update {
+                        it.copy(isLoading = false, movie = movieRow.copy(isFavorite = isFavorite), error = null)
+                    }
+                }
+
                 when (val result = movieRepository.getMovieDetails(effectiveProviderId, movieId, knownPresentationHint)) {
                     is Result.Success -> {
                         applyLoadedMovie(effectiveProviderId, result.data)
@@ -105,10 +116,11 @@ class MovieDetailViewModel @Inject constructor(
                         loadRelatedContent(effectiveProviderId)
                     }
                     is Result.Error -> _uiState.update {
-                        it.copy(isLoading = false, error = result.message)
+                        // Keep any cached row already shown; only surface the error if we have nothing.
+                        it.copy(isLoading = false, error = if (it.movie == null) result.message else null)
                     }
                     is Result.Loading -> _uiState.update {
-                        it.copy(isLoading = true)
+                        it.copy(isLoading = it.movie == null)
                     }
                 }
             } catch (e: Exception) {
