@@ -191,7 +191,15 @@ class DashboardViewModel @Inject constructor(
                             updateNotice = state.updateNotice ?: retained.updateNotice,
                             isLoading = false
                         )
-                        mobileRetentionEnabled && state.provider != null -> state.copy(isLoading = true)
+                        mobileRetentionEnabled && state.provider != null -> {
+                            // First cold load on mobile: there is no retained snapshot yet, so the
+                            // large shelf `combine` still emits empty rows while Room fills them.
+                            // Render the dashboard shell immediately and drop the full-screen
+                            // spinner as soon as any snapshot for this provider arrives; the shelves
+                            // populate in place instead of blocking behind one long load.
+                            // Television never enables mobileRetentionEnabled, so its path is unchanged.
+                            state.copy(isLoading = false)
+                        }
                         else -> state
                     }
                     if (hasContent && state.provider != null) {
