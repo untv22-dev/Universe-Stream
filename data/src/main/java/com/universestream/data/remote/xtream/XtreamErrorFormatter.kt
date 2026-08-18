@@ -12,6 +12,15 @@ internal object XtreamErrorFormatter {
             throwable is XtreamAuthenticationException -> "$prefix: Authentication failed. Please check your username, password, and server URL."
             throwable is XtreamParsingException -> "$prefix: ${throwable.message ?: "Server returned malformed or unsupported data."}"
             throwable is XtreamRequestException -> "$prefix: Request failed with HTTP ${throwable.statusCode}."
+            throwable is XtreamNetworkException -> when (throwable.kind) {
+                XtreamNetworkFailureKind.TIMEOUT -> "$prefix: Provider server did not respond in time."
+                XtreamNetworkFailureKind.DNS -> "$prefix: Provider hostname could not be resolved."
+                XtreamNetworkFailureKind.CONNECTION -> "$prefix: Could not connect to the provider server."
+                XtreamNetworkFailureKind.CLEAR_TEXT_BLOCKED -> "$prefix: HTTP provider was blocked by Android network policy."
+                XtreamNetworkFailureKind.TLS -> "$prefix: Secure connection failed."
+                XtreamNetworkFailureKind.SERVER_RESPONSE -> "$prefix: Provider returned HTTP ${throwable.statusCode ?: "5xx"}."
+                XtreamNetworkFailureKind.UNKNOWN -> "$prefix: Could not connect to the provider server."
+            }
             else -> "$prefix: ${throwable.message ?: "Unexpected network error"}"
         }
         return XtreamUrlFactory.sanitizeLogMessage(formatted)

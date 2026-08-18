@@ -6,6 +6,7 @@ import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.util.Locale
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 internal object XtreamUrlCodec {
     private const val UTF_8_NAME = "UTF-8"
@@ -380,10 +381,28 @@ object XtreamUrlFactory {
         path: String,
         queryParams: List<Pair<String, String>>
     ): String {
-        val query = queryParams.joinToString("&") { (key, value) ->
-            "${encodeQueryComponent(key)}=${encodeQueryComponent(value)}"
+        val baseUrl = serverUrl.trim().toHttpUrlOrNull()
+            ?: throw IllegalArgumentException("Invalid Xtream server URL")
+        val basePath = baseUrl.encodedPath.trimEnd('/')
+        val endpointPath = path.trim('/').let { endpoint ->
+            if (basePath.equals("/$endpoint", ignoreCase = true) ||
+                basePath.endsWith("/$endpoint", ignoreCase = true)
+            ) {
+                basePath.ifBlank { "/$endpoint" }
+            } else {
+                "$basePath/$endpoint".replace("//", "/")
+            }
         }
-        return serverUrl.trimEnd('/') + "/$path?$query"
+        return baseUrl.newBuilder()
+            .encodedPath(endpointPath)
+            .encodedQuery(null)
+            .apply {
+                queryParams.forEach { (key, value) ->
+                    addQueryParameter(key, value)
+                }
+            }
+            .build()
+            .toString()
     }
 
     private fun parseQuery(rawQuery: String?): Map<String, String> {

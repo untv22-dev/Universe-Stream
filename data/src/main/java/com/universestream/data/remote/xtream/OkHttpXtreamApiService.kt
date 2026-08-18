@@ -34,8 +34,13 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.NoRouteToHostException
 import java.net.URI
+import java.net.UnknownHostException
 import java.nio.charset.Charset
+import javax.net.ssl.SSLException
 import java.util.concurrent.TimeUnit.SECONDS
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -244,7 +249,11 @@ class OkHttpXtreamApiService(
                             }
                             throw XtreamRequestException(response.code, message)
                         }
-                        in 500..599, 429 -> throw XtreamNetworkException(message)
+                        in 500..599, 429 -> throw XtreamNetworkException(
+                            message = message,
+                            kind = XtreamNetworkFailureKind.SERVER_RESPONSE,
+                            statusCode = response.code
+                        )
                         else -> throw XtreamRequestException(response.code, message)
                     }
                 }
@@ -259,12 +268,35 @@ class OkHttpXtreamApiService(
             }
         } catch (e: XtreamApiException) {
             throw e
+        } catch (e: XtreamNetworkException) {
+            throw e
         } catch (e: IOException) {
             Log.w(
                 TAG,
                 "Xtream request network failure for ${descriptor.hint} (${request.safeRequestIdentitySummary(effectiveRequestProfile)}): ${XtreamUrlFactory.sanitizeLogMessage(e.message ?: "Network request failed")}"
             )
-            throw XtreamNetworkException(XtreamUrlFactory.sanitizeLogMessage(e.message ?: "Network request failed"), e)
+            val sanitizedMessage = XtreamUrlFactory.sanitizeLogMessage(e.message ?: "Network request failed")
+            throw XtreamNetworkException(
+                message = sanitizedMessage,
+                cause = e,
+                kind = classifyNetworkFailure(e)
+            )
+        }
+    }
+
+    private fun classifyNetworkFailure(throwable: Throwable): XtreamNetworkFailureKind {
+        val chain = generateSequence(throwable) { it.cause }.toList()
+        val message = chain.joinToString(" ") { it.message.orEmpty() }
+        return when {
+            chain.any { it is SocketTimeoutException || it is java.util.concurrent.TimeoutException } ->
+                XtreamNetworkFailureKind.TIMEOUT
+            chain.any { it is UnknownHostException } -> XtreamNetworkFailureKind.DNS
+            message.contains("CLEARTEXT communication", ignoreCase = true) ||
+                message.contains("cleartext", ignoreCase = true) -> XtreamNetworkFailureKind.CLEAR_TEXT_BLOCKED
+            chain.any { it is SSLException } -> XtreamNetworkFailureKind.TLS
+            chain.any { it is ConnectException || it is NoRouteToHostException } ->
+                XtreamNetworkFailureKind.CONNECTION
+            else -> XtreamNetworkFailureKind.UNKNOWN
         }
     }
 
@@ -367,7 +399,11 @@ class OkHttpXtreamApiService(
                             }
                             throw XtreamRequestException(response.code, message)
                         }
-                        in 500..599, 429 -> throw XtreamNetworkException(message)
+                        in 500..599, 429 -> throw XtreamNetworkException(
+                            message = message,
+                            kind = XtreamNetworkFailureKind.SERVER_RESPONSE,
+                            statusCode = response.code
+                        )
                         else -> throw XtreamRequestException(response.code, message)
                     }
                 }
@@ -384,12 +420,19 @@ class OkHttpXtreamApiService(
             }
         } catch (e: XtreamApiException) {
             throw e
+        } catch (e: XtreamNetworkException) {
+            throw e
         } catch (e: IOException) {
             Log.w(
                 TAG,
                 "Xtream streamed request network failure for ${descriptor.hint} (${request.safeRequestIdentitySummary(effectiveRequestProfile)}): ${XtreamUrlFactory.sanitizeLogMessage(e.message ?: "Network request failed")}"
             )
-            throw XtreamNetworkException(XtreamUrlFactory.sanitizeLogMessage(e.message ?: "Network request failed"), e)
+            val sanitizedMessage = XtreamUrlFactory.sanitizeLogMessage(e.message ?: "Network request failed")
+            throw XtreamNetworkException(
+                message = sanitizedMessage,
+                cause = e,
+                kind = classifyNetworkFailure(e)
+            )
         }
     }
 

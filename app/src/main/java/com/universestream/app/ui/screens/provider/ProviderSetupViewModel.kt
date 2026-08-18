@@ -6,6 +6,7 @@ import com.universestream.app.pairing.ProviderQrPairingManager
 import com.universestream.app.pairing.ProviderQrPairingState
 import com.universestream.data.remote.xtream.XtreamAuthenticationException
 import com.universestream.data.remote.xtream.XtreamNetworkException
+import com.universestream.data.remote.xtream.XtreamNetworkFailureKind
 import com.universestream.data.remote.xtream.XtreamParsingException
 import com.universestream.data.remote.xtream.XtreamRequestException
 import com.universestream.data.remote.xtream.XtreamResponseTooLargeException
@@ -940,6 +941,7 @@ class ProviderSetupViewModel @Inject constructor(
 
     private fun mapXtreamLoginError(result: ValidateAndAddProviderResult.Error): String {
         val failure = result.exception
+        val networkFailure = failure.findCause<XtreamNetworkException>()
         return when {
             result.message.startsWith(PROVIDER_LOGIN_SYNC_FAILED_PREFIX, ignoreCase = true) ->
                 "Login succeeded, but the initial sync failed while loading the playlist"
@@ -974,13 +976,30 @@ class ProviderSetupViewModel @Inject constructor(
             failure.findCause<XtreamRequestException>()?.statusCode in 500..599 ->
                 "Server is temporarily busy - try syncing again in a moment"
 
-            failure.hasCause<SocketTimeoutException>() ||
-                failure.hasCause<InterruptedIOException>() ||
-                failure.hasCause<UnknownHostException>() ||
+            networkFailure?.statusCode == 429 ||
+                failure.findCause<XtreamRequestException>()?.statusCode == 429 ->
+                "Provider is temporarily rate-limiting requests - try again in a moment"
+
+            networkFailure?.statusCode in 500..599 ->
+                "Provider server returned HTTP ${networkFailure.statusCode}"
+
+            networkFailure?.kind == XtreamNetworkFailureKind.TIMEOUT ||
+                failure.hasCause<SocketTimeoutException>() ||
+                failure.hasCause<InterruptedIOException>() ->
+                "Provider server did not respond in time"
+
+            networkFailure?.kind == XtreamNetworkFailureKind.DNS ||
+                failure.hasCause<UnknownHostException>() ->
+                "Cannot resolve the provider hostname"
+
+            networkFailure?.kind == XtreamNetworkFailureKind.CLEAR_TEXT_BLOCKED ->
+                "HTTP provider was blocked by Android network policy"
+
+            networkFailure?.kind == XtreamNetworkFailureKind.CONNECTION ||
                 failure.hasCause<ConnectException>() ||
                 failure.hasCause<NoRouteToHostException>() ||
-                failure.hasCause<XtreamNetworkException>() ->
-                "Cannot reach server - check your internet connection and server URL"
+                networkFailure != null ->
+                "Cannot connect to the provider server"
 
             failure.hasCause<XtreamResponseTooLargeException>() ->
                 "Server returned an unusually large response - try again later or contact the provider"

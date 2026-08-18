@@ -38,6 +38,7 @@ class XtreamProvider(
 ) : IptvProvider {
     companion object {
         private const val TAG = "XtreamProvider"
+        private const val LOGIN_TAG = "XtreamLogin"
         private const val STREAM_SUMMARY_BATCH_SIZE = 500
         private const val FALLBACK_EPG_LIMIT = 500
 
@@ -89,16 +90,28 @@ class XtreamProvider(
     private val adultCategoryCache = mutableMapOf<ContentType, Set<Long>>()
     private val adultCategoryCacheMutex = Mutex()
     override suspend fun authenticate(): Result<Provider> = try {
-        val response = api.authenticate(
-            XtreamUrlFactory.buildPlayerApiUrl(serverUrl, username, password),
-            requestProfile
+        val authEndpoint = XtreamUrlFactory.buildPlayerApiUrl(serverUrl, username, password)
+        Log.d(
+            LOGIN_TAG,
+            "XtreamLogin: request=${XtreamUrlFactory.sanitizeLogMessage(authEndpoint)}"
         )
+        val response = api.authenticate(authEndpoint, requestProfile)
         serverInfo = response.serverInfo
         liveOutputFormats = normalizeAllowedOutputFormats(response.userInfo.allowedOutputFormats)
             .ifEmpty { liveOutputFormats }
 
         if (response.userInfo.auth != 1) {
-            Result.error("Authentication failed: ${response.userInfo.message}")
+            Log.w(
+                LOGIN_TAG,
+                "XtreamLogin: Authentication rejected by provider; responseAuth=${response.userInfo.auth}"
+            )
+            Result.error(
+                message = "Authentication rejected by provider",
+                exception = XtreamAuthenticationException(
+                    statusCode = 200,
+                    message = "Provider returned auth=0"
+                )
+            )
         } else {
             // Parse expiration date
             val expDateStr = response.userInfo.expDate
@@ -130,7 +143,26 @@ class XtreamProvider(
             )
         }
     } catch (e: Exception) {
+        Log.w(LOGIN_TAG, "XtreamLogin: ${loginFailureReason(e)}")
         Result.error(XtreamErrorFormatter.message("Authentication failed", e), e)
+    }
+
+    private fun loginFailureReason(throwable: Throwable): String {
+        val network = generateSequence(throwable) { it.cause }
+            .filterIsInstance<XtreamNetworkException>()
+            .firstOrNull()
+        return when {
+            network?.statusCode != null -> "HTTP ${network.statusCode}"
+            network?.kind == XtreamNetworkFailureKind.TIMEOUT -> "Connect/read timeout"
+            network?.kind == XtreamNetworkFailureKind.DNS -> "DNS resolution failed"
+            network?.kind == XtreamNetworkFailureKind.CLEAR_TEXT_BLOCKED -> "Cleartext HTTP blocked"
+            network?.kind == XtreamNetworkFailureKind.TLS -> "SSL/TLS failure"
+            network?.kind == XtreamNetworkFailureKind.CONNECTION -> "Connection failed"
+            throwable is XtreamAuthenticationException -> "HTTP ${throwable.statusCode} authentication failure"
+            throwable is XtreamParsingException -> "Invalid provider response"
+            throwable.message?.contains("auth", ignoreCase = true) == true -> "Authentication rejected"
+            else -> "Unexpected authentication failure"
+        }
     }
 
     // ── Live TV ────────────────────────────────────────────────────

@@ -4,7 +4,22 @@ import java.io.IOException
 
 sealed class XtreamApiException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
-class XtreamNetworkException(message: String, cause: Throwable? = null) : IOException(message, cause)
+enum class XtreamNetworkFailureKind {
+    TIMEOUT,
+    DNS,
+    CONNECTION,
+    CLEAR_TEXT_BLOCKED,
+    TLS,
+    SERVER_RESPONSE,
+    UNKNOWN
+}
+
+class XtreamNetworkException(
+    message: String,
+    cause: Throwable? = null,
+    val kind: XtreamNetworkFailureKind = XtreamNetworkFailureKind.UNKNOWN,
+    val statusCode: Int? = null
+) : IOException(message, cause)
 
 class XtreamAuthenticationException(
     val statusCode: Int,

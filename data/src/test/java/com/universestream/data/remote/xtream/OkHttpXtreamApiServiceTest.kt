@@ -84,6 +84,41 @@ class OkHttpXtreamApiServiceTest {
     }
 
     @Test
+    fun `get classifies 503 as provider server response`() = runTest {
+        val service = OkHttpXtreamApiService(
+            client = clientReturning(statusCode = 503, body = "temporarily unavailable"),
+            json = json
+        )
+
+        val failure = runCatching {
+            service.getLiveCategories("https://example.test/player_api.php")
+        }.exceptionOrNull()
+
+        assertThat(failure).isInstanceOf(XtreamNetworkException::class.java)
+        val networkFailure = failure as XtreamNetworkException
+        assertThat(networkFailure.kind).isEqualTo(XtreamNetworkFailureKind.SERVER_RESPONSE)
+        assertThat(networkFailure.statusCode).isEqualTo(503)
+    }
+
+    @Test
+    fun `get classifies socket timeout with timeout kind`() = runTest {
+        val service = OkHttpXtreamApiService(
+            client = OkHttpClient.Builder()
+                .addInterceptor { throw SocketTimeoutException("timed out") }
+                .build(),
+            json = json
+        )
+
+        val failure = runCatching {
+            service.getLiveCategories("https://example.test/player_api.php")
+        }.exceptionOrNull()
+
+        assertThat(failure).isInstanceOf(XtreamNetworkException::class.java)
+        assertThat((failure as XtreamNetworkException).kind)
+            .isEqualTo(XtreamNetworkFailureKind.TIMEOUT)
+    }
+
+    @Test
     fun `streamVodStreams decodes array incrementally`() = runTest {
         val service = OkHttpXtreamApiService(
             client = clientReturning(
