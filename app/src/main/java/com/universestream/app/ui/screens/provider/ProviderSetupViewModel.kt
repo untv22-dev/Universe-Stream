@@ -981,7 +981,7 @@ class ProviderSetupViewModel @Inject constructor(
                 "Provider is temporarily rate-limiting requests - try again in a moment"
 
             networkFailure?.statusCode in 500..599 ->
-                "Provider server returned HTTP ${networkFailure.statusCode}"
+                "Provider server returned HTTP ${networkFailure?.statusCode}"
 
             networkFailure?.kind == XtreamNetworkFailureKind.TIMEOUT ||
                 failure.hasCause<SocketTimeoutException>() ||
