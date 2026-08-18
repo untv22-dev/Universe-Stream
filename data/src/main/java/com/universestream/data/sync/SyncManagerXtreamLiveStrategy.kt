@@ -368,7 +368,7 @@ internal class SyncManagerXtreamLiveStrategy(
             Log.i(
                 "SyncDiag",
                     "Live sync provider=${provider.id} decoder=$decoderLabel raw=$streamedRawCount accepted=$acceptedCount " +
-                        "flushes=$flushCount elapsedMs=$fullChannelsElapsedMs categoriesPreferred=${resolvedCategories?.size ?: 0}"
+                        "flushes=$flushCount elapsedMs=$fullChannelsElapsedMs"
             )
             if (acceptedCount == 0) {
                 return CatalogSyncPayload(
