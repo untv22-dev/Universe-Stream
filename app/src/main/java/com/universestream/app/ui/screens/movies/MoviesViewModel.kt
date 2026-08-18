@@ -137,6 +137,8 @@ class MoviesViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
+            val previewStartedAt = android.os.SystemClock.elapsedRealtime()
+            var firstPreviewEmissionLogged = false
             providerRepository.getActiveProvider()
                 .filterNotNull()
                 .flatMapLatest { provider ->
@@ -242,6 +244,15 @@ class MoviesViewModel @Inject constructor(
                 }
                 .collect { result ->
                     val snapshot = result.snapshot
+                    if (!firstPreviewEmissionLogged && snapshot.grouped.values.any { it.isNotEmpty() }) {
+                        firstPreviewEmissionLogged = true
+                        android.util.Log.i(
+                            "MoviesPerf",
+                            "first-preview-row categories=${snapshot.grouped.count { it.value.isNotEmpty() }} " +
+                                "rows=${snapshot.grouped.values.sumOf { it.size }} elapsedMs=" +
+                                (android.os.SystemClock.elapsedRealtime() - previewStartedAt)
+                        )
+                    }
                     val isReordering = _uiState.value.isReorderMode
                     val currentSelected = _uiState.value.selectedCategory
                     val preserveSelectedCategory = currentSelected != null && _searchQuery.value.isNotBlank()
@@ -292,6 +303,8 @@ class MoviesViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            val selectedFlowStartedAt = android.os.SystemClock.elapsedRealtime()
+            var firstSelectedCategoryEmissionLogged = false
             providerRepository.getActiveProvider()
                 .filterNotNull()
                 .flatMapLatest { provider ->
@@ -350,10 +363,25 @@ class MoviesViewModel @Inject constructor(
                 }
                 .flatMapLatest { request ->
                     flow {
-                        emit(loadSelectedCategoryItems(request))
+                        val categoryStartedAt = android.os.SystemClock.elapsedRealtime()
+                        val snapshot = loadSelectedCategoryItems(request)
+                        android.util.Log.i(
+                            "MoviesPerf",
+                            "category-open category=${request.selectedCategory ?: "library"} " +
+                                "rows=${snapshot.items.size} elapsedMs=${android.os.SystemClock.elapsedRealtime() - categoryStartedAt}"
+                        )
+                        emit(snapshot)
                     }
                 }
                 .collect { snapshot ->
+                    if (!firstSelectedCategoryEmissionLogged && snapshot.items.isNotEmpty()) {
+                        firstSelectedCategoryEmissionLogged = true
+                        android.util.Log.i(
+                            "MoviesPerf",
+                            "first-selected-row rows=${snapshot.items.size} elapsedMs=" +
+                                (android.os.SystemClock.elapsedRealtime() - selectedFlowStartedAt)
+                        )
+                    }
                     _uiState.update {
                         it.copy(
                             selectedCategoryItems = snapshot.items,

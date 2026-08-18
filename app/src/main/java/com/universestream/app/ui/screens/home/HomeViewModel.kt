@@ -861,12 +861,22 @@ class HomeViewModel @Inject constructor(
                     }
                 }
 
+                val providerIdForCount = _uiState.value.provider?.id
+                val rawCategoryCountFlow = if (_uiState.value.isCombinedLiveSource || category.isVirtual || providerIdForCount == null) {
+                    flowOf(0)
+                } else if (category.id == ChannelRepository.ALL_CHANNELS_ID) {
+                    channelRepository.getChannelCount(providerIdForCount)
+                } else {
+                    channelRepository.getChannelCountByCategory(providerIdForCount, category.id)
+                }
+
                 combine(
                     channelsFlow,
+                    rawCategoryCountFlow,
                     preferencesRepository.liveChannelNumberingMode,
                     _uiState.map { it.selectedCombinedSourceProviderId }.distinctUntilChanged(),
                     _uiState.map { it.parentalControlLevel }.distinctUntilChanged()
-                ) { channels, numberingMode, selectedCombinedSourceProviderId, level ->
+                ) { channels, rawCategoryCount, numberingMode, selectedCombinedSourceProviderId, level ->
                     val byProvider = selectedCombinedSourceProviderId?.let { selectedProviderId ->
                         channels.filter { it.providerId == selectedProviderId }
                     } ?: channels
@@ -879,18 +889,29 @@ class HomeViewModel @Inject constructor(
                     }
                     val isAggregatedSurface = category.id == ChannelRepository.ALL_CHANNELS_ID ||
                         category.id == VirtualCategoryIds.RECENT
-                    if (isAggregatedSurface) {
+                    val displayed = if (isAggregatedSurface) {
                         AdultContentVisibilityPolicy.filterForAggregatedSurface(
                             numbered, level
                         ) { isAdult || isUserProtected }
                     } else numbered
-                }.collect { displayedChannels ->
+                    displayed to rawCategoryCount
+                }.collect { (displayedChannels, rawCategoryCount) ->
                     val currentQuery = _uiState.value.channelSearchQuery.trim()
                     val currentLimit = if (currentQuery.length < MIN_CHANNEL_SEARCH_QUERY_LENGTH) {
                         _channelBrowseLimit.value
                     } else {
                         _channelSearchLimit.value
                     }
+                    val hasMore = when {
+                        currentQuery.isBlank() -> rawCategoryCount > currentLimit
+                        currentQuery.length >= MIN_CHANNEL_SEARCH_QUERY_LENGTH -> displayedChannels.size >= currentLimit
+                        else -> false
+                    }
+                    android.util.Log.i(
+                        "HomeDiag",
+                        "category=${category.id} dbCount=$rawCategoryCount limit=$currentLimit " +
+                            "displayed=${displayedChannels.size} hasMore=$hasMore queryLength=${currentQuery.length}"
+                    )
                     _localChannels.value = displayedChannels
                     channelCache[channelCacheKey(category)] = displayedChannels
                     if (!firstEmissionLogged) {
@@ -906,7 +927,7 @@ class HomeViewModel @Inject constructor(
                             hasChannels = displayedChannels.isNotEmpty(),
                             isLoading = displayedChannels.isEmpty() && it.isSyncing,
                             errorMessage = null,
-                            hasMoreChannels = displayedChannels.size >= currentLimit
+                            hasMoreChannels = hasMore
                         )
                     }
                 }

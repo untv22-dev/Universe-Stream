@@ -558,6 +558,9 @@ abstract class ChannelDao {
     @Query("SELECT COUNT(*) FROM channels WHERE provider_id = :providerId")
     abstract fun getRawCount(providerId: Long): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM channels WHERE provider_id = :providerId AND category_id = :categoryId")
+    abstract fun getRawCountByCategory(providerId: Long, categoryId: Long): Flow<Int>
+
     @Query(
         """
         SELECT COUNT(*)

@@ -358,6 +358,11 @@ internal class SyncManagerXtreamLiveStrategy(
                     "with $acceptedCount accepted items from $streamedRawCount raw items " +
                     "across $flushCount flushes; mapping=${mappingElapsedMs}ms staging=${stagingElapsedMs}ms profile=${runtimeProfile.diagnosticsLabel}."
             )
+            Log.i(
+                "SyncDiag",
+                "Live sync provider=${provider.id} decoder=$decoderLabel raw=$streamedRawCount accepted=$acceptedCount " +
+                    "flushes=$flushCount elapsedMs=$fullChannelsElapsedMs"
+            )
             if (acceptedCount == 0) {
                 return CatalogSyncPayload(
                     catalogResult = CatalogStrategyResult.EmptyValid(
@@ -539,6 +544,11 @@ internal class SyncManagerXtreamLiveStrategy(
         Log.i(
             XTREAM_LIVE_STRATEGY_TAG,
             "Xtream live category strategy summary for provider ${provider.id}: successful=$successfulCategories empty=$emptyCategories failed=$failedCategories stagedChannels=$stagedAcceptedCount concurrency=$concurrency"
+        )
+        Log.i(
+            "SyncDiag",
+            "Live category sync provider=${provider.id} categoriesRaw=${categories.size} successful=$successfulCategories " +
+                "empty=$emptyCategories failed=$failedCategories accepted=$stagedAcceptedCount"
         )
 
         return when {

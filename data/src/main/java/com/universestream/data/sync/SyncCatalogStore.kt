@@ -72,6 +72,8 @@ internal class SyncCatalogStore(
         }
     }
 
+    suspend fun countStoredLiveChannels(providerId: Long): Int = channelDao.countByProvider(providerId)
+
     suspend fun replaceLiveCatalog(providerId: Long, categories: List<CategoryEntity>?, channels: List<ChannelEntity>): Int {
         val sessionId = newSessionId()
         val stagedChannels = buildChannelStages(providerId, sessionId, channels)

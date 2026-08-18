@@ -58,6 +58,7 @@ import com.universestream.domain.util.AdultContentVisibilityPolicy
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -307,6 +308,8 @@ class DashboardViewModel @Inject constructor(
             )
         }
 
+        val dashboardStartedAt = android.os.SystemClock.elapsedRealtime()
+        var firstRenderableSnapshotLogged = false
         return baseSnapshot.combine(
             preferencesRepository.appHomeDashboardShelves.onStart { emit(AppHomeDashboardShelf.defaultOrder) }
         ) { snapshot, homeDashboardShelves ->
@@ -364,6 +367,15 @@ class DashboardViewModel @Inject constructor(
                 updateNotice = snapshot.updateNotice,
                 isLoading = false
             )
+        }.onEach { state ->
+            if (!firstRenderableSnapshotLogged && state.hasRenderableContent()) {
+                firstRenderableSnapshotLogged = true
+                android.util.Log.i(
+                    "HomePerf",
+                    "first-renderable-snapshot provider=${provider.id} elapsedMs=" +
+                        (android.os.SystemClock.elapsedRealtime() - dashboardStartedAt)
+                )
+            }
         }
     }
 

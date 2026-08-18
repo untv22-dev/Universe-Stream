@@ -89,6 +89,9 @@ class ChannelRepositoryImpl @Inject constructor(
             }
         }
 
+    override fun getChannelCountByCategory(providerId: Long, categoryId: Long): Flow<Int> =
+        channelDao.getRawCountByCategory(providerId, categoryId)
+
     override fun getChannelsByCategory(providerId: Long, categoryId: Long): Flow<List<Channel>> =
         observeChannels(channelFlow(providerId, categoryId), providerId)
 

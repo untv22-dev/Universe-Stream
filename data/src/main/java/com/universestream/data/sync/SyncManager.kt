@@ -5381,6 +5381,12 @@ class SyncManager @Inject constructor(
                 )
             }
         }
+        val storedCount = syncCatalogStore.countStoredLiveChannels(providerId)
+        Log.i(
+            "SyncDiag",
+            "Live commit provider=$providerId accepted=$acceptedCount stored=$storedCount " +
+                "partial=${partialCompletionWarning != null} atomic=true"
+        )
         return XtreamLiveCommitResult(acceptedCount = acceptedCount, warnings = warnings)
     }
 

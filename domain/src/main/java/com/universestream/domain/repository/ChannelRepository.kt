@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 interface ChannelRepository {
     fun getChannels(providerId: Long): Flow<List<Channel>>
     fun getChannelCount(providerId: Long): Flow<Int>
+    fun getChannelCountByCategory(providerId: Long, categoryId: Long): Flow<Int>
     fun getChannelsByCategory(providerId: Long, categoryId: Long): Flow<List<Channel>>
     fun getChannelsByCategoryPage(providerId: Long, categoryId: Long, limit: Int): Flow<List<Channel>>
     fun getChannelsByNumber(providerId: Long, categoryId: Long = ALL_CHANNELS_ID): Flow<List<Channel>>
