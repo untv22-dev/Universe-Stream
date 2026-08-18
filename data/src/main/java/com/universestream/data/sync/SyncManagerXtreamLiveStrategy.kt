@@ -555,8 +555,7 @@ internal class SyncManagerXtreamLiveStrategy(
         Log.i(
             "SyncDiag",
             "Live category sync provider=${provider.id} categoriesRaw=${categories.size} successful=$successfulCategories " +
-                "empty=$emptyCategories failed=$failedCategories accepted=$stagedAcceptedCount " +
-                "categoriesPreferred=${visibleResolvedCategories?.size ?: 0}"
+                "empty=$emptyCategories failed=$failedCategories accepted=$stagedAcceptedCount"
         )
 
         return when {
