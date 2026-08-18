@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.focusGroup
@@ -65,7 +66,9 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
@@ -79,10 +82,13 @@ import com.universestream.app.R
 import com.universestream.app.MainActivity
 import com.universestream.app.cast.CastConnectionState
 import com.universestream.app.ui.components.PlayerRenderView
+import com.universestream.app.ui.components.ChannelLogoBadge
 import com.universestream.app.ui.design.requestFocusSafely
+import com.universestream.app.ui.design.AppColors
 import com.universestream.app.ui.design.AppWindowSizeClass
 import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.app.ui.notifications.rememberNotificationPermissionGate
+import com.universestream.app.ui.interaction.TvClickableSurface
 import com.universestream.app.ui.screens.player.overlay.ChannelInfoOverlay
 import com.universestream.app.ui.screens.player.overlay.ChannelVariantSelectionDialog
 import com.universestream.app.ui.screens.player.overlay.CategoryListOverlay
@@ -913,6 +919,35 @@ fun PlayerScreen(
             }
         )
 
+        // Mobile Portrait only: keep the current category in memory and make the
+        // unused area below the 16:9 surface an in-player channel browser. This
+        // branch is intentionally gated before any Television-specific overlays.
+        if (isCompactPortrait && !isInPictureInPictureMode && contentType == "LIVE" && !isCatchUpPlayback) {
+            PortraitLiveChannelBrowser(
+                channels = currentChannelList,
+                currentChannelId = currentChannel?.id ?: internalChannelId,
+                categoryName = lastVisitedCategory?.name
+                    ?: currentChannelList.firstOrNull()?.categoryName
+                    ?: stringResource(R.string.nav_live_tv),
+                currentChannel = currentChannel,
+                isPlaying = isPlaying,
+                isMuted = isMuted,
+                onSelectChannel = { channelId ->
+                    viewModel.notifyUserActivity()
+                    viewModel.zapToChannel(channelId)
+                },
+                onTogglePlayPause = { if (isPlaying) viewModel.pause() else viewModel.play() },
+                onSeekBackward = viewModel::seekBackward,
+                onSeekForward = viewModel::seekForward,
+                onToggleMute = viewModel::toggleMute,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .padding(top = compactPortraitVideoHeight)
+            )
+        }
+
         // Buffering indicator
         if (playbackState == PlaybackState.BUFFERING) {
             Box(
@@ -1431,6 +1466,224 @@ private fun buildResolutionBadgeLabel(
         autoResolutionLabel
     } else {
         selectedTrack.name
+    }
+}
+
+@Composable
+private fun PortraitLiveChannelBrowser(
+    channels: List<Channel>,
+    currentChannelId: Long,
+    categoryName: String,
+    currentChannel: Channel?,
+    isPlaying: Boolean,
+    isMuted: Boolean,
+    onSelectChannel: (Long) -> Unit,
+    onTogglePlayPause: () -> Unit,
+    onSeekBackward: () -> Unit,
+    onSeekForward: () -> Unit,
+    onToggleMute: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val listState = rememberLazyListState()
+    val selectedIndex = remember(channels, currentChannelId) {
+        channels.indexOfFirst { it.id == currentChannelId }.takeIf { it >= 0 }
+    }
+
+    LaunchedEffect(selectedIndex, channels.size) {
+        selectedIndex?.let { index ->
+            if (index >= 0 && index < channels.size) {
+                listState.animateScrollToItem(index)
+            }
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .background(AppColors.Canvas)
+            .padding(horizontal = 10.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = currentChannel?.name ?: stringResource(R.string.nav_live_tv),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = AppColors.TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = currentChannel?.currentProgram?.title
+                        ?: stringResource(R.string.player_live_no_program),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.TextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Text(
+                text = if (channels.isEmpty()) "" else stringResource(
+                    R.string.player_channel_count_format,
+                    channels.size
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.Brand
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            PortraitPlayerActionButton(
+                label = stringResource(if (isPlaying) R.string.player_pause else R.string.player_play),
+                onClick = onTogglePlayPause,
+                modifier = Modifier.weight(1f)
+            )
+            PortraitPlayerActionButton(
+                label = stringResource(R.string.player_seek_back_10),
+                onClick = onSeekBackward,
+                modifier = Modifier.weight(1f)
+            )
+            PortraitPlayerActionButton(
+                label = stringResource(R.string.player_seek_forward_10),
+                onClick = onSeekForward,
+                modifier = Modifier.weight(1f)
+            )
+            PortraitPlayerActionButton(
+                label = stringResource(if (isMuted) R.string.player_unmute else R.string.player_mute),
+                onClick = onToggleMute,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Text(
+            text = categoryName,
+            style = MaterialTheme.typography.labelMedium,
+            color = AppColors.TextSecondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+        )
+
+        if (channels.isEmpty()) {
+            Text(
+                text = stringResource(R.string.home_live_loading),
+                style = MaterialTheme.typography.bodySmall,
+                color = AppColors.TextTertiary,
+                modifier = Modifier.padding(12.dp)
+            )
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                contentPadding = PaddingValues(bottom = 10.dp)
+            ) {
+                items(channels, key = { channel -> channel.id }) { channel ->
+                    val selected = channel.id == currentChannelId
+                    TvClickableSurface(
+                        onClick = { onSelectChannel(channel.id) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 62.dp),
+                        colors = ClickableSurfaceDefaults.colors(
+                            containerColor = if (selected) AppColors.BrandMuted else AppColors.Surface,
+                            focusedContainerColor = if (selected) AppColors.BrandMuted else AppColors.SurfaceElevated
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            ChannelLogoBadge(
+                                channelName = channel.name,
+                                logoUrl = channel.logoUrl,
+                                modifier = Modifier.size(42.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                backgroundColor = AppColors.SurfaceElevated,
+                                textStyle = MaterialTheme.typography.labelMedium
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = channel.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (selected) AppColors.BrandStrong else AppColors.TextPrimary,
+                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                channel.currentProgram?.title?.takeIf { it.isNotBlank() }?.let { programTitle ->
+                                    Text(
+                                        text = programTitle,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = AppColors.TextSecondary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                            if (selected) {
+                                Text(
+                                    text = stringResource(R.string.player_live_now),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = AppColors.Brand,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            } else if (channel.number > 0) {
+                                Text(
+                                    text = channel.number.toString(),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = AppColors.TextTertiary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PortraitPlayerActionButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    TvClickableSurface(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = 38.dp),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = AppColors.Surface,
+            focusedContainerColor = AppColors.SurfaceElevated
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 7.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
