@@ -30,7 +30,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -69,14 +71,15 @@ jobs:
 
       - name: Build signed release APK
         run: |
-          # Keep the Gradle and Kotlin compiler JVMs within the runner memory budget.
-          # timeout makes a pathological compiler/daemon stall fail with diagnostics
-          # instead of consuming the entire Actions job indefinitely.
+          # Fast development/review APK path: keep memory bounded while allowing
+          # limited parallelism on GitHub-hosted runners. Final release CI remains
+          # responsible for the full unit-test and coverage suite.
           timeout --signal=TERM --kill-after=60s 27m \
-            ./gradlew --no-daemon --max-workers=1 --console=plain --info \
+            ./gradlew --no-daemon --max-workers=2 --console=plain \
               -Dorg.gradle.jvmargs="-Xmx3g -Dfile.encoding=UTF-8" \
               -Dkotlin.daemon.jvm.options="-Xmx2g" \
-              -Dorg.gradle.workers.max=1 \
+              -Dorg.gradle.workers.max=2 \
+              -Dorg.gradle.parallel=true \
               -Dorg.gradle.vfs.watch=false \
               :app:assembleRelease --stacktrace
 
