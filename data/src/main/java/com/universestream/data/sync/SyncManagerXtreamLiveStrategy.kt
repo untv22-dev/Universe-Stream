@@ -55,6 +55,7 @@ internal class SyncManagerXtreamLiveStrategy(
         runtimeProfile: CatalogSyncRuntimeProfile,
         trackInitialLiveOnboarding: Boolean,
         publishInitialLiveBatch: Boolean = false,
+        onFirstBatchPublished: (suspend () -> Unit)? = null,
         effectiveLiveSyncMethod: EffectiveXtreamLiveSyncMethod = EffectiveXtreamLiveSyncMethod.STREAM_ALL
     ): CatalogSyncPayload<Channel> {
         Log.i(XTREAM_LIVE_STRATEGY_TAG, "Xtream live strategy start for provider ${provider.id}.")
@@ -155,7 +156,8 @@ internal class SyncManagerXtreamLiveStrategy(
             onProgress = onProgress,
             preferSequential = existingMetadata.liveSequentialFailuresRemembered || runtimeProfile.maxCategoryConcurrency <= 1,
             runtimeProfile = runtimeProfile,
-            publishInitialLiveBatch = publishInitialLiveBatch
+            publishInitialLiveBatch = publishInitialLiveBatch,
+            onFirstBatchPublished = onFirstBatchPublished
         )
         return CatalogSyncPayload(
             catalogResult = categoryPayload.catalogResult,
@@ -417,7 +419,8 @@ internal class SyncManagerXtreamLiveStrategy(
         onProgress: ((String) -> Unit)?,
         preferSequential: Boolean,
         runtimeProfile: CatalogSyncRuntimeProfile,
-        publishInitialLiveBatch: Boolean = false
+        publishInitialLiveBatch: Boolean = false,
+        onFirstBatchPublished: (suspend () -> Unit)? = null
     ): CatalogSyncPayload<Channel> {
         val categories = rawCategories.filter { it.categoryId.isNotBlank() }
         if (categories.isEmpty()) {
@@ -464,6 +467,17 @@ internal class SyncManagerXtreamLiveStrategy(
                         "Live first batch published provider=${provider.id} session=$sessionId " +
                             "batchAccepted=$stagedAcceptedCount visibleDb=$visibleCount"
                     )
+                    try {
+                        onFirstBatchPublished?.invoke()
+                    } catch (error: kotlinx.coroutines.CancellationException) {
+                        throw error
+                    } catch (error: Exception) {
+                        Log.w(
+                            "SyncDiag",
+                            "Live first batch follow-up scheduling failed provider=${provider.id}: " +
+                                sanitizeThrowableMessage(error)
+                        )
+                    }
                 } catch (error: kotlinx.coroutines.CancellationException) {
                     throw error
                 } catch (error: Exception) {

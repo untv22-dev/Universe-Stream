@@ -1136,6 +1136,21 @@ class SyncManager @Inject constructor(
                         runtimeProfile = runtimeProfile,
                         trackInitialLiveOnboarding = true,
                         publishInitialLiveBatch = prioritizeInitialLiveOnboarding,
+                        onFirstBatchPublished = if (prioritizeInitialLiveOnboarding) {
+                            {
+                                scheduleXtreamCategoryShellSync(provider.id)
+                                if (provider.epgSyncMode != ProviderEpgSyncMode.SKIP) {
+                                    scheduleBackgroundEpgSync(provider.id)
+                                }
+                                Log.i(
+                                    "SyncDiag",
+                                    "Initial Live first batch follow-up queued provider=${provider.id} " +
+                                        "vodSeries=true epg=${provider.epgSyncMode != ProviderEpgSyncMode.SKIP}"
+                                )
+                            }
+                        } else {
+                            null
+                        },
                         syncReason = syncReason
                     )
                 } ?: throw IOException(
@@ -1315,18 +1330,13 @@ class SyncManager @Inject constructor(
         scheduleXtreamIndexSync(provider.id, ContentType.LIVE)
 
         if (trackInitialLiveOnboarding && prioritizeInitialLiveOnboarding) {
-            // Mobile Live-first onboarding: only enqueue the other libraries after the
-            // first Live outcome has been committed, so they cannot win the race for the
-            // provider's network/admission path while the user is waiting for channels.
-            scheduleXtreamCategoryShellSync(provider.id)
-            if (provider.epgSyncMode != ProviderEpgSyncMode.SKIP) {
-                scheduleBackgroundEpgSync(provider.id)
-            }
+            // Mobile Live-first onboarding queues VOD/Series/EPG from the one-time
+            // first-batch callback above, while the remaining Live categories continue.
             Log.i(
                 "SyncDiag",
                 "Initial Live-first onboarding provider=${provider.id} liveOutcome=" +
                     "${if (liveOutcome.isSuccess) "success" else "failure"} liveCount=$liveCount " +
-                    "otherLibrariesQueuedAfterLive=true queueElapsedMs=${System.currentTimeMillis() - liveStartedAt}"
+                    "otherLibrariesQueuedByFirstBatch=true queueElapsedMs=${System.currentTimeMillis() - liveStartedAt}"
             )
         } else if (!trackInitialLiveOnboarding) {
             scheduleXtreamCategoryShellSync(provider.id)
@@ -5212,6 +5222,7 @@ class SyncManager @Inject constructor(
         runtimeProfile: CatalogSyncRuntimeProfile = CatalogSyncRuntimeProfile.from(applicationContext),
         trackInitialLiveOnboarding: Boolean = false,
         publishInitialLiveBatch: Boolean = false,
+        onFirstBatchPublished: (suspend () -> Unit)? = null,
         syncReason: XtreamLiveSyncReason = XtreamLiveSyncReason.FOREGROUND
     ): CatalogSyncPayload<Channel> {
         // Emission d'entree LIVE : signale tot a l'UI que la section LIVE demarre,
@@ -5247,6 +5258,7 @@ class SyncManager @Inject constructor(
             runtimeProfile,
             trackInitialLiveOnboarding,
             publishInitialLiveBatch,
+            onFirstBatchPublished,
             effectiveLiveSyncMethod
         )
     }
