@@ -412,7 +412,7 @@ fun PlayerScreen(
     }
 
     // Split Screen Manager dialog
-    if (showSplitDialog && currentChannel != null) {
+    if (showSplitDialog && !isCompactMobile && currentChannel != null) {
         val multiViewViewModel: MultiViewViewModel = hiltViewModel()
         MultiViewPlannerDialog(
             pendingChannel = currentChannel,
@@ -1113,7 +1113,7 @@ fun PlayerScreen(
             audioVideoSyncEnabled = audioVideoSyncEnabled,
             showEpisodesAction = canOpenEpisodePicker,
             onOpenEpisodes = { showEpisodePicker = true },
-            onOpenSplitScreen = { showSplitDialog = true },
+            onOpenSplitScreen = { if (!isCompactMobile) showSplitDialog = true },
             onEnterPictureInPicture = enterPictureInPicture,
             onToggleMute = viewModel::toggleMute,
             isCastConnected = castConnectionState == CastConnectionState.CONNECTED,
@@ -1422,7 +1422,8 @@ fun PlayerScreen(
                     isPlaying = isPlaying,
                     currentAspectRatio = aspectRatio.modeName,
                     isDiagnosticsEnabled = showDiagnostics,
-                    onOpenSplitScreen = { showSplitDialog = true },
+                    showSplitScreenAction = !isCompactMobile,
+                    onOpenSplitScreen = { if (!isCompactMobile) showSplitDialog = true },
                     subtitleTrackCount = availableSubtitleTracks.size,
                     liveTranslationAvailable = liveTranslationAvailable,
                     audioTrackCount = availableAudioTracks.size,

@@ -93,6 +93,7 @@ fun ChannelInfoOverlay(
     isPlaying: Boolean,
     currentAspectRatio: String,
     isDiagnosticsEnabled: Boolean,
+    showSplitScreenAction: Boolean = true,
     onOpenSplitScreen: () -> Unit = {},
     subtitleTrackCount: Int = 0,
     liveTranslationAvailable: Boolean = false,
@@ -505,17 +506,19 @@ fun ChannelInfoOverlay(
                         onInteraction = { handleMainActionFocus(null) }
                     )
                 }
-                item {
-                    QuickActionButton(
-                        icon = stringResource(R.string.player_action_split),
-                        label = stringResource(R.string.player_multiview_short),
-                        onClick = {
-                            expandedPanel = null
-                            onDismiss()
-                            onOpenSplitScreen()
-                        },
-                        onInteraction = { handleMainActionFocus(null) }
-                    )
+                if (showSplitScreenAction) {
+                    item {
+                        QuickActionButton(
+                            icon = stringResource(R.string.player_action_split),
+                            label = stringResource(R.string.player_multiview_short),
+                            onClick = {
+                                expandedPanel = null
+                                onDismiss()
+                                onOpenSplitScreen()
+                            },
+                            onInteraction = { handleMainActionFocus(null) }
+                        )
+                    }
                 }
                 item {
                     QuickActionButton(

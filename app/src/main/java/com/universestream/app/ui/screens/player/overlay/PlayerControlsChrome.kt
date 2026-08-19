@@ -694,6 +694,7 @@ private fun PlayerBottomBar(
                         onOpenIdleStandbyTimer = onOpenIdleStandbyTimer,
                         onOpenAudioVideoSync = onOpenAudioVideoSync,
                         audioVideoSyncEnabled = audioVideoSyncEnabled,
+                        showSplitScreenAction = !isCompact,
                         onOpenSplitScreen = onOpenSplitScreen,
                         onEnterPictureInPicture = onEnterPictureInPicture,
                         onToggleMute = onToggleMute,
@@ -792,6 +793,7 @@ private fun PlayerLiveInfo(
     onOpenIdleStandbyTimer: () -> Unit,
     onOpenAudioVideoSync: () -> Unit,
     audioVideoSyncEnabled: Boolean,
+    showSplitScreenAction: Boolean,
     onOpenSplitScreen: () -> Unit,
     onEnterPictureInPicture: () -> Unit,
     onToggleMute: () -> Unit,
@@ -879,7 +881,9 @@ private fun PlayerLiveInfo(
         if (audioVideoSyncEnabled && !isCastConnected) {
             add(PlayerActionSpec(stringResource(R.string.player_av_sync_short), onOpenAudioVideoSync))
         }
-        add(PlayerActionSpec(stringResource(R.string.multiview_nav), onOpenSplitScreen))
+        if (showSplitScreenAction) {
+            add(PlayerActionSpec(stringResource(R.string.multiview_nav), onOpenSplitScreen))
+        }
     }
 
     Row(verticalAlignment = Alignment.Top) {

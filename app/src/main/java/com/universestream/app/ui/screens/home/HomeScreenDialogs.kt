@@ -21,6 +21,8 @@ import com.universestream.app.ui.components.dialogs.PremiumDialog
 import com.universestream.app.ui.components.dialogs.PremiumDialogActionButton
 import com.universestream.app.ui.components.dialogs.PremiumDialogFooterButton
 import com.universestream.app.ui.components.dialogs.RenameGroupDialog
+import com.universestream.app.ui.design.AppWindowSizeClass
+import com.universestream.app.ui.design.rememberAppWindowSizeClass
 import com.universestream.app.ui.screens.multiview.MultiViewPlannerDialog
 import com.universestream.app.ui.screens.multiview.MultiViewViewModel
 import com.universestream.domain.model.ActiveLiveSource
@@ -61,6 +63,7 @@ internal fun HomeDialogsHost(
     scope: CoroutineScope
 ) {
     val context = LocalContext.current
+    val isCompactPhone = rememberAppWindowSizeClass() == AppWindowSizeClass.Compact
 
     if (showPinDialog) {
         PinDialog(
@@ -214,7 +217,7 @@ internal fun HomeDialogsHost(
         )
     }
 
-    if (pendingSplitPlannerChannel != null) {
+    if (!isCompactPhone && pendingSplitPlannerChannel != null) {
         MultiViewPlannerDialog(
             pendingChannel = pendingSplitPlannerChannel,
             onDismiss = { onPendingSplitPlannerChannelChange(null) },
@@ -250,7 +253,9 @@ internal fun HomeDialogsHost(
                 uiState.currentCombinedProfileMembers.count { it.enabled } > 1
             ) null else { name -> viewModel.createCustomGroup(name) },
             isQueuedForSplitScreen = multiViewViewModel.isQueued(channel.id),
-            onOpenSplitScreenPlanner = { onPendingSplitPlannerChannelChange(channel) },
+            onOpenSplitScreenPlanner = if (isCompactPhone) null else {
+                { onPendingSplitPlannerChannelChange(channel) }
+            },
             onRemoveFromRecent = if (uiState.selectedCategory?.id == VirtualCategoryIds.RECENT) {
                 {
                     viewModel.removeChannelFromRecent(channel)
@@ -270,7 +275,7 @@ internal fun HomeDialogsHost(
         )
     }
 
-    if (showSplitManagerDialog) {
+    if (!isCompactPhone && showSplitManagerDialog) {
         MultiViewPlannerDialog(
             pendingChannel = null,
             onDismiss = { onShowSplitManagerDialogChange(false) },
