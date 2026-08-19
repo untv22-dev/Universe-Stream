@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -35,9 +36,13 @@ fun ChannelLogoBadge(
     backgroundColor: Color = AppColors.SurfaceEmphasis,
     contentPadding: PaddingValues = PaddingValues(0.dp),
     textStyle: TextStyle = MaterialTheme.typography.titleMedium,
-    textColor: Color = AppColors.TextSecondary
+    textColor: Color = AppColors.TextSecondary,
+    imageTargetSizeDp: Dp? = null
 ) {
-    val model = rememberCrossfadeImageModel(logoUrl?.takeIf { it.isNotBlank() })
+    val model = rememberCrossfadeImageModel(
+        logoUrl?.takeIf { it.isNotBlank() },
+        targetSizeDp = imageTargetSizeDp
+    )
     var showFallback by remember(model) { mutableStateOf(true) }
 
     Box(

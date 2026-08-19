@@ -251,6 +251,7 @@ fun MobileLiveTvContent(
                         },
                         isLocked = isChannelLocked(channel),
                         rowHeight = 68.dp,
+                        logoTargetSizeDp = 96.dp,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

@@ -93,6 +93,7 @@ class HomeViewModel @Inject constructor(
         const val MIN_CHANNEL_SEARCH_QUERY_LENGTH = 2
         const val CHANNEL_PAGE_SIZE = 200
         const val CHANNEL_SEARCH_PAGE_SIZE = 300
+        const val MOBILE_CHANNEL_SNAPSHOT_LIMIT = 300
         const val LOAD_MORE_THRESHOLD = 5
         const val ADAPTIVE_PREVIEW_REPRIME_DELAY_MS = 2_500L
     }
@@ -111,6 +112,13 @@ class HomeViewModel @Inject constructor(
         val categoryId: Long
     )
     private val channelCache = mutableMapOf<ChannelCacheKey, List<Channel>>()
+    // Mobile-only warm snapshot: keep only a few recent categories and never retain
+    // the full catalog indefinitely. Room remains the source of truth.
+    private val mobileChannelSnapshotCache = LinkedHashMap<ChannelCacheKey, List<Channel>>(
+        4,
+        0.75f,
+        true
+    )
     private var channelPageRequestCount = 0
     // Enabled only by MobileLiveTvContent (Compact). The Television/non-compact
     // renderers keep the existing paged Room query and load-more behavior.
@@ -155,6 +163,18 @@ class HomeViewModel @Inject constructor(
             categoryId = category.id
         )
     }
+
+    private fun isMobileSnapshotEligible(category: Category): Boolean =
+        mobileDatabaseFirst &&
+            !_uiState.value.isCombinedLiveSource &&
+            !category.isVirtual
+
+    private fun readWarmChannelSnapshot(category: Category): List<Channel> =
+        if (isMobileSnapshotEligible(category)) {
+            mobileChannelSnapshotCache[channelCacheKey(category)].orEmpty()
+        } else {
+            channelCache[channelCacheKey(category)].orEmpty()
+        }
 
     init {
         loadAllProviders()
@@ -737,7 +757,7 @@ class HomeViewModel @Inject constructor(
             }
         }
         clearPreview()
-        val cachedChannels = channelCache[channelCacheKey(category)].orEmpty()
+        val cachedChannels = readWarmChannelSnapshot(category)
         _localChannels.value = cachedChannels
         android.util.Log.i(
             "HomePerf",
@@ -961,7 +981,22 @@ class HomeViewModel @Inject constructor(
                             "mobileDbFirst=$mobileDatabaseFirst combined=${_uiState.value.isCombinedLiveSource}"
                     )
                     _localChannels.value = displayedChannels
-                    channelCache[channelCacheKey(category)] = displayedChannels
+                    if (isMobileSnapshotEligible(category)) {
+                        mobileChannelSnapshotCache[channelCacheKey(category)] =
+                            displayedChannels.take(MOBILE_CHANNEL_SNAPSHOT_LIMIT)
+                        while (mobileChannelSnapshotCache.size > 4) {
+                            val eldestKey = mobileChannelSnapshotCache.entries.firstOrNull()?.key ?: break
+                            mobileChannelSnapshotCache.remove(eldestKey)
+                        }
+                        android.util.Log.i(
+                            "HomePerf",
+                            "mobile-snapshot-cached categoryId=${category.id} " +
+                                "rows=${displayedChannels.size.coerceAtMost(MOBILE_CHANNEL_SNAPSHOT_LIMIT)} " +
+                                "cacheEntries=${mobileChannelSnapshotCache.size}"
+                        )
+                    } else {
+                        channelCache[channelCacheKey(category)] = displayedChannels
+                    }
                     if (!firstEmissionLogged) {
                         firstEmissionLogged = true
                         android.util.Log.i(
@@ -2156,6 +2191,8 @@ class HomeViewModel @Inject constructor(
         categoriesJob?.cancel()
         recentChannelsJob?.cancel()
         clearPreview()
+        channelCache.clear()
+        mobileChannelSnapshotCache.clear()
         super.onCleared()
     }
 }

@@ -93,7 +93,8 @@ fun LiveChannelRowCard(
     channel: Channel,
     sourceBadgeLabel: String? = null,
     modifier: Modifier = Modifier,
-    rowHeight: Dp = 68.dp
+    rowHeight: Dp = 68.dp,
+    logoTargetSizeDp: Dp? = null
 ) {
     val isUltraCompact = rowHeight <= 60.dp
     val isDense = rowHeight <= 56.dp
@@ -133,6 +134,7 @@ fun LiveChannelRowCard(
                     contentPadding = PaddingValues(logoPadding),
                     textStyle = MaterialTheme.typography.titleLarge,
                     textColor = AppColors.TextSecondary,
+                    imageTargetSizeDp = logoTargetSizeDp,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -221,7 +223,8 @@ fun LiveChannelRowSurface(
     isLocked: Boolean = false,
     isReorderMode: Boolean = false,
     isDragging: Boolean = false,
-    rowHeight: Dp = 68.dp
+    rowHeight: Dp = 68.dp,
+    logoTargetSizeDp: Dp? = null
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val sounds = rememberTvInteractionSounds()
@@ -309,7 +312,8 @@ fun LiveChannelRowSurface(
                 channel = channel,
                 sourceBadgeLabel = sourceBadgeLabel,
                 modifier = Modifier.fillMaxWidth(),
-                rowHeight = rowHeight
+                rowHeight = rowHeight,
+                logoTargetSizeDp = logoTargetSizeDp
             )
             if (isLocked) {
                 Box(
