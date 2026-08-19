@@ -16,7 +16,9 @@ import com.universestream.data.remote.xtream.XtreamApiService
 import com.universestream.data.remote.xtream.XtreamProvider
 import com.universestream.data.security.CredentialCrypto
 import com.universestream.data.security.CredentialDecryptionException
+import android.content.Context
 import com.universestream.data.sync.SyncManager
+import com.universestream.data.sync.isTelevisionDeviceForSync
 import com.universestream.data.sync.hasUsableLiveCatalogForActivation
 import com.universestream.data.util.ProviderInputSanitizer
 import com.universestream.data.util.UrlSecurityPolicy
@@ -39,11 +41,13 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.util.logging.Logger
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class ProviderRepositoryImpl @Inject constructor(
+    @ApplicationContext private val applicationContext: Context,
     private val providerDao: ProviderDao,
     private val categoryDao: CategoryDao,
     private val channelDao: ChannelDao,
@@ -697,9 +701,17 @@ class ProviderRepositoryImpl @Inject constructor(
                     newData.copy(id = newId).copy(password = "")
                 }
 
+                val prioritizeInitialLiveOnboarding = providerData.type == ProviderType.XTREAM_CODES &&
+                    !applicationContext.isTelevisionDeviceForSync()
                 handleInitialOnboardingSync(
                     providerData = providerData,
-                    syncResult = syncManager.sync(providerData.id, force = false, onProgress = onProgress),
+                    syncResult = syncManager.sync(
+                        providerId = providerData.id,
+                        force = false,
+                        onProgress = onProgress,
+                        trackInitialLiveOnboarding = prioritizeInitialLiveOnboarding,
+                        prioritizeInitialLiveOnboarding = prioritizeInitialLiveOnboarding
+                    ),
                     syncFailurePrefix = "Provider login succeeded, but initial sync failed. The provider was saved and can be retried from Settings"
                 )
             }

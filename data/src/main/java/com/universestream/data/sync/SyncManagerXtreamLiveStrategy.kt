@@ -43,7 +43,8 @@ internal class SyncManagerXtreamLiveStrategy(
     private val liveCategorySequentialModeWarning: String,
     private val isCurrentlyLowOnMemory: () -> Boolean = { false },
     private val stageChannelItems: suspend (Long, List<Channel>, MutableSet<Long>, FallbackCategoryCollector, Long?) -> StagedCatalogSnapshot,
-    private val syncProgressBus: SyncProgressBus
+    private val syncProgressBus: SyncProgressBus,
+    private val publishStagedLiveBatch: suspend (Long, Long) -> Int = { _, _ -> 0 }
 ) {
     suspend fun syncXtreamLiveCatalog(
         provider: Provider,
@@ -53,6 +54,7 @@ internal class SyncManagerXtreamLiveStrategy(
         onProgress: ((String) -> Unit)?,
         runtimeProfile: CatalogSyncRuntimeProfile,
         trackInitialLiveOnboarding: Boolean,
+        publishInitialLiveBatch: Boolean = false,
         effectiveLiveSyncMethod: EffectiveXtreamLiveSyncMethod = EffectiveXtreamLiveSyncMethod.STREAM_ALL
     ): CatalogSyncPayload<Channel> {
         Log.i(XTREAM_LIVE_STRATEGY_TAG, "Xtream live strategy start for provider ${provider.id}.")
@@ -152,7 +154,8 @@ internal class SyncManagerXtreamLiveStrategy(
             rawCategories = filteredRawLiveCategories,
             onProgress = onProgress,
             preferSequential = existingMetadata.liveSequentialFailuresRemembered || runtimeProfile.maxCategoryConcurrency <= 1,
-            runtimeProfile = runtimeProfile
+            runtimeProfile = runtimeProfile,
+            publishInitialLiveBatch = publishInitialLiveBatch
         )
         return CatalogSyncPayload(
             catalogResult = categoryPayload.catalogResult,
@@ -413,7 +416,8 @@ internal class SyncManagerXtreamLiveStrategy(
         rawCategories: List<XtreamCategory>,
         onProgress: ((String) -> Unit)?,
         preferSequential: Boolean,
-        runtimeProfile: CatalogSyncRuntimeProfile
+        runtimeProfile: CatalogSyncRuntimeProfile,
+        publishInitialLiveBatch: Boolean = false
     ): CatalogSyncPayload<Channel> {
         val categories = rawCategories.filter { it.categoryId.isNotBlank() }
         if (categories.isEmpty()) {
@@ -432,9 +436,11 @@ internal class SyncManagerXtreamLiveStrategy(
         val stageMutex = Mutex()
         var stagedSessionId: Long? = null
         var stagedAcceptedCount = 0
+        var initialBatchPublished = false
 
         suspend fun stageMappedBatch(channels: List<Channel>) {
             if (channels.isEmpty()) return
+            var publishSessionId: Long? = null
             stageMutex.withLock {
                 val staged = stageChannelItems(
                     provider.id,
@@ -445,6 +451,27 @@ internal class SyncManagerXtreamLiveStrategy(
                 )
                 stagedSessionId = staged.sessionId
                 stagedAcceptedCount += staged.acceptedCount
+                if (publishInitialLiveBatch && !initialBatchPublished && staged.acceptedCount > 0) {
+                    initialBatchPublished = true
+                    publishSessionId = staged.sessionId
+                }
+            }
+            publishSessionId?.let { sessionId ->
+                try {
+                    val visibleCount = publishStagedLiveBatch(provider.id, sessionId)
+                    Log.i(
+                        "SyncDiag",
+                        "Live first batch published provider=${provider.id} session=$sessionId " +
+                            "batchAccepted=$stagedAcceptedCount visibleDb=$visibleCount"
+                    )
+                } catch (error: kotlinx.coroutines.CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    Log.w(
+                        "SyncDiag",
+                        "Live first batch publish failed provider=${provider.id}: ${sanitizeThrowableMessage(error)}"
+                    )
+                }
             }
         }
 

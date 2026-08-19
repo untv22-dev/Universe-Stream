@@ -278,7 +278,8 @@ class SyncManager @Inject constructor(
             liveCategorySequentialModeWarning = LIVE_CATEGORY_SEQUENTIAL_MODE_WARNING,
             isCurrentlyLowOnMemory = applicationContext::isCurrentlyLowOnMemoryForSync,
             stageChannelItems = catalogStager::stageChannelItems,
-            syncProgressBus = syncProgressBus
+            syncProgressBus = syncProgressBus,
+            publishStagedLiveBatch = syncCatalogStore::publishStagedLiveBatchUpsertOnly
         )
     }
 
@@ -747,7 +748,8 @@ class SyncManager @Inject constructor(
         movieFastSyncOverride: Boolean? = null,
         epgSyncModeOverride: ProviderEpgSyncMode? = null,
         onProgress: ((String) -> Unit)? = null,
-        trackInitialLiveOnboarding: Boolean = false
+        trackInitialLiveOnboarding: Boolean = false,
+        prioritizeInitialLiveOnboarding: Boolean = false
     ): com.universestream.domain.model.Result<Unit> {
         suspend fun runSyncCycle(): com.universestream.domain.model.Result<Unit> {
             return try {
@@ -773,6 +775,7 @@ class SyncManager @Inject constructor(
                                 force = force,
                                 onProgress = onProgress,
                                 trackInitialLiveOnboarding = trackInitialLiveOnboarding,
+                                prioritizeInitialLiveOnboarding = prioritizeInitialLiveOnboarding,
                                 syncReason = if (trackInitialLiveOnboarding) {
                                     XtreamLiveSyncReason.INITIAL_ONBOARDING
                                 } else {
@@ -1002,6 +1005,7 @@ class SyncManager @Inject constructor(
         force: Boolean,
         onProgress: ((String) -> Unit)?,
         trackInitialLiveOnboarding: Boolean = false,
+        prioritizeInitialLiveOnboarding: Boolean = false,
         syncReason: XtreamLiveSyncReason = XtreamLiveSyncReason.FOREGROUND
     ): SyncOutcome {
         val warnings = mutableListOf<String>()
@@ -1047,12 +1051,20 @@ class SyncManager @Inject constructor(
                     itemsIndexed = 0
                 )
             )
-            // Queue the other Xtream libraries before Live TV starts. The provider lock
-            // keeps requests serialized, but every job is ready to continue immediately
-            // after the bounded Live TV attempt finishes or times out.
-            scheduleXtreamCategoryShellSync(provider.id)
-            if (provider.epgSyncMode != ProviderEpgSyncMode.SKIP) {
-                scheduleBackgroundEpgSync(provider.id)
+            if (!prioritizeInitialLiveOnboarding) {
+                // Preserve the existing TV/default ordering: background library work is
+                // queued before the bounded Live TV attempt and remains serialized by the
+                // provider admission rules.
+                scheduleXtreamCategoryShellSync(provider.id)
+                if (provider.epgSyncMode != ProviderEpgSyncMode.SKIP) {
+                    scheduleBackgroundEpgSync(provider.id)
+                }
+            } else {
+                Log.i(
+                    "SyncDiag",
+                    "Initial Live-first onboarding provider=${provider.id} mobilePriority=true; " +
+                        "VOD/Series/EPG remain unqueued until Live commits."
+                )
             }
         }
 
@@ -1063,6 +1075,13 @@ class SyncManager @Inject constructor(
             now = now,
             lastAttemptAt = now
         )
+        val liveStartedAt = System.currentTimeMillis()
+        if (trackInitialLiveOnboarding) {
+            Log.i(
+                "SyncDiag",
+                "Initial Live fetch started provider=${provider.id} mobilePriority=$prioritizeInitialLiveOnboarding"
+            )
+        }
         val liveOutcome = runCatching {
             val recoveredLiveCommit = if (trackInitialLiveOnboarding) {
                 recoverXtreamLiveOnboardingSession(
@@ -1116,6 +1135,7 @@ class SyncManager @Inject constructor(
                         onProgress = onProgress,
                         runtimeProfile = runtimeProfile,
                         trackInitialLiveOnboarding = true,
+                        publishInitialLiveBatch = prioritizeInitialLiveOnboarding,
                         syncReason = syncReason
                     )
                 } ?: throw IOException(
@@ -1130,6 +1150,7 @@ class SyncManager @Inject constructor(
                     onProgress = onProgress,
                     runtimeProfile = runtimeProfile,
                     trackInitialLiveOnboarding = false,
+                    publishInitialLiveBatch = false,
                     syncReason = syncReason
                 )
             }
@@ -1273,6 +1294,13 @@ class SyncManager @Inject constructor(
             )
             0
         }
+        if (trackInitialLiveOnboarding) {
+            Log.i(
+                "SyncDiag",
+                "Initial Live outcome provider=${provider.id} elapsedMs=${System.currentTimeMillis() - liveStartedAt} " +
+                    "success=${liveOutcome.isSuccess} liveCount=$liveCount"
+            )
+        }
         upsertXtreamIndexJob(
             providerId = provider.id,
             section = ContentType.LIVE.name,
@@ -1286,9 +1314,21 @@ class SyncManager @Inject constructor(
         )
         scheduleXtreamIndexSync(provider.id, ContentType.LIVE)
 
-        // Live TV is bounded during initial onboarding. VOD and Series were queued
-        // before this stage and continue as soon as the provider lock is released.
-        if (!trackInitialLiveOnboarding) {
+        if (trackInitialLiveOnboarding && prioritizeInitialLiveOnboarding) {
+            // Mobile Live-first onboarding: only enqueue the other libraries after the
+            // first Live outcome has been committed, so they cannot win the race for the
+            // provider's network/admission path while the user is waiting for channels.
+            scheduleXtreamCategoryShellSync(provider.id)
+            if (provider.epgSyncMode != ProviderEpgSyncMode.SKIP) {
+                scheduleBackgroundEpgSync(provider.id)
+            }
+            Log.i(
+                "SyncDiag",
+                "Initial Live-first onboarding provider=${provider.id} liveOutcome=" +
+                    "${if (liveOutcome.isSuccess) "success" else "failure"} liveCount=$liveCount " +
+                    "otherLibrariesQueuedAfterLive=true queueElapsedMs=${System.currentTimeMillis() - liveStartedAt}"
+            )
+        } else if (!trackInitialLiveOnboarding) {
             scheduleXtreamCategoryShellSync(provider.id)
         }
         val movieCategoryCount = 0
@@ -5171,6 +5211,7 @@ class SyncManager @Inject constructor(
         onProgress: ((String) -> Unit)?,
         runtimeProfile: CatalogSyncRuntimeProfile = CatalogSyncRuntimeProfile.from(applicationContext),
         trackInitialLiveOnboarding: Boolean = false,
+        publishInitialLiveBatch: Boolean = false,
         syncReason: XtreamLiveSyncReason = XtreamLiveSyncReason.FOREGROUND
     ): CatalogSyncPayload<Channel> {
         // Emission d'entree LIVE : signale tot a l'UI que la section LIVE demarre,
@@ -5205,6 +5246,7 @@ class SyncManager @Inject constructor(
             onProgress,
             runtimeProfile,
             trackInitialLiveOnboarding,
+            publishInitialLiveBatch,
             effectiveLiveSyncMethod
         )
     }

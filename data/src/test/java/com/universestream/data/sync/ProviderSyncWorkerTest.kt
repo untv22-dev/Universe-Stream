@@ -65,6 +65,36 @@ class ProviderSyncWorkerTest {
     }
 
     @Test
+    fun `fresh partial xtream provider is eligible for mobile live-first onboarding`() {
+        val provider = ProviderEntity(
+            id = 10L,
+            name = "New Xtream",
+            type = ProviderType.XTREAM_CODES,
+            serverUrl = "https://example.com",
+            username = "user",
+            status = ProviderStatus.PARTIAL,
+            lastSyncedAt = 0L
+        )
+
+        assertThat(isFreshXtreamProvider(provider)).isTrue()
+    }
+
+    @Test
+    fun `synced xtream provider is not treated as fresh onboarding`() {
+        val provider = ProviderEntity(
+            id = 11L,
+            name = "Existing Xtream",
+            type = ProviderType.XTREAM_CODES,
+            serverUrl = "https://example.com",
+            username = "user",
+            status = ProviderStatus.PARTIAL,
+            lastSyncedAt = 123L
+        )
+
+        assertThat(isFreshXtreamProvider(provider)).isFalse()
+    }
+
+    @Test
     fun `non xtream provider is not tracked for initial live resume`() = runTest {
         val provider = ProviderEntity(
             id = 5L,

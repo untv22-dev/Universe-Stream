@@ -92,6 +92,12 @@ internal suspend fun shouldTrackInitialLiveOnboarding(
 ): Boolean = provider.type == ProviderType.XTREAM_CODES &&
     onboardingDao.getIncompleteByProvider(provider.id) != null
 
+internal fun isFreshXtreamProvider(
+    provider: com.universestream.data.local.entity.ProviderEntity
+): Boolean = provider.type == ProviderType.XTREAM_CODES &&
+    provider.status == ProviderStatus.PARTIAL &&
+    provider.lastSyncedAt == 0L
+
 class ProviderSyncWorker(
     appContext: Context,
     workerParams: WorkerParameters
@@ -127,18 +133,38 @@ class ProviderSyncWorker(
 
             var sawRetryableFailure = false
             providers.forEach { provider ->
-                val trackInitialLiveOnboarding = shouldTrackInitialLiveOnboarding(
+                val hasIncompleteLiveOnboarding = shouldTrackInitialLiveOnboarding(
                     provider = provider,
                     onboardingDao = entryPoint.xtreamLiveOnboardingDao()
+                )
+                val isFreshXtream = isFreshXtreamProvider(provider)
+                val isTelevision = applicationContext.isTelevisionDeviceForSync()
+                val prioritizeInitialLiveOnboarding = !isTelevision &&
+                    (hasIncompleteLiveOnboarding || isFreshXtream)
+                // Preserve the existing TV tracking behavior. The fresh-provider fallback
+                // is intentionally promoted to tracked onboarding only on non-TV devices.
+                val trackInitialLiveOnboarding = hasIncompleteLiveOnboarding ||
+                    prioritizeInitialLiveOnboarding
+                Log.i(
+                    "SyncDiag",
+                    "provider=${provider.id} initialLive track=$trackInitialLiveOnboarding " +
+                        "prioritize=$prioritizeInitialLiveOnboarding fresh=$isFreshXtream " +
+                        "incomplete=$hasIncompleteLiveOnboarding tv=$isTelevision"
                 )
                 val result = if (requestedProviderId == provider.id) {
                     entryPoint.syncManager().sync(
                         provider.id,
                         force = false,
-                        trackInitialLiveOnboarding = trackInitialLiveOnboarding
+                        trackInitialLiveOnboarding = trackInitialLiveOnboarding,
+                        prioritizeInitialLiveOnboarding = prioritizeInitialLiveOnboarding
                     )
                 } else if (provider.type == ProviderType.XTREAM_CODES) {
-                    syncXtreamProviderIfStale(entryPoint, provider)
+                    syncXtreamProviderIfStale(
+                        entryPoint = entryPoint,
+                        provider = provider,
+                        trackInitialLiveOnboarding = trackInitialLiveOnboarding,
+                        prioritizeInitialLiveOnboarding = prioritizeInitialLiveOnboarding
+                    )
                 } else if (provider.type == ProviderType.STALKER_PORTAL) {
                     syncStalkerProviderIfStale(entryPoint, provider)
                 } else {
@@ -251,14 +277,17 @@ class ProviderSyncWorker(
 
     private suspend fun syncXtreamProviderIfStale(
         entryPoint: ProviderSyncWorkerEntryPoint,
-        provider: com.universestream.data.local.entity.ProviderEntity
+        provider: com.universestream.data.local.entity.ProviderEntity,
+        trackInitialLiveOnboarding: Boolean = false,
+        prioritizeInitialLiveOnboarding: Boolean = false
     ): com.universestream.domain.model.Result<Unit> {
         val now = System.currentTimeMillis()
-        if (shouldTrackInitialLiveOnboarding(provider, entryPoint.xtreamLiveOnboardingDao())) {
+        if (trackInitialLiveOnboarding) {
             return entryPoint.syncManager().sync(
                 provider.id,
                 force = false,
-                trackInitialLiveOnboarding = true
+                trackInitialLiveOnboarding = true,
+                prioritizeInitialLiveOnboarding = prioritizeInitialLiveOnboarding
             )
         }
         val metadata = entryPoint.syncMetadataRepository().getMetadata(provider.id)

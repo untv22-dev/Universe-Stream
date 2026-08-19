@@ -205,6 +205,20 @@ internal class SyncCatalogStore(
     }
 
     /**
+     * Publishes the rows staged so far without closing the import session.
+     * This is used only for first-batch Mobile onboarding so Room can expose
+     * an immediately usable Live catalog while the remaining rows continue
+     * to arrive. The final commit still applies the complete staged session.
+     */
+    suspend fun publishStagedLiveBatchUpsertOnly(providerId: Long, sessionId: Long): Int {
+        transactionRunner.inTransaction {
+            upsertChannels(providerId, sessionId)
+            catalogSyncDao.rebuildChannelFts()
+        }
+        return channelDao.countByProvider(providerId)
+    }
+
+    /**
      * Staged movie-catalog commit that updates and inserts without deleting stale rows.
      * Use when the staged session represents a partial (subset) of categories/pages.
      */
