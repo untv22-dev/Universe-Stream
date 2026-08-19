@@ -3,12 +3,12 @@ package com.universestream.app.ui.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.roundToPx
 import androidx.compose.ui.platform.LocalDensity
-import com.universestream.app.ui.accessibility.rememberReducedMotionEnabled
+import androidx.compose.ui.unit.Dp
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.universestream.app.ui.accessibility.rememberReducedMotionEnabled
+import kotlin.math.roundToInt
 
 @Composable
 fun rememberCrossfadeImageModel(
@@ -18,7 +18,9 @@ fun rememberCrossfadeImageModel(
     val context = LocalContext.current
     val density = LocalDensity.current
     val reducedMotionEnabled = rememberReducedMotionEnabled()
-    val targetSizePx = targetSizeDp?.let { with(density) { it.roundToPx() } }
+    val targetSizePx = targetSizeDp?.let {
+        (it.value * density.density).roundToInt()
+    }
     return remember(context, data, reducedMotionEnabled, targetSizePx) {
         data?.let {
             ImageRequest.Builder(context)
