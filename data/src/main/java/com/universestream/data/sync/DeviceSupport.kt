@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 
-internal fun Context.isTelevisionDeviceForSync(): Boolean {
+fun Context.isTelevisionDeviceForSync(): Boolean {
     val packageManager = packageManager
     if (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) return true
     if (packageManager.hasSystemFeature("android.software.leanback_only")) return true
