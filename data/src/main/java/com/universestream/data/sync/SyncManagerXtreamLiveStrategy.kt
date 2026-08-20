@@ -17,6 +17,7 @@ import com.universestream.domain.sync.Section
 import com.universestream.domain.sync.SyncProgress
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.Locale
 import kotlin.system.measureTimeMillis
 
 private const val XTREAM_LIVE_STRATEGY_TAG = "SyncManager"
@@ -26,7 +27,94 @@ private enum class XtreamLiveDecodeMode {
     LEGACY_ONLY
 }
 
+internal data class LiveCategoryMapping(
+    val metadataIds: Set<Long> = emptySet(),
+    val idByNormalizedName: Map<String, Long> = emptyMap(),
+    val nameById: Map<Long, String> = emptyMap()
+) {
+    companion object {
+        val EMPTY = LiveCategoryMapping()
+    }
+}
+
+private data class LiveCategoryRemapStats(
+    val observedChannelIds: MutableSet<Long> = linkedSetOf(),
+    var nameRemappedCount: Int = 0,
+    var unresolvedNameCount: Int = 0
+)
+
 internal class LowMemoryCatalogAbortException(message: String) : IllegalStateException(message)
+
+private fun normalizeLiveCategoryName(value: String?): String? {
+    val normalized = value
+        ?.trim()
+        ?.lowercase(Locale.ROOT)
+        ?.replace(Regex("\\s+"), " ")
+        ?.takeIf { it.isNotBlank() }
+    return normalized
+}
+
+private fun buildLiveCategoryMapping(categories: List<XtreamCategory>?): LiveCategoryMapping {
+    val metadata = categories.orEmpty().mapNotNull { category ->
+        val id = category.categoryId.trim().toLongOrNull() ?: return@mapNotNull null
+        id to normalizeLiveCategoryName(category.categoryName)
+    }
+    val names = metadata
+        .mapNotNull { (id, name) -> name?.let { it to id } }
+        .groupBy({ it.first }, { it.second })
+        .filterValues { ids -> ids.distinct().size == 1 }
+        .mapValues { (_, ids) -> ids.first() }
+    return LiveCategoryMapping(
+        metadataIds = metadata.map { it.first }.toSet(),
+        idByNormalizedName = names,
+        nameById = metadata.mapNotNull { (id, name) -> name?.let { id to it } }.toMap()
+    )
+}
+
+private fun remapLiveChannels(
+    channels: List<Channel>,
+    mapping: LiveCategoryMapping,
+    stats: LiveCategoryRemapStats
+): List<Channel> {
+    return channels.map { channel ->
+        val rawId = channel.categoryId
+        rawId?.let(stats.observedChannelIds::add)
+        if (rawId != null && rawId in mapping.metadataIds) {
+            return@map channel
+        }
+        val mappedId = mapping.idByNormalizedName[normalizeLiveCategoryName(channel.categoryName)]
+        if (mappedId != null) {
+            stats.nameRemappedCount++
+            channel.copy(
+                categoryId = mappedId,
+                categoryName = mapping.nameById[mappedId] ?: channel.categoryName
+            )
+        } else {
+            stats.unresolvedNameCount += if (rawId != null) 1 else 0
+            channel
+        }
+    }
+}
+
+private fun logLiveCategoryMapping(
+    providerId: Long,
+    source: String,
+    mapping: LiveCategoryMapping,
+    stats: LiveCategoryRemapStats,
+    streamedRawCount: Int,
+    acceptedCount: Int
+) {
+    val matched = stats.observedChannelIds.intersect(mapping.metadataIds)
+    val unmatched = stats.observedChannelIds - mapping.metadataIds
+    Log.i(
+        "SyncDiag",
+        "Live category ID comparison provider=$providerId source=$source " +
+            "metadataIds=${mapping.metadataIds.size} channelIds=${stats.observedChannelIds.size} " +
+            "matched=${matched.size} unmatched=${unmatched.size} " +
+            "nameRemapped=${stats.nameRemappedCount} unresolved=${stats.unresolvedNameCount} " +
+            "raw=$streamedRawCount accepted=$acceptedCount"
+    )
+}
 
 internal class SyncManagerXtreamLiveStrategy(
     private val xtreamCatalogApiService: XtreamApiService,
@@ -113,6 +201,7 @@ internal class SyncManagerXtreamLiveStrategy(
         var visibleResolvedCategories = resolvedCategories
             ?.filterNot { category -> category.categoryId in hiddenLiveCategoryIds }
             ?.takeIf { it.isNotEmpty() }
+        val liveCategoryMapping = buildLiveCategoryMapping(rawLiveCategories)
         Log.i(
             "SyncDiag",
             "Live categories provider=${provider.id} rawApi=${rawLiveCategories?.size ?: -1} " +
@@ -146,7 +235,8 @@ internal class SyncManagerXtreamLiveStrategy(
                 runtimeProfile = runtimeProfile,
                 onProgress = onProgress,
                 publishInitialLiveBatch = publishInitialLiveBatch,
-                onFirstBatchPublished = onFirstBatchPublished
+                onFirstBatchPublished = onFirstBatchPublished,
+                categoryMapping = liveCategoryMapping
             )
             when (val fullResult = fullPayload.catalogResult) {
                 is CatalogStrategyResult.Success -> return fullPayload.copy(
@@ -197,7 +287,8 @@ internal class SyncManagerXtreamLiveStrategy(
             onFirstBatchPublished = if (fullPayload.stagedSessionId == null) onFirstBatchPublished else null,
             onCategoryCheckpoint = onCategoryCheckpoint,
             existingStagedSessionId = fullPayload.stagedSessionId ?: existingStagedSessionId,
-            categoryKeyFilter = categoryKeyFilter
+            categoryKeyFilter = categoryKeyFilter,
+            categoryMapping = liveCategoryMapping
         )
         return CatalogSyncPayload(
             catalogResult = categoryPayload.catalogResult,
@@ -227,7 +318,8 @@ internal class SyncManagerXtreamLiveStrategy(
         runtimeProfile: CatalogSyncRuntimeProfile,
         onProgress: ((String) -> Unit)? = null,
         publishInitialLiveBatch: Boolean = false,
-        onFirstBatchPublished: (suspend (stagedSessionId: Long?) -> Unit)? = null
+        onFirstBatchPublished: (suspend (stagedSessionId: Long?) -> Unit)? = null,
+        categoryMapping: LiveCategoryMapping = LiveCategoryMapping.EMPTY
     ): CatalogSyncPayload<Channel> {
         val endpoint = XtreamUrlFactory.buildPlayerApiUrl(
             serverUrl = provider.serverUrl,
@@ -246,7 +338,8 @@ internal class SyncManagerXtreamLiveStrategy(
                 runtimeProfile = runtimeProfile,
                 onProgress = onProgress,
                 publishInitialLiveBatch = publishInitialLiveBatch,
-                onFirstBatchPublished = onFirstBatchPublished
+                onFirstBatchPublished = onFirstBatchPublished,
+                categoryMapping = categoryMapping
             )
         }
 
@@ -304,7 +397,8 @@ internal class SyncManagerXtreamLiveStrategy(
         runtimeProfile: CatalogSyncRuntimeProfile,
         onProgress: ((String) -> Unit)?,
         publishInitialLiveBatch: Boolean,
-        onFirstBatchPublished: (suspend (stagedSessionId: Long?) -> Unit)?
+        onFirstBatchPublished: (suspend (stagedSessionId: Long?) -> Unit)?,
+        categoryMapping: LiveCategoryMapping
     ): CatalogSyncPayload<Channel> {
         val fallbackCollector = FallbackCategoryCollector(provider.id, ContentType.LIVE)
         val seenStreamIds = HashSet<Long>()
@@ -317,6 +411,7 @@ internal class SyncManagerXtreamLiveStrategy(
         var initialBatchPublished = false
         var mappingElapsedMs = 0L
         var stagingElapsedMs = 0L
+        val remapStats = LiveCategoryRemapStats()
 
         fun abortIfLowMemory() {
             if (isCurrentlyLowOnMemory()) {
@@ -344,7 +439,11 @@ internal class SyncManagerXtreamLiveStrategy(
             if (rawBatch.isEmpty()) return
             lateinit var mappedChannels: List<Channel>
             mappingElapsedMs += measureTimeMillis {
-                mappedChannels = mapRawBatch(rawBatch.asSequence()).toList()
+                mappedChannels = remapLiveChannels(
+                    channels = mapRawBatch(rawBatch.asSequence()).toList(),
+                    mapping = categoryMapping,
+                    stats = remapStats
+                )
             }
             lateinit var staged: StagedCatalogSnapshot
             stagingElapsedMs += measureTimeMillis {
@@ -426,6 +525,15 @@ internal class SyncManagerXtreamLiveStrategy(
                 }
             }
         }
+
+        logLiveCategoryMapping(
+            providerId = provider.id,
+            source = "full-$decoderLabel",
+            mapping = categoryMapping,
+            stats = remapStats,
+            streamedRawCount = streamedRawCount,
+            acceptedCount = acceptedCount
+        )
 
         if (fullChannelsFailure != null) {
             xtreamSupport.logXtreamCatalogFallback(
@@ -509,7 +617,8 @@ internal class SyncManagerXtreamLiveStrategy(
         onFirstBatchPublished: (suspend (stagedSessionId: Long?) -> Unit)? = null,
         onCategoryCheckpoint: (suspend (completedCategoryKeys: List<String>, totalCategories: Int) -> Unit)? = null,
         existingStagedSessionId: Long? = null,
-        categoryKeyFilter: Set<String>? = null
+        categoryKeyFilter: Set<String>? = null,
+        categoryMapping: LiveCategoryMapping = LiveCategoryMapping.EMPTY
     ): CatalogSyncPayload<Channel> {
         val categories = rawCategories.filter {
             it.categoryId.isNotBlank() && (categoryKeyFilter == null || it.categoryId in categoryKeyFilter)
@@ -531,14 +640,22 @@ internal class SyncManagerXtreamLiveStrategy(
         var stagedSessionId: Long? = existingStagedSessionId
         var stagedAcceptedCount = 0
         var initialBatchPublished = false
+        var mappedChannelCount = 0
+        val remapStats = LiveCategoryRemapStats()
 
         suspend fun stageMappedBatch(channels: List<Channel>) {
             if (channels.isEmpty()) return
             var publishSessionId: Long? = null
             stageMutex.withLock {
+                val remappedChannels = remapLiveChannels(
+                    channels = channels,
+                    mapping = categoryMapping,
+                    stats = remapStats
+                )
+                mappedChannelCount += channels.size
                 val staged = stageChannelItems(
                     provider.id,
-                    channels,
+                    remappedChannels,
                     seenStreamIds,
                     fallbackCollector,
                     stagedSessionId
@@ -696,6 +813,14 @@ internal class SyncManagerXtreamLiveStrategy(
             "SyncDiag",
             "Live category sync provider=${provider.id} categoriesRaw=${categories.size} successful=$successfulCategories " +
                 "empty=$emptyCategories failed=$failedCategories accepted=$stagedAcceptedCount"
+        )
+        logLiveCategoryMapping(
+            providerId = provider.id,
+            source = "category-bulk",
+            mapping = categoryMapping,
+            stats = remapStats,
+            streamedRawCount = mappedChannelCount,
+            acceptedCount = stagedAcceptedCount
         )
 
         return when {

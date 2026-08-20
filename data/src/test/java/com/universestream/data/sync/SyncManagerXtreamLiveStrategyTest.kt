@@ -810,6 +810,7 @@ class SyncManagerXtreamLiveStrategyTest {
         val requestCount = AtomicInteger(0)
         val categoryRequestCount = AtomicInteger(0)
         val requestedCategoryIds = mutableListOf<String?>()
+        val stagedCategoryIds = mutableListOf<Long?>()
         val httpService = OkHttpXtreamApiService(
             client = OkHttpClient.Builder()
                 .addInterceptor { chain ->
@@ -822,7 +823,7 @@ class SyncManagerXtreamLiveStrategyTest {
                             "name": "Forced Full Live",
                             "stream_id": "777",
                             "stream_icon": "https://img.example.test/live.png",
-                            "category_id": "12",
+                            "category_id": "99",
                             "category_name": "News",
                             "container_extension": "m3u8"
                           }
@@ -868,6 +869,7 @@ class SyncManagerXtreamLiveStrategyTest {
             httpService = httpService,
             stageChannelItems = { _, channels, _, fallbackCollector, _ ->
                 channels.forEach { channel ->
+                    stagedCategoryIds += channel.categoryId
                     fallbackCollector.record(channel.categoryId, channel.categoryName, channel.isAdult)
                 }
                 StagedCatalogSnapshot(sessionId = 55L, acceptedCount = channels.size, fallbackCategories = fallbackCollector.entities())
@@ -895,6 +897,7 @@ class SyncManagerXtreamLiveStrategyTest {
         assertThat(payload.strategyFeedback.attemptedFullCatalog).isTrue()
         assertThat(payload.strategyFeedback.preferredSegmentedFirst).isFalse()
         assertThat(payload.stagedAcceptedCount).isEqualTo(1)
+        assertThat(stagedCategoryIds).containsExactly(12L)
         assertThat(requestedCategoryIds).containsExactly(null)
         assertThat(requestCount.get()).isEqualTo(1)
         // Task 6: real category names require the single lightweight metadata request.

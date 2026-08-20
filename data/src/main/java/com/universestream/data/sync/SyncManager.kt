@@ -5556,6 +5556,8 @@ class SyncManager @Inject constructor(
                     previousHealthyStreak = currentMetadata.liveHealthySyncStreak,
                     sawSequentialStress = liveSequentialStress
                 )
+                val preserveExistingLiveOnRetry = syncReason == XtreamLiveSyncReason.MANUAL_SETTINGS &&
+                    !applicationContext.isTelevisionDeviceForSync()
                 val liveAvoidFullUntil = updateAvoidFullUntil(
                     previousAvoidFullUntil = currentMetadata.liveAvoidFullUntil,
                     now = now,
@@ -5568,7 +5570,8 @@ class SyncManager @Inject constructor(
                             providerId = provider.id,
                             liveSyncResult = liveSyncResult,
                             hiddenLiveCategoryIds = hiddenLiveCategoryIds,
-                            onProgress = onProgress
+                            onProgress = onProgress,
+                            preserveExistingOnCommit = preserveExistingLiveOnRetry
                         ).acceptedCount
                         syncMetadataRepository.updateMetadata(
                             currentMetadata.copy(
@@ -5587,7 +5590,8 @@ class SyncManager @Inject constructor(
                             liveSyncResult = liveSyncResult,
                             hiddenLiveCategoryIds = hiddenLiveCategoryIds,
                             onProgress = onProgress,
-                            partialCompletionWarning = "Live TV retry completed partially."
+                            partialCompletionWarning = "Live TV retry completed partially.",
+                            preserveExistingOnCommit = preserveExistingLiveOnRetry
                         )
                         val acceptedCount = commitResult.acceptedCount
                         syncMetadataRepository.updateMetadata(
@@ -6052,7 +6056,8 @@ class SyncManager @Inject constructor(
         liveSyncResult: CatalogSyncPayload<Channel>,
         hiddenLiveCategoryIds: Set<Long>,
         onProgress: ((String) -> Unit)? = null,
-        partialCompletionWarning: String? = null
+        partialCompletionWarning: String? = null,
+        preserveExistingOnCommit: Boolean = false
     ): XtreamLiveCommitResult {
         progress(providerId, onProgress, "Saving Live TV channels...")
         val warnings = buildList {
@@ -6071,11 +6076,24 @@ class SyncManager @Inject constructor(
                     if (hiddenLiveCategoryIds.isNotEmpty()) {
                         mergeHiddenChannelsIntoStaging(providerId, sessionId, hiddenLiveCategoryIds)
                     }
-                    syncCatalogStore.applyStagedLiveCatalog(
-                        providerId = providerId,
-                        sessionId = sessionId,
-                        categories = mergedCategories
-                    )
+                    if (preserveExistingOnCommit) {
+                        Log.w(
+                            "SyncDiag",
+                            "Live retry mobile commit uses upsert-only provider=$providerId " +
+                                "stagedAccepted=${liveSyncResult.stagedAcceptedCount}"
+                        )
+                        syncCatalogStore.applyStagedLiveCatalogUpsertOnly(
+                            providerId = providerId,
+                            sessionId = sessionId,
+                            categories = mergedCategories
+                        )
+                    } else {
+                        syncCatalogStore.applyStagedLiveCatalog(
+                            providerId = providerId,
+                            sessionId = sessionId,
+                            categories = mergedCategories
+                        )
+                    }
                     liveSyncResult.stagedAcceptedCount
                 } ?: run {
                     val liveCatalog = mergeVisibleLiveSyncWithHiddenStoredContent(
@@ -6084,11 +6102,24 @@ class SyncManager @Inject constructor(
                         visibleChannels = liveResult.items.map { it.toEntity() },
                         hiddenLiveCategoryIds = hiddenLiveCategoryIds
                     )
-                    syncCatalogStore.replaceLiveCatalog(
-                        providerId = providerId,
-                        categories = liveCatalog.categories,
-                        channels = liveCatalog.channels
-                    )
+                    if (preserveExistingOnCommit) {
+                        Log.w(
+                            "SyncDiag",
+                            "Live retry mobile commit uses upsert-only provider=$providerId " +
+                                "channels=${liveCatalog.channels.size}"
+                        )
+                        syncCatalogStore.upsertLiveCatalog(
+                            providerId = providerId,
+                            categories = liveCatalog.categories,
+                            channels = liveCatalog.channels
+                        )
+                    } else {
+                        syncCatalogStore.replaceLiveCatalog(
+                            providerId = providerId,
+                            categories = liveCatalog.categories,
+                            channels = liveCatalog.channels
+                        )
+                    }
                 }
             }
             is CatalogStrategyResult.Partial -> {
@@ -6129,12 +6160,19 @@ class SyncManager @Inject constructor(
             }
         }
         val storedCount = syncCatalogStore.countStoredLiveChannels(providerId)
+        if (preserveExistingOnCommit && storedCount < liveSyncResult.stagedAcceptedCount) {
+            Log.w(
+                "SyncDiag",
+                "Live retry mobile commit stored fewer channels than staged provider=$providerId " +
+                    "stored=$storedCount staged=${liveSyncResult.stagedAcceptedCount}"
+            )
+        }
         Log.i(
             "SyncDiag",
             "Live commit provider=$providerId accepted=$acceptedCount stored=$storedCount " +
-                "partial=${partialCompletionWarning != null} atomic=true"
+                "partial=${partialCompletionWarning != null} preserveExisting=$preserveExistingOnCommit atomic=true"
         )
-        return XtreamLiveCommitResult(acceptedCount = acceptedCount, warnings = warnings)
+        return XtreamLiveCommitResult(acceptedCount = storedCount, warnings = warnings)
     }
 
     private suspend fun mergeHiddenChannelsIntoStaging(

@@ -83,6 +83,7 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.doSuspendableAnswer
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.verify
 import java.util.Locale
@@ -746,6 +747,20 @@ class SyncManagerTest {
         val updated = syncMetadataRepo.getMetadata(1L)
         assertThat(updated?.liveCount).isEqualTo(1)
         assertThat(mgr.currentSyncState(1L)).isInstanceOf(SyncState.Success::class.java)
+    }
+
+    @Test
+    fun `retrySection_live_xtream_mobile_preserves_existing_catalog_when_result_is_smaller`() = runTest {
+        val mgr = buildManager(providerType = ProviderType.XTREAM_CODES)
+        org.mockito.kotlin.whenever(channelDao.getCount(1L)).thenReturn(flowOf(2))
+        stubXtreamLiveCatalog()
+
+        val result = mgr.retrySection(providerId = 1L, section = SyncRepairSection.LIVE)
+        advanceUntilIdle()
+
+        assertThat(result.isSuccess).isTrue()
+        verify(catalogSyncDao, never()).deleteStaleChannelsForStage(any(), any())
+        assertThat(syncMetadataRepo.getMetadata(1L)?.liveCount).isEqualTo(2)
     }
 
     @Test
