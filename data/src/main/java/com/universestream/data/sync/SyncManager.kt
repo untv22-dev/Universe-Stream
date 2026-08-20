@@ -72,8 +72,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.async
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -235,6 +239,7 @@ class SyncManager @Inject constructor(
     private val providerStalkerFetchSemaphores = ConcurrentHashMap<Long, Semaphore>()
     private val providerEpgMutexes = ConcurrentHashMap<Long, Mutex>()
     private val syncAdmissionMutex = Mutex()
+    private val mobileInitialLibraryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val xtreamCatalogHttpService: OkHttpXtreamApiService by lazy {
         OkHttpXtreamApiService(
             client = okHttpClient,
@@ -425,6 +430,66 @@ class SyncManager @Inject constructor(
             )
         }.onFailure { error ->
             Log.w(TAG, "Failed to schedule Xtream index work for provider $providerId (${section?.name ?: "all"}): ${sanitizeThrowableMessage(error)}")
+        }
+    }
+
+    /**
+     * Performs the mobile app-open category delta check. Only the cheap Xtream category
+     * endpoints are requested; full movie/series catalogs are never fetched here.
+     */
+    suspend fun checkMobileXtreamCategoryDelta(providerId: Long) {
+        if (applicationContext.isTelevisionDeviceForSync()) return
+
+        withProviderLock(providerId) lock@{
+            val providerEntity = providerDao.getById(providerId)
+                ?: return@lock
+            if (!providerEntity.isActive || providerEntity.type != ProviderType.XTREAM_CODES) {
+                return@lock
+            }
+
+            val provider = providerEntity
+                .copy(password = credentialCrypto.decryptIfNeeded(providerEntity.password))
+                .toDomain()
+            val useTextClassification = preferencesRepository.useXtreamTextClassification.first()
+            val enableBase64TextCompatibility = preferencesRepository.xtreamBase64TextCompatibility.first()
+            val api = createXtreamSyncProvider(provider, useTextClassification, enableBase64TextCompatibility)
+
+            suspend fun checkSection(contentType: ContentType, remoteResult: Result<List<com.universestream.domain.model.Category>>) {
+                when (remoteResult) {
+                    is Result.Success -> {
+                        val localIds = categoryDao
+                            .getByProviderAndTypeSync(providerId, contentType.name)
+                            .map { it.categoryId }
+                            .toSet()
+                        val remoteIds = remoteResult.data.map { it.id }.toSet()
+                        if (localIds != remoteIds) {
+                            Log.i(
+                                "SyncDiag",
+                                "Mobile category delta provider=$providerId section=${contentType.name} " +
+                                    "localCount=${localIds.size} remoteCount=${remoteIds.size}"
+                            )
+                            scheduleXtreamIndexSync(providerId, contentType, force = false)
+                        } else {
+                            Log.i(
+                                "SyncDiag",
+                                "Mobile category delta unchanged provider=$providerId section=${contentType.name} " +
+                                    "count=${remoteIds.size}"
+                            )
+                        }
+                    }
+                    is Result.Error -> {
+                        Log.w(
+                            "SyncDiag",
+                            "Mobile category delta endpoint failed provider=$providerId section=${contentType.name}: " +
+                                remoteResult.message
+                        )
+                    }
+                    is Result.Loading -> Unit
+                }
+            }
+
+            checkSection(ContentType.MOVIE, api.getVodCategories())
+            checkSection(ContentType.SERIES, api.getSeriesCategories())
         }
     }
 
@@ -1138,14 +1203,24 @@ class SyncManager @Inject constructor(
                         publishInitialLiveBatch = prioritizeInitialLiveOnboarding,
                         onFirstBatchPublished = if (prioritizeInitialLiveOnboarding) {
                             {
-                                scheduleXtreamCategoryShellSync(provider.id)
+                                // This callback is only supplied by the mobile Live-first path.
+                                // Do not alter the TV/default onboarding order here.
+                                if (!applicationContext.isTelevisionDeviceForSync()) {
+                                    mobileInitialLibraryScope.launch {
+                                        awaitMobileInitialLibraryCompletion(
+                                            providerId = provider.id,
+                                            onProgress = onProgress
+                                        )
+                                    }
+                                }
                                 if (provider.epgSyncMode != ProviderEpgSyncMode.SKIP) {
                                     scheduleBackgroundEpgSync(provider.id)
                                 }
                                 Log.i(
                                     "SyncDiag",
-                                    "Initial Live first batch follow-up queued provider=${provider.id} " +
-                                        "vodSeries=true epg=${provider.epgSyncMode != ProviderEpgSyncMode.SKIP}"
+                                    "Initial Live first batch follow-up started provider=${provider.id} " +
+                                        "mobileLibraryAwait=${!applicationContext.isTelevisionDeviceForSync()} " +
+                                        "epg=${provider.epgSyncMode != ProviderEpgSyncMode.SKIP}"
                                 )
                             }
                         } else {
@@ -1670,6 +1745,102 @@ class SyncManager @Inject constructor(
             com.universestream.domain.model.Result.error(warnings.first(), exception)
         } else {
             com.universestream.domain.model.Result.success(Unit)
+        }
+    }
+
+    private suspend fun awaitMobileInitialLibraryCompletion(
+        providerId: Long,
+        onProgress: ((String) -> Unit)?
+    ) {
+        if (applicationContext.isTelevisionDeviceForSync()) return
+
+        val sections = listOf(
+            ContentType.MOVIE to com.universestream.domain.sync.Section.VOD,
+            ContentType.SERIES to com.universestream.domain.sync.Section.SERIES
+        )
+        val maxRounds = 50
+
+        try {
+            // Prepare both category shells in this coroutine so the await path owns the
+            // transition from the first Live batch to the VOD/Series index jobs. This avoids
+            // relying only on a queued worker and makes SUCCESS observable to onboarding.
+            prepareXtreamCategoryShells(providerId)
+
+            sections.forEach { (contentType, progressSection) ->
+                var rounds = 0
+                while (rounds < maxRounds) {
+                    val job = xtreamIndexJobDao.get(providerId, contentType.name)
+                    val state = job?.state
+                    val label = if (contentType == ContentType.MOVIE) "Movies" else "Series"
+                    val completed = job?.completedCategories ?: 0
+                    val total = job?.totalCategories ?: 0
+                    val progressLabel = "Loading $label categories $completed/$total"
+
+                    syncProgressBus.emit(
+                        SyncProgress(
+                            section = progressSection,
+                            current = completed,
+                            total = total,
+                            currentLabel = progressLabel,
+                            itemsIndexed = job?.indexedRows ?: 0
+                        )
+                    )
+                    onProgress?.invoke(progressLabel)
+
+                    if (state == "SUCCESS" || state == "FAILED_PERMANENT") {
+                        Log.i(
+                            "SyncDiag",
+                            "Mobile library completion provider=$providerId section=${contentType.name} " +
+                                "rounds=$rounds finalState=$state completed=$completed/$total"
+                        )
+                        break
+                    }
+
+                    // A null job is treated as queued because the shell worker may not have
+                    // committed its row yet. processQueuedXtreamIndexJobs() is provider-locked
+                    // internally, while initial onboarding intentionally is not.
+                    if (state == null || state in setOf(
+                            "QUEUED",
+                            "RUNNING",
+                            "PARTIAL",
+                            "STALE",
+                            "FAILED_RETRYABLE"
+                        )
+                    ) {
+                        processQueuedXtreamIndexJobs(
+                            providerId = providerId,
+                            section = contentType,
+                            maxCategoriesPerSection = null,
+                            onProgress = onProgress
+                        )
+                        rounds++
+                        if (rounds < maxRounds) delay(250L)
+                    } else {
+                        Log.w(
+                            "SyncDiag",
+                            "Mobile library completion stopped provider=$providerId section=${contentType.name} " +
+                                "unexpectedState=$state rounds=$rounds"
+                        )
+                        break
+                    }
+                }
+
+                if (rounds >= maxRounds) {
+                    Log.w(
+                        "SyncDiag",
+                        "Mobile library completion reached max rounds provider=$providerId " +
+                            "section=${contentType.name} finalState=${xtreamIndexJobDao.get(providerId, contentType.name)?.state}"
+                    )
+                }
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            Log.e(
+                "SyncDiag",
+                "Mobile library completion failed provider=$providerId: ${sanitizeThrowableMessage(error)}",
+                error
+            )
         }
     }
 

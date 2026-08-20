@@ -1,6 +1,8 @@
 package com.universestream.app
 
+import android.app.Activity
 import android.app.Application
+import android.os.Bundle
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -30,6 +32,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.universestream.data.manager.recording.RecordingReconcileWorker
 import com.universestream.data.sync.ProviderSyncWorker
+import com.universestream.data.sync.isTelevisionDeviceForSync
 import com.universestream.data.sync.XtreamIndexWorker
 import com.universestream.player.timeshift.TimeshiftDiskManager
 import javax.inject.Inject
@@ -39,6 +42,24 @@ import okhttp3.OkHttpClient
 class UniverseStreamApp : Application(), SingletonImageLoader.Factory {
     private val runtimeDiagnosticsManager by lazy { RuntimeDiagnosticsManager(this) }
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var startedActivityCount = 0
+    private val mobileSyncActivityCallbacks = object : Application.ActivityLifecycleCallbacks {
+        override fun onActivityStarted(activity: Activity) {
+            if (startedActivityCount++ == 0 && !applicationContext.isTelevisionDeviceForSync()) {
+                ProviderSyncWorker.enqueueMobileLightweightCheck(applicationContext)
+            }
+        }
+
+        override fun onActivityStopped(activity: Activity) {
+            startedActivityCount = (startedActivityCount - 1).coerceAtLeast(0)
+        }
+
+        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+        override fun onActivityResumed(activity: Activity) = Unit
+        override fun onActivityPaused(activity: Activity) = Unit
+        override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+        override fun onActivityDestroyed(activity: Activity) = Unit
+    }
 
     @Inject
     lateinit var preferencesRepository: PreferencesRepository
@@ -91,6 +112,7 @@ class UniverseStreamApp : Application(), SingletonImageLoader.Factory {
 
         ProviderSyncWorker.enqueuePeriodic(this)
         ProviderSyncWorker.enqueueLaunchStaleCheck(this)
+        registerActivityLifecycleCallbacks(mobileSyncActivityCallbacks)
         XtreamIndexWorker.enqueuePeriodic(this)
         XtreamIndexWorker.enqueueLaunchStaleCheck(this)
         RecordingReconcileWorker.enqueuePeriodic(this)

@@ -70,6 +70,16 @@ class XtreamIndexWorker(
             }
 
             var sawRetryableFailure = false
+            val categorySliceSize = if (applicationContext.isTelevisionDeviceForSync()) {
+                TV_CATEGORY_SLICE_SIZE
+            } else {
+                MOBILE_CATEGORY_SLICE_SIZE
+            }
+            Log.i(
+                TAG,
+                "Processing Xtream index providers=${providers.size} section=${requestedSection?.name ?: "ALL"} " +
+                    "categorySliceSize=$categorySliceSize tv=${applicationContext.isTelevisionDeviceForSync()}"
+            )
             providers
                 .filter { provider -> provider.type == ProviderType.XTREAM_CODES }
                 .forEach { provider ->
@@ -77,7 +87,7 @@ class XtreamIndexWorker(
                         providerId = provider.id,
                         section = requestedSection,
                         force = force,
-                        maxCategoriesPerSection = CATEGORY_SLICE_SIZE
+                        maxCategoriesPerSection = categorySliceSize
                     )) {
                         is com.universestream.domain.model.Result.Error -> {
                             Log.w(TAG, "Xtream index worker failed for provider ${provider.id}: ${result.message}")
@@ -112,7 +122,8 @@ class XtreamIndexWorker(
         private const val KEY_FORCE = "force"
         private const val KEY_PREPARE_CATEGORY_SHELLS = "prepare_category_shells"
         private const val INVALID_PROVIDER_ID = -1L
-        private const val CATEGORY_SLICE_SIZE = 2
+        private const val TV_CATEGORY_SLICE_SIZE = 2
+        private const val MOBILE_CATEGORY_SLICE_SIZE = 12
         const val CATEGORY_SHELL_SECTION = "CATEGORY_SHELLS"
         private const val UNIQUE_WORK_PREFIX = "xtream-index-worker-"
         private const val UNIQUE_PERIODIC_WORK_NAME = "xtream-index-periodic-worker"

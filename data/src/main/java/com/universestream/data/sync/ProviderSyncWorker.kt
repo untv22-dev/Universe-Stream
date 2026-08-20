@@ -205,6 +205,7 @@ class ProviderSyncWorker(
         private const val STALE_RUNNING_JOB_MILLIS = 15 * 60 * 1000L
         private const val UNIQUE_WORK_NAME = "provider-sync-worker"
         private const val UNIQUE_LAUNCH_STALE_WORK_NAME = "provider-sync-launch-stale-check"
+        private const val UNIQUE_MOBILE_LIGHTWEIGHT_WORK_NAME = "provider-sync-mobile-lightweight-check"
         private const val UNIQUE_PROVIDER_WORK_PREFIX = "provider-sync-provider-"
         private const val KEY_PROVIDER_ID = "provider_id"
         private const val INVALID_PROVIDER_ID = -1L
@@ -252,6 +253,34 @@ class ProviderSyncWorker(
             )
         }
 
+        /**
+         * Schedules only the mobile app-open category check. The existing launch stale check
+         * remains KEEP so the TV/default path and its timing are unchanged.
+         */
+        fun enqueueMobileLightweightCheck(context: Context) {
+            if (context.isTelevisionDeviceForSync()) return
+
+            val request = OneTimeWorkRequestBuilder<ProviderSyncWorker>()
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                )
+                .setInitialDelay(5, TimeUnit.SECONDS)
+                .setBackoffCriteria(
+                    BackoffPolicy.EXPONENTIAL,
+                    WorkRequest.MIN_BACKOFF_MILLIS,
+                    TimeUnit.MILLISECONDS
+                )
+                .build()
+
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                UNIQUE_MOBILE_LIGHTWEIGHT_WORK_NAME,
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
+        }
+
         fun enqueueProvider(context: Context, providerId: Long) {
             val request = OneTimeWorkRequestBuilder<ProviderSyncWorker>()
                 .setInputData(workDataOf(KEY_PROVIDER_ID to providerId))
@@ -289,6 +318,16 @@ class ProviderSyncWorker(
                 trackInitialLiveOnboarding = true,
                 prioritizeInitialLiveOnboarding = prioritizeInitialLiveOnboarding
             )
+        }
+        if (!applicationContext.isTelevisionDeviceForSync() && provider.isActive) {
+            runCatching {
+                entryPoint.syncManager().checkMobileXtreamCategoryDelta(provider.id)
+            }.onFailure { error ->
+                Log.w(
+                    "SyncDiag",
+                    "Mobile category delta check failed provider=${provider.id}: ${error.message}"
+                )
+            }
         }
         val metadata = entryPoint.syncMetadataRepository().getMetadata(provider.id)
         val liveStale = ContentCachePolicy.shouldRefresh(
