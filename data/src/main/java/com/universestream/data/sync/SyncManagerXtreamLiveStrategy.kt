@@ -98,12 +98,10 @@ internal class SyncManagerXtreamLiveStrategy(
             return rawLiveCategories
         }
 
-        // Full-first mobile onboarding intentionally postpones this lightweight request.
-        // A successful get_live_streams call must remain the only initial Live request;
-        // categories are fetched only if full decode falls back to category mode.
-        if (!mobileInitialFullFirst) {
-            loadLiveCategoriesIfNeeded()
-        }
+        // Category metadata is a single lightweight request and is required even for
+        // mobile full-first onboarding so the UI can use the provider's real names.
+        // The expensive channel request remains one get_live_streams call on success.
+        loadLiveCategoriesIfNeeded()
 
         var resolvedCategories = rawLiveCategories
             ?.let { categories -> api.mapCategories(ContentType.LIVE, categories) }
@@ -182,24 +180,6 @@ internal class SyncManagerXtreamLiveStrategy(
             )
         }
 
-        if (mobileInitialFullFirst && !categoriesRequestAttempted) {
-            loadLiveCategoriesIfNeeded()
-            resolvedCategories = rawLiveCategories
-                ?.let { categories -> api.mapCategories(ContentType.LIVE, categories) }
-                ?.map { category -> category.toEntity(provider.id) }
-                ?.takeIf { it.isNotEmpty() }
-            filteredRawLiveCategories = rawLiveCategories.orEmpty().filterNot { category ->
-                category.categoryId.toLongOrNull() in hiddenLiveCategoryIds
-            }
-            visibleResolvedCategories = resolvedCategories
-                ?.filterNot { category -> category.categoryId in hiddenLiveCategoryIds }
-                ?.takeIf { it.isNotEmpty() }
-            Log.i(
-                "SyncDiag",
-                "Live categories fallback provider=${provider.id} rawApi=${rawLiveCategories?.size ?: -1} " +
-                    "resolved=${resolvedCategories?.size ?: -1} hidden=${hiddenLiveCategoryIds.size}"
-            )
-        }
         Log.i(
             "SyncDiag",
             "Live fallback request provider=${provider.id} mode=CATEGORY_BY_CATEGORY " +
@@ -214,9 +194,9 @@ internal class SyncManagerXtreamLiveStrategy(
             preferSequential = existingMetadata.liveSequentialFailuresRemembered || runtimeProfile.maxCategoryConcurrency <= 1,
             runtimeProfile = runtimeProfile,
             publishInitialLiveBatch = publishInitialLiveBatch,
-            onFirstBatchPublished = onFirstBatchPublished,
+            onFirstBatchPublished = if (fullPayload.stagedSessionId == null) onFirstBatchPublished else null,
             onCategoryCheckpoint = onCategoryCheckpoint,
-            existingStagedSessionId = existingStagedSessionId,
+            existingStagedSessionId = fullPayload.stagedSessionId ?: existingStagedSessionId,
             categoryKeyFilter = categoryKeyFilter
         )
         return CatalogSyncPayload(
@@ -303,6 +283,10 @@ internal class SyncManagerXtreamLiveStrategy(
     }
 
     private fun CatalogSyncPayload<Channel>.shouldRetryLegacyFullDecode(): Boolean {
+        // If the thin decoder already staged usable rows, go straight to the category
+        // fallback with the same session. Retrying the full endpoint would issue another
+        // large request and could duplicate work or trigger provider throttling.
+        if (stagedSessionId != null && stagedAcceptedCount > 0) return false
         val result = catalogResult
         if ((result as? CatalogStrategyResult.Failure)?.error is LowMemoryCatalogAbortException) return false
         return result is CatalogStrategyResult.Failure ||
@@ -426,9 +410,18 @@ internal class SyncManagerXtreamLiveStrategy(
                 is Attempt.Success -> Unit
                 is Attempt.Failure -> {
                     fullChannelsFailure = attempt.error
-                    stagedSessionId?.let { sessionId ->
-                        syncCatalogStore.discardStagedImport(provider.id, sessionId)
-                        stagedSessionId = null
+                    val preserveStagedImportForFallback = stagedSessionId != null && acceptedCount > 0
+                    if (preserveStagedImportForFallback) {
+                        Log.w(
+                            "SyncDiag",
+                            "Live full request failed after partial staging; preserving session for category fallback " +
+                                "provider=${provider.id} session=$stagedSessionId accepted=$acceptedCount"
+                        )
+                    } else {
+                        stagedSessionId?.let { sessionId ->
+                            syncCatalogStore.discardStagedImport(provider.id, sessionId)
+                            stagedSessionId = null
+                        }
                     }
                 }
             }
@@ -450,7 +443,9 @@ internal class SyncManagerXtreamLiveStrategy(
                     error = fullChannelsFailure!!,
                     warnings = listOf(fullCatalogFallbackWarning("Live TV", fullChannelsFailure))
                 ),
-                categories = null
+                categories = null,
+                stagedSessionId = stagedSessionId,
+                stagedAcceptedCount = acceptedCount
             )
         }
 

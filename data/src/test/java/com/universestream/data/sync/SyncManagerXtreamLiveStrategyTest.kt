@@ -897,7 +897,8 @@ class SyncManagerXtreamLiveStrategyTest {
         assertThat(payload.stagedAcceptedCount).isEqualTo(1)
         assertThat(requestedCategoryIds).containsExactly(null)
         assertThat(requestCount.get()).isEqualTo(1)
-        assertThat(categoryRequestCount.get()).isEqualTo(0)
+        // Task 6: real category names require the single lightweight metadata request.
+        assertThat(categoryRequestCount.get()).isEqualTo(1)
     }
 
     @Test
