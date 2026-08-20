@@ -376,10 +376,11 @@ internal class SyncManagerXtreamLiveStrategy(
             acceptedCount += staged.acceptedCount
             flushCount++
             rawBatch.clear()
-            val visibleChannelCount = if (publishInitialLiveBatch) {
+            val sessionIdForPublish = stagedSessionId
+            val visibleChannelCount = if (publishInitialLiveBatch && sessionIdForPublish != null) {
                 syncCatalogStore.publishStagedLiveBatchUpsertOnly(
                     providerId = provider.id,
-                    sessionId = staged.sessionId
+                    sessionId = sessionIdForPublish
                 )
             } else {
                 null
