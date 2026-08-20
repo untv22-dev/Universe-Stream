@@ -352,7 +352,8 @@ internal class SyncManagerXtreamLiveStrategy(
             runtimeProfile = runtimeProfile,
             onProgress = onProgress,
             publishInitialLiveBatch = publishInitialLiveBatch,
-            onFirstBatchPublished = onFirstBatchPublished
+            onFirstBatchPublished = onFirstBatchPublished,
+            categoryMapping = categoryMapping
         )
         if (!thinPayload.shouldRetryLegacyFullDecode()) {
             return thinPayload
@@ -371,7 +372,8 @@ internal class SyncManagerXtreamLiveStrategy(
             runtimeProfile = runtimeProfile,
             onProgress = onProgress,
             publishInitialLiveBatch = publishInitialLiveBatch,
-            onFirstBatchPublished = onFirstBatchPublished
+            onFirstBatchPublished = onFirstBatchPublished,
+            categoryMapping = categoryMapping
         )
     }
 
