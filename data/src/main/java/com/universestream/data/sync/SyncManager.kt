@@ -1202,10 +1202,18 @@ class SyncManager @Inject constructor(
                         trackInitialLiveOnboarding = true,
                         publishInitialLiveBatch = prioritizeInitialLiveOnboarding,
                         onFirstBatchPublished = if (prioritizeInitialLiveOnboarding) {
-                            {
+                            { stagedSessionId ->
                                 // This callback is only supplied by the mobile Live-first path.
                                 // Do not alter the TV/default onboarding order here.
                                 if (!applicationContext.isTelevisionDeviceForSync()) {
+                                    recordXtreamLiveOnboardingState(
+                                        provider = provider,
+                                        phase = XTREAM_ONBOARDING_PHASE_FETCHING,
+                                        stagedSessionId = stagedSessionId,
+                                        importStrategy = "full",
+                                        clearError = true,
+                                        runtimeProfile = runtimeProfile
+                                    )
                                     mobileInitialLibraryScope.launch {
                                         awaitMobileInitialLibraryCompletion(
                                             providerId = provider.id,
@@ -1221,6 +1229,17 @@ class SyncManager @Inject constructor(
                                     "Initial Live first batch follow-up started provider=${provider.id} " +
                                         "mobileLibraryAwait=${!applicationContext.isTelevisionDeviceForSync()} " +
                                         "epg=${provider.epgSyncMode != ProviderEpgSyncMode.SKIP}"
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                        onCategoryCheckpoint = if (prioritizeInitialLiveOnboarding && !applicationContext.isTelevisionDeviceForSync()) {
+                            { completedCategoryKeys, totalCategories ->
+                                persistXtreamLiveCategoryCheckpoint(
+                                    providerId = provider.id,
+                                    completedCategoryKeys = completedCategoryKeys,
+                                    totalCategories = totalCategories
                                 )
                             }
                         } else {
@@ -1362,11 +1381,19 @@ class SyncManager @Inject constructor(
             syncMetadataRepository.updateMetadata(metadata)
             acceptedCount
         }
+        val liveContinuationQueued = trackInitialLiveOnboarding &&
+            prioritizeInitialLiveOnboarding &&
+            !applicationContext.isTelevisionDeviceForSync() &&
+            liveOutcome.isFailure
         val liveCount = liveOutcome.getOrElse { error ->
             if (error is CancellationException) throw error
             val safeError = sanitizeThrowableMessage(error)
-            warnings += "Live TV sync did not finish: $safeError. Continuing with Movies, Series, and EPG in the background."
-            if (trackInitialLiveOnboarding) {
+            warnings += if (liveContinuationQueued) {
+                "Live TV first-batch window ended: $safeError. Remaining categories were queued for background continuation."
+            } else {
+                "Live TV sync did not finish: $safeError. Continuing with Movies, Series, and EPG in the background."
+            }
+            if (trackInitialLiveOnboarding && !liveContinuationQueued) {
                 recordXtreamLiveOnboardingState(
                     provider = provider,
                     phase = XTREAM_ONBOARDING_PHASE_FAILED,
@@ -1374,14 +1401,22 @@ class SyncManager @Inject constructor(
                     runtimeProfile = runtimeProfile
                 )
             }
-            upsertXtreamIndexJob(
-                providerId = provider.id,
-                section = ContentType.LIVE.name,
-                state = xtreamIndexFailureState(error),
-                now = now,
-                lastAttemptAt = now,
-                lastError = safeError
-            )
+            if (!liveContinuationQueued) {
+                upsertXtreamIndexJob(
+                    providerId = provider.id,
+                    section = ContentType.LIVE.name,
+                    state = xtreamIndexFailureState(error),
+                    now = now,
+                    lastAttemptAt = now,
+                    lastError = safeError
+                )
+            } else {
+                Log.i(
+                    "SyncDiag",
+                    "Mobile Live continuation retained provider=${provider.id} " +
+                        "checkpoint=${xtreamIndexJobDao.get(provider.id, ContentType.LIVE.name)?.completedCategoryKeys.orEmpty()}"
+                )
+            }
             0
         }
         if (trackInitialLiveOnboarding) {
@@ -1391,16 +1426,26 @@ class SyncManager @Inject constructor(
                     "success=${liveOutcome.isSuccess} liveCount=$liveCount"
             )
         }
+        val liveCheckpointJob = xtreamIndexJobDao.get(provider.id, ContentType.LIVE.name)
+        val liveCheckpointKeys = liveCheckpointJob?.completedCategoryKeys.orEmpty()
+            .split(',')
+            .filter(String::isNotBlank)
+            .toSet()
         upsertXtreamIndexJob(
             providerId = provider.id,
             section = ContentType.LIVE.name,
             state = "QUEUED",
             now = now,
-            totalCategories = 1,
-            completedCategories = 0,
-            indexedRows = liveCount,
+            totalCategories = if (liveContinuationQueued) liveCheckpointJob?.totalCategories else 1,
+            completedCategories = if (liveContinuationQueued) liveCheckpointKeys.size else 0,
+            indexedRows = if (liveContinuationQueued) {
+                maxOf(liveCount, liveCheckpointJob?.indexedRows ?: 0)
+            } else {
+                liveCount
+            },
             lastAttemptAt = now,
-            lastError = null
+            lastError = null,
+            completedCategoryKeys = liveCheckpointKeys
         )
         scheduleXtreamIndexSync(provider.id, ContentType.LIVE)
 
@@ -1419,7 +1464,7 @@ class SyncManager @Inject constructor(
         val movieCategoryCount = 0
         val seriesCategoryCount = 0
 
-        if (trackInitialLiveOnboarding) {
+        if (trackInitialLiveOnboarding && !liveContinuationQueued) {
             if (liveOutcome.isFailure) {
                 recordXtreamLiveOnboardingState(
                     provider = provider,
@@ -1712,7 +1757,34 @@ class SyncManager @Inject constructor(
             }
             val failure = runCatching {
                 when (contentType) {
-                    ContentType.LIVE -> processXtreamLiveIndexBackfillSection(providerId, onProgress)
+                    ContentType.LIVE -> {
+                        if (!applicationContext.isTelevisionDeviceForSync()) {
+                            val liveJob = xtreamIndexJobDao.get(providerId, ContentType.LIVE.name)
+                            val completedKeys = liveJob?.completedCategoryKeys.orEmpty()
+                                .split(',')
+                                .map(String::trim)
+                                .filter(String::isNotBlank)
+                                .toSet()
+                            val savedSessionId = xtreamLiveOnboardingDao
+                                .getIncompleteByProvider(providerId)
+                                ?.stagedSessionId
+                            if (completedKeys.isNotEmpty() || savedSessionId != null) {
+                                processXtreamLiveRemoteContinuationSection(
+                                    provider = provider,
+                                    api = api,
+                                    providerId = providerId,
+                                    completedCategoryKeys = completedKeys,
+                                    existingStagedSessionId = savedSessionId,
+                                    maxCategoriesPerSection = maxCategoriesPerSection,
+                                    onProgress = onProgress
+                                )
+                            } else {
+                                processXtreamLiveIndexBackfillSection(providerId, onProgress)
+                            }
+                        } else {
+                            processXtreamLiveIndexBackfillSection(providerId, onProgress)
+                        }
+                    }
                     ContentType.MOVIE,
                     ContentType.SERIES -> processXtreamSummaryIndexSection(provider, api, contentType, maxCategoriesPerSection, onProgress)
                     ContentType.SERIES_EPISODE -> Unit
@@ -3975,6 +4047,401 @@ class SyncManager @Inject constructor(
         )
     }
 
+    private suspend fun processXtreamLiveRemoteContinuationSection(
+        provider: Provider,
+        api: XtreamProvider,
+        providerId: Long,
+        completedCategoryKeys: Set<String>,
+        existingStagedSessionId: Long?,
+        maxCategoriesPerSection: Int?,
+        onProgress: ((String) -> Unit)?
+    ) {
+        if (applicationContext.isTelevisionDeviceForSync()) return
+
+        val startedAt = System.currentTimeMillis()
+        val hiddenLiveCategoryIds = preferencesRepository
+            .getHiddenCategoryIds(providerId, ContentType.LIVE)
+            .first()
+        val existingMetadata = syncMetadataRepository.getMetadata(providerId) ?: SyncMetadata(providerId)
+        val normalizedCompletedKeys = completedCategoryKeys
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .toSet()
+
+        val rawLiveCategories = runCatching {
+            xtreamSupport.retryXtreamCatalogTransient(providerId) {
+                xtreamSupport.executeXtreamRequest(
+                    providerId = providerId,
+                    stage = XtreamAdaptiveSyncPolicy.Stage.LIGHTWEIGHT
+                ) {
+                    xtreamCatalogApiService.getLiveCategories(
+                        XtreamUrlFactory.buildPlayerApiUrl(
+                            serverUrl = provider.serverUrl,
+                            username = provider.username,
+                            password = provider.password,
+                            action = "get_live_categories"
+                        )
+                    )
+                }
+            }
+        }.getOrElse { error ->
+            if (error is CancellationException) throw error
+            Log.w(
+                "SyncDiag",
+                "Mobile Live continuation categories failed provider=$providerId: ${sanitizeThrowableMessage(error)}"
+            )
+            processXtreamLiveIndexBackfillSection(providerId, onProgress)
+            return
+        }
+
+        val allCategoryKeys = rawLiveCategories
+            .asSequence()
+            .map { it.categoryId.trim() }
+            .filter { key ->
+                key.isNotBlank() && key.toLongOrNull() !in hiddenLiveCategoryIds
+            }
+            .toSet()
+        val completedKeys = normalizedCompletedKeys.intersect(allCategoryKeys)
+        val remainingCategoryKeys = allCategoryKeys - completedKeys
+        val sliceSize = maxCategoriesPerSection?.takeIf { it > 0 }
+        val categoryKeysForThisRun = if (sliceSize != null && remainingCategoryKeys.size > sliceSize) {
+            remainingCategoryKeys.toList().take(sliceSize).toSet()
+        } else {
+            remainingCategoryKeys
+        }
+        val totalCategories = allCategoryKeys.size
+
+        Log.i(
+            "SyncDiag",
+            "Mobile Live continuation plan provider=$providerId rawCategories=${rawLiveCategories.size} " +
+                "visibleCategories=$totalCategories completed=${completedKeys.size} " +
+                "remaining=${remainingCategoryKeys.size} slice=${categoryKeysForThisRun.size} " +
+                    "stagedSession=$existingStagedSessionId"
+        )
+
+        upsertXtreamIndexJob(
+            providerId = providerId,
+            section = ContentType.LIVE.name,
+            state = "RUNNING",
+            now = startedAt,
+            totalCategories = totalCategories,
+            completedCategories = completedKeys.size,
+            nextCategoryIndex = completedKeys.size,
+            completedCategoryKeys = completedKeys,
+            lastAttemptAt = startedAt,
+            lastError = null
+        )
+
+        if (remainingCategoryKeys.isEmpty()) {
+            val sessionId = existingStagedSessionId
+            if (sessionId != null) {
+                val stagedState = syncCatalogStore.stagedLiveImportState(providerId, sessionId)
+                if (stagedState.channelCount > 0 && stagedState.movieCount == 0 && stagedState.seriesCount == 0) {
+                    if (hiddenLiveCategoryIds.isNotEmpty()) {
+                        mergeHiddenChannelsIntoStaging(providerId, sessionId, hiddenLiveCategoryIds)
+                    }
+                    val commitState = if (hiddenLiveCategoryIds.isNotEmpty()) {
+                        syncCatalogStore.stagedLiveImportState(providerId, sessionId)
+                    } else {
+                        stagedState
+                    }
+                    syncCatalogStore.applyStagedLiveCatalog(
+                        providerId = providerId,
+                        sessionId = sessionId,
+                        categories = commitState.categories.takeIf { it.isNotEmpty() }
+                    )
+                    val finishedAt = System.currentTimeMillis()
+                    val indexedRows = backfillXtreamLiveIndex(providerId, finishedAt)
+                    val storedCount = channelDao.getCount(providerId).first()
+                    recordXtreamLiveOnboardingState(
+                        provider = provider,
+                        phase = XTREAM_ONBOARDING_PHASE_COMPLETED,
+                        now = finishedAt,
+                        acceptedRowCount = storedCount,
+                        stagedFlushCount = stagedFlushCountFor(storedCount),
+                        clearError = true,
+                        completedAt = finishedAt,
+                        clearStagedSession = true
+                    )
+                    syncMetadataRepository.updateMetadata(
+                        (syncMetadataRepository.getMetadata(providerId) ?: existingMetadata).copy(
+                            lastLiveSync = finishedAt,
+                            lastLiveSuccess = finishedAt,
+                            liveCount = storedCount
+                        )
+                    )
+                    upsertXtreamIndexJob(
+                        providerId = providerId,
+                        section = ContentType.LIVE.name,
+                        state = "SUCCESS",
+                        now = finishedAt,
+                        totalCategories = totalCategories,
+                        completedCategories = totalCategories,
+                        nextCategoryIndex = totalCategories,
+                        failedCategories = 0,
+                        indexedRows = indexedRows,
+                        lastAttemptAt = startedAt,
+                        lastSuccessAt = finishedAt,
+                        lastError = null,
+                        completedCategoryKeys = allCategoryKeys
+                    )
+                    Log.i(
+                        "SyncDiag",
+                        "Mobile Live continuation finalized saved session provider=$providerId " +
+                            "storedChannels=$storedCount indexedRows=$indexedRows"
+                    )
+                    return
+                }
+            }
+            processXtreamLiveIndexBackfillSection(providerId, onProgress)
+            return
+        }
+
+        val liveSyncResult = runCatching {
+            syncXtreamLiveCatalog(
+                provider = provider,
+                api = api,
+                existingMetadata = existingMetadata,
+                hiddenLiveCategoryIds = hiddenLiveCategoryIds,
+                onProgress = onProgress,
+                existingStagedSessionId = existingStagedSessionId,
+                categoryKeyFilter = categoryKeysForThisRun,
+                onCategoryCheckpoint = { keys, _ ->
+                    persistXtreamLiveCategoryCheckpoint(providerId, keys, totalCategories)
+                },
+                syncReason = XtreamLiveSyncReason.BACKGROUND_STALE
+            )
+        }.getOrElse { error ->
+            if (error is CancellationException) throw error
+            Log.w(
+                "SyncDiag",
+                "Mobile Live continuation failed provider=$providerId: ${sanitizeThrowableMessage(error)}"
+            )
+            processXtreamLiveIndexBackfillSection(providerId, onProgress)
+            return
+        }
+
+        val finishedAt = System.currentTimeMillis()
+        val checkpointJob = xtreamIndexJobDao.get(providerId, ContentType.LIVE.name)
+        val checkpointKeys = checkpointJob?.completedCategoryKeys.orEmpty()
+            .split(',')
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .toSet()
+            .intersect(allCategoryKeys)
+        val isFullCatalogSuccess = (liveSyncResult.catalogResult as? CatalogStrategyResult.Success)
+            ?.strategyName
+            ?.equals("full", ignoreCase = true) == true
+        val remainingAfter = if (isFullCatalogSuccess) {
+            emptySet()
+        } else {
+            allCategoryKeys - checkpointKeys
+        }
+        val sessionId = liveSyncResult.stagedSessionId ?: existingStagedSessionId
+
+        suspend fun publishCurrentSlice(): Int {
+            if (sessionId != null) {
+                return syncCatalogStore.publishStagedLiveBatchUpsertOnly(providerId, sessionId)
+            }
+            val partialPayload = when (val result = liveSyncResult.catalogResult) {
+                is CatalogStrategyResult.Success -> liveSyncResult.copy(
+                    catalogResult = CatalogStrategyResult.Partial(
+                        strategyName = result.strategyName,
+                        items = result.items,
+                        warnings = result.warnings
+                    )
+                )
+                else -> liveSyncResult
+            }
+            return finalizeXtreamLiveCatalog(
+                providerId = providerId,
+                liveSyncResult = partialPayload,
+                hiddenLiveCategoryIds = hiddenLiveCategoryIds,
+                onProgress = onProgress,
+                partialCompletionWarning = "Live TV continuation slice published."
+            ).acceptedCount
+        }
+
+        when (liveSyncResult.catalogResult) {
+            is CatalogStrategyResult.Success -> {
+                if (remainingAfter.isNotEmpty()) {
+                    val publishedRows = publishCurrentSlice()
+                    val indexedRows = backfillXtreamLiveIndex(providerId, finishedAt)
+                    upsertXtreamIndexJob(
+                        providerId = providerId,
+                        section = ContentType.LIVE.name,
+                        state = "QUEUED",
+                        now = finishedAt,
+                        totalCategories = totalCategories,
+                        completedCategories = checkpointKeys.size,
+                        nextCategoryIndex = checkpointKeys.size,
+                        indexedRows = indexedRows,
+                        lastAttemptAt = startedAt,
+                        lastError = null,
+                        completedCategoryKeys = checkpointKeys
+                    )
+                    if (sessionId != null) {
+                        recordXtreamLiveOnboardingState(
+                            provider = provider,
+                            phase = XTREAM_ONBOARDING_PHASE_FETCHING,
+                            now = finishedAt,
+                            stagedSessionId = sessionId,
+                            acceptedRowCount = publishedRows,
+                            stagedFlushCount = stagedFlushCountFor(publishedRows),
+                            clearError = true
+                        )
+                    }
+                    scheduleXtreamIndexSync(providerId, ContentType.LIVE, force = false)
+                    Log.i(
+                        "SyncDiag",
+                        "Mobile Live continuation slice published provider=$providerId " +
+                            "completed=${checkpointKeys.size}/$totalCategories remaining=${remainingAfter.size} " +
+                            "publishedRows=$publishedRows indexedRows=$indexedRows"
+                    )
+                } else {
+                    val commitResult = finalizeXtreamLiveCatalog(
+                        providerId = providerId,
+                        liveSyncResult = liveSyncResult,
+                        hiddenLiveCategoryIds = hiddenLiveCategoryIds,
+                        onProgress = onProgress
+                    )
+                    val indexedRows = backfillXtreamLiveIndex(providerId, finishedAt)
+                    val storedCount = channelDao.getCount(providerId).first()
+                    recordXtreamLiveOnboardingState(
+                        provider = provider,
+                        phase = XTREAM_ONBOARDING_PHASE_COMPLETED,
+                        now = finishedAt,
+                        acceptedRowCount = storedCount,
+                        stagedFlushCount = stagedFlushCountFor(storedCount),
+                        clearError = true,
+                        completedAt = finishedAt,
+                        clearStagedSession = true
+                    )
+                    syncMetadataRepository.updateMetadata(
+                        (syncMetadataRepository.getMetadata(providerId) ?: existingMetadata).copy(
+                            lastLiveSync = finishedAt,
+                            lastLiveSuccess = finishedAt,
+                            liveCount = storedCount
+                        )
+                    )
+                    upsertXtreamIndexJob(
+                        providerId = providerId,
+                        section = ContentType.LIVE.name,
+                        state = "SUCCESS",
+                        now = finishedAt,
+                        totalCategories = totalCategories,
+                        completedCategories = totalCategories,
+                        nextCategoryIndex = totalCategories,
+                        failedCategories = 0,
+                        indexedRows = indexedRows,
+                        lastAttemptAt = startedAt,
+                        lastSuccessAt = finishedAt,
+                        lastError = null,
+                        completedCategoryKeys = allCategoryKeys
+                    )
+                    Log.i(
+                        "SyncDiag",
+                        "Mobile Live continuation SUCCESS provider=$providerId " +
+                            "accepted=${commitResult.acceptedCount} storedChannels=$storedCount indexedRows=$indexedRows"
+                    )
+                }
+            }
+            is CatalogStrategyResult.Partial -> {
+                if (sessionId == null && remainingAfter.isNotEmpty()) {
+                    val publishedRows = publishCurrentSlice()
+                    val indexedRows = backfillXtreamLiveIndex(providerId, finishedAt)
+                    upsertXtreamIndexJob(
+                        providerId = providerId,
+                        section = ContentType.LIVE.name,
+                        state = "QUEUED",
+                        now = finishedAt,
+                        totalCategories = totalCategories,
+                        completedCategories = checkpointKeys.size,
+                        nextCategoryIndex = checkpointKeys.size,
+                        indexedRows = indexedRows,
+                        lastAttemptAt = startedAt,
+                        lastError = null,
+                        completedCategoryKeys = checkpointKeys
+                    )
+                    scheduleXtreamIndexSync(providerId, ContentType.LIVE, force = false)
+                    Log.i(
+                        "SyncDiag",
+                        "Mobile Live continuation partial direct upsert provider=$providerId " +
+                            "completed=${checkpointKeys.size}/$totalCategories remaining=${remainingAfter.size} " +
+                            "publishedRows=$publishedRows indexedRows=$indexedRows"
+                    )
+                } else {
+                    val publishedRows = if (remainingAfter.isEmpty()) {
+                        finalizeXtreamLiveCatalog(
+                            providerId = providerId,
+                            liveSyncResult = liveSyncResult,
+                            hiddenLiveCategoryIds = hiddenLiveCategoryIds,
+                            onProgress = onProgress,
+                            partialCompletionWarning = "Live TV continuation completed partially."
+                        ).acceptedCount
+                    } else {
+                        publishCurrentSlice()
+                    }
+                    val indexedRows = backfillXtreamLiveIndex(providerId, finishedAt)
+                    val state = if (remainingAfter.isEmpty()) "PARTIAL" else "QUEUED"
+                    upsertXtreamIndexJob(
+                        providerId = providerId,
+                        section = ContentType.LIVE.name,
+                        state = state,
+                        now = finishedAt,
+                        totalCategories = totalCategories,
+                        completedCategories = checkpointKeys.size,
+                        nextCategoryIndex = checkpointKeys.size,
+                        indexedRows = indexedRows,
+                        lastAttemptAt = startedAt,
+                        lastError = null,
+                        completedCategoryKeys = checkpointKeys
+                    )
+                    if (remainingAfter.isEmpty()) {
+                        recordXtreamLiveOnboardingState(
+                            provider = provider,
+                            phase = XTREAM_ONBOARDING_PHASE_COMPLETED,
+                            now = finishedAt,
+                            acceptedRowCount = channelDao.getCount(providerId).first(),
+                            stagedFlushCount = stagedFlushCountFor(channelDao.getCount(providerId).first()),
+                            clearError = true,
+                            completedAt = finishedAt,
+                            clearStagedSession = true
+                        )
+                    } else {
+                        if (sessionId != null) {
+                            recordXtreamLiveOnboardingState(
+                                provider = provider,
+                                phase = XTREAM_ONBOARDING_PHASE_FETCHING,
+                                now = finishedAt,
+                                stagedSessionId = sessionId,
+                                acceptedRowCount = publishedRows,
+                                stagedFlushCount = stagedFlushCountFor(publishedRows),
+                                clearError = true
+                            )
+                        }
+                        scheduleXtreamIndexSync(providerId, ContentType.LIVE, force = false)
+                    }
+                    Log.i(
+                        "SyncDiag",
+                        "Mobile Live continuation PARTIAL provider=$providerId state=$state " +
+                            "completed=${checkpointKeys.size}/$totalCategories remaining=${remainingAfter.size} " +
+                            "publishedRows=$publishedRows indexedRows=$indexedRows"
+                    )
+                }
+            }
+            is CatalogStrategyResult.EmptyValid,
+            is CatalogStrategyResult.Failure -> {
+                processXtreamLiveIndexBackfillSection(providerId, onProgress)
+                Log.w(
+                    "SyncDiag",
+                    "Mobile Live continuation returned no usable result provider=$providerId; " +
+                        "local index fallback retained."
+                )
+            }
+        }
+    }
+
     private suspend fun backfillXtreamLiveIndex(providerId: Long, indexedAt: Long): Int {
         val channels = channelDao.getByProviderSync(providerId)
         if (channels.isEmpty()) return 0
@@ -4030,7 +4497,8 @@ class SyncManager @Inject constructor(
         clearPriority: Boolean = false,
         lastAttemptAt: Long? = null,
         lastSuccessAt: Long? = null,
-        lastError: String? = null
+        lastError: String? = null,
+        completedCategoryKeys: Set<String>? = null
     ) {
         val existing = xtreamIndexJobDao.get(providerId, section)
         xtreamIndexJobDao.upsert(
@@ -4046,9 +4514,45 @@ class SyncManager @Inject constructor(
                 priorityCategoryId = if (clearPriority) null else priorityCategoryId ?: existing?.priorityCategoryId,
                 priorityRequestedAt = if (clearPriority) 0L else priorityRequestedAt ?: existing?.priorityRequestedAt ?: 0L,
                 lastError = lastError,
+                completedCategoryKeys = completedCategoryKeys?.toList()?.sorted()?.joinToString(",")
+                    ?: existing?.completedCategoryKeys.orEmpty(),
                 lastAttemptAt = lastAttemptAt ?: existing?.lastAttemptAt ?: 0L,
                 lastSuccessAt = lastSuccessAt ?: existing?.lastSuccessAt ?: 0L,
                 updatedAt = now
+            )
+        )
+    }
+
+    private suspend fun persistXtreamLiveCategoryCheckpoint(
+        providerId: Long,
+        completedCategoryKeys: List<String>,
+        totalCategories: Int
+    ) {
+        if (applicationContext.isTelevisionDeviceForSync()) return
+        val existing = xtreamIndexJobDao.get(providerId, ContentType.LIVE.name)
+        val mergedKeys = (existing?.completedCategoryKeys.orEmpty()
+            .split(',')
+            .filter(String::isNotBlank)
+            .toSet() + completedCategoryKeys.filter(String::isNotBlank))
+        val now = System.currentTimeMillis()
+        upsertXtreamIndexJob(
+            providerId = providerId,
+            section = ContentType.LIVE.name,
+            state = "RUNNING",
+            now = now,
+            totalCategories = totalCategories,
+            completedCategories = mergedKeys.size,
+            completedCategoryKeys = mergedKeys,
+            lastAttemptAt = now,
+            lastError = null
+        )
+        syncProgressBus.emit(
+            com.universestream.domain.sync.SyncProgress(
+                section = com.universestream.domain.sync.Section.LIVE,
+                current = mergedKeys.size,
+                total = totalCategories,
+                currentLabel = "Loading Live TV ${mergedKeys.size}/$totalCategories",
+                itemsIndexed = existing?.indexedRows ?: 0
             )
         )
     }
@@ -5393,7 +5897,10 @@ class SyncManager @Inject constructor(
         runtimeProfile: CatalogSyncRuntimeProfile = CatalogSyncRuntimeProfile.from(applicationContext),
         trackInitialLiveOnboarding: Boolean = false,
         publishInitialLiveBatch: Boolean = false,
-        onFirstBatchPublished: (suspend () -> Unit)? = null,
+        onFirstBatchPublished: (suspend (stagedSessionId: Long?) -> Unit)? = null,
+        onCategoryCheckpoint: (suspend (completedCategoryKeys: List<String>, totalCategories: Int) -> Unit)? = null,
+        existingStagedSessionId: Long? = null,
+        categoryKeyFilter: Set<String>? = null,
         syncReason: XtreamLiveSyncReason = XtreamLiveSyncReason.FOREGROUND
     ): CatalogSyncPayload<Channel> {
         // Emission d'entree LIVE : signale tot a l'UI que la section LIVE demarre,
@@ -5429,8 +5936,11 @@ class SyncManager @Inject constructor(
             runtimeProfile,
             trackInitialLiveOnboarding,
             publishInitialLiveBatch,
-            onFirstBatchPublished,
-            effectiveLiveSyncMethod
+            onFirstBatchPublished = onFirstBatchPublished,
+            onCategoryCheckpoint = onCategoryCheckpoint,
+            existingStagedSessionId = existingStagedSessionId,
+            categoryKeyFilter = categoryKeyFilter,
+            effectiveLiveSyncMethod = effectiveLiveSyncMethod
         )
     }
 

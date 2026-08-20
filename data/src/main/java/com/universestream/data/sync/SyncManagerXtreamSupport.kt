@@ -37,7 +37,7 @@ internal class SyncManagerXtreamSupport(
         sequentialModeWarning: String,
         onProgress: ((String) -> Unit)?,
         fetch: suspend (XtreamCategory) -> TimedCategoryOutcome<T>,
-        onCategoryCompleted: ((completed: Int, total: Int, currentLabel: String) -> Unit)? = null
+        onCategoryCompleted: (suspend (completed: Int, total: Int, currentLabel: String, completedCategoryKeys: List<String>) -> Unit)? = null
     ): CategoryExecutionPlan<T> {
         if (categories.isEmpty()) {
             return CategoryExecutionPlan(emptyList())
@@ -75,7 +75,17 @@ internal class SyncManagerXtreamSupport(
             // SyncProgress structure apres chaque fenetre traitee. Le label correspond a
             // la derniere categorie de la fenetre (pertinent en mode sequentiel ; en mode
             // concurrent, la fenetre est petite donc le label reste representatif).
-            onCategoryCompleted?.invoke(completed, categories.size, window.last().categoryName)
+            val completedCategoryKeys = windowOutcomes
+                .filter { outcome ->
+                    outcome.outcome is CategoryFetchOutcome.Success || outcome.outcome is CategoryFetchOutcome.Empty
+                }
+                .map { outcome -> outcome.category.categoryId }
+            onCategoryCompleted?.invoke(
+                completed,
+                categories.size,
+                window.last().categoryName,
+                completedCategoryKeys
+            )
 
             if (!forceSequential && shouldRecoverRemainingCategoryRequests(categories.size, completed, outcomes.map { it.outcome })) {
                 forceSequential = true

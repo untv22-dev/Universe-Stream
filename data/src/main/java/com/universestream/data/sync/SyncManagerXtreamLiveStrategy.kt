@@ -55,7 +55,10 @@ internal class SyncManagerXtreamLiveStrategy(
         runtimeProfile: CatalogSyncRuntimeProfile,
         trackInitialLiveOnboarding: Boolean,
         publishInitialLiveBatch: Boolean = false,
-        onFirstBatchPublished: (suspend () -> Unit)? = null,
+        onFirstBatchPublished: (suspend (stagedSessionId: Long?) -> Unit)? = null,
+        onCategoryCheckpoint: (suspend (completedCategoryKeys: List<String>, totalCategories: Int) -> Unit)? = null,
+        existingStagedSessionId: Long? = null,
+        categoryKeyFilter: Set<String>? = null,
         effectiveLiveSyncMethod: EffectiveXtreamLiveSyncMethod = EffectiveXtreamLiveSyncMethod.STREAM_ALL
     ): CatalogSyncPayload<Channel> {
         Log.i(XTREAM_LIVE_STRATEGY_TAG, "Xtream live strategy start for provider ${provider.id}.")
@@ -157,7 +160,10 @@ internal class SyncManagerXtreamLiveStrategy(
             preferSequential = existingMetadata.liveSequentialFailuresRemembered || runtimeProfile.maxCategoryConcurrency <= 1,
             runtimeProfile = runtimeProfile,
             publishInitialLiveBatch = publishInitialLiveBatch,
-            onFirstBatchPublished = onFirstBatchPublished
+            onFirstBatchPublished = onFirstBatchPublished,
+            onCategoryCheckpoint = onCategoryCheckpoint,
+            existingStagedSessionId = existingStagedSessionId,
+            categoryKeyFilter = categoryKeyFilter
         )
         return CatalogSyncPayload(
             catalogResult = categoryPayload.catalogResult,
@@ -420,9 +426,14 @@ internal class SyncManagerXtreamLiveStrategy(
         preferSequential: Boolean,
         runtimeProfile: CatalogSyncRuntimeProfile,
         publishInitialLiveBatch: Boolean = false,
-        onFirstBatchPublished: (suspend () -> Unit)? = null
+        onFirstBatchPublished: (suspend (stagedSessionId: Long?) -> Unit)? = null,
+        onCategoryCheckpoint: (suspend (completedCategoryKeys: List<String>, totalCategories: Int) -> Unit)? = null,
+        existingStagedSessionId: Long? = null,
+        categoryKeyFilter: Set<String>? = null
     ): CatalogSyncPayload<Channel> {
-        val categories = rawCategories.filter { it.categoryId.isNotBlank() }
+        val categories = rawCategories.filter {
+            it.categoryId.isNotBlank() && (categoryKeyFilter == null || it.categoryId in categoryKeyFilter)
+        }
         if (categories.isEmpty()) {
             return CatalogSyncPayload(
                 catalogResult = CatalogStrategyResult.Failure(
@@ -437,7 +448,7 @@ internal class SyncManagerXtreamLiveStrategy(
         val fallbackCollector = FallbackCategoryCollector(provider.id, ContentType.LIVE)
         val seenStreamIds = HashSet<Long>()
         val stageMutex = Mutex()
-        var stagedSessionId: Long? = null
+        var stagedSessionId: Long? = existingStagedSessionId
         var stagedAcceptedCount = 0
         var initialBatchPublished = false
 
@@ -468,7 +479,7 @@ internal class SyncManagerXtreamLiveStrategy(
                             "batchAccepted=$stagedAcceptedCount visibleDb=$visibleCount"
                     )
                     try {
-                        onFirstBatchPublished?.invoke()
+                        onFirstBatchPublished?.invoke(sessionId)
                     } catch (error: kotlinx.coroutines.CancellationException) {
                         throw error
                     } catch (error: Exception) {
@@ -517,7 +528,7 @@ internal class SyncManagerXtreamLiveStrategy(
                     onMappedBatch = ::stageMappedBatch
                 )
             },
-            onCategoryCompleted = { completed, total, currentLabel ->
+            onCategoryCompleted = { completed, total, currentLabel, completedCategoryKeys ->
                 // D6 — emission structuree en parallele du callback string deja emis par
                 // `executeCategoryRecoveryPlan` via `progress(...)`. Le compteur cumulatif
                 // `stagedAcceptedCount` est mis a jour de maniere thread-safe sous le
@@ -532,6 +543,7 @@ internal class SyncManagerXtreamLiveStrategy(
                         itemsIndexed = stagedAcceptedCount
                     )
                 )
+                onCategoryCheckpoint?.invoke(completedCategoryKeys, total)
             }
         )
         var timedOutcomes = executionPlan.outcomes
@@ -579,6 +591,13 @@ internal class SyncManagerXtreamLiveStrategy(
             )
             fallbackWarnings = (fallbackWarnings + if (downgradeRecommended) listOf(liveCategorySequentialModeWarning) else emptyList()).distinct()
         }
+
+        val completedCategoryKeys = timedOutcomes
+            .filter { it.outcome !is CategoryFetchOutcome.Failure }
+            .map { it.category.categoryId }
+            .filter(String::isNotBlank)
+            .distinct()
+        onCategoryCheckpoint?.invoke(completedCategoryKeys, categories.size)
 
         val finalOutcomes = timedOutcomes.map { it.outcome }
         val warnings = finalOutcomes

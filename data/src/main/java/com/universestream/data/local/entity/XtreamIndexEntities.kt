@@ -75,6 +75,8 @@ data class XtreamIndexJobEntity(
     @ColumnInfo(name = "priority_category_id") val priorityCategoryId: Long? = null,
     @ColumnInfo(name = "priority_requested_at") val priorityRequestedAt: Long = 0L,
     @ColumnInfo(name = "last_error") val lastError: String? = null,
+    /** Comma-separated remote category keys completed successfully for resumable indexing. */
+    @ColumnInfo(name = "completed_category_keys") val completedCategoryKeys: String = "",
     @ColumnInfo(name = "last_attempt_at") val lastAttemptAt: Long = 0L,
     @ColumnInfo(name = "last_success_at") val lastSuccessAt: Long = 0L,
     @ColumnInfo(name = "updated_at") val updatedAt: Long = 0L
