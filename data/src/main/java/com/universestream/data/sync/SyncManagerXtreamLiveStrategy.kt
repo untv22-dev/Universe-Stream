@@ -54,6 +54,7 @@ internal class SyncManagerXtreamLiveStrategy(
         onProgress: ((String) -> Unit)?,
         runtimeProfile: CatalogSyncRuntimeProfile,
         trackInitialLiveOnboarding: Boolean,
+        prioritizeInitialLiveOnboarding: Boolean = false,
         publishInitialLiveBatch: Boolean = false,
         onFirstBatchPublished: (suspend (stagedSessionId: Long?) -> Unit)? = null,
         onCategoryCheckpoint: (suspend (completedCategoryKeys: List<String>, totalCategories: Int) -> Unit)? = null,
@@ -62,37 +63,56 @@ internal class SyncManagerXtreamLiveStrategy(
         effectiveLiveSyncMethod: EffectiveXtreamLiveSyncMethod = EffectiveXtreamLiveSyncMethod.STREAM_ALL
     ): CatalogSyncPayload<Channel> {
         Log.i(XTREAM_LIVE_STRATEGY_TAG, "Xtream live strategy start for provider ${provider.id}.")
-        val rawLiveCategories = when (val attempt = xtreamSupport.attemptNonCancellation {
-            xtreamSupport.retryXtreamCatalogTransient(provider.id) {
-                xtreamSupport.executeXtreamRequest(provider.id, XtreamAdaptiveSyncPolicy.Stage.LIGHTWEIGHT) {
-                    xtreamCatalogApiService.getLiveCategories(
-                        XtreamUrlFactory.buildPlayerApiUrl(
-                            serverUrl = provider.serverUrl,
-                            username = provider.username,
-                            password = provider.password,
-                            action = "get_live_categories"
+        val mobileInitialFullFirst = prioritizeInitialLiveOnboarding &&
+            trackInitialLiveOnboarding &&
+            !runtimeProfile.snapshot.isTelevision
+        var rawLiveCategories: List<XtreamCategory>? = null
+        var categoriesRequestAttempted = false
+
+        suspend fun loadLiveCategoriesIfNeeded(): List<XtreamCategory>? {
+            if (categoriesRequestAttempted) return rawLiveCategories
+            categoriesRequestAttempted = true
+            rawLiveCategories = when (val attempt = xtreamSupport.attemptNonCancellation {
+                xtreamSupport.retryXtreamCatalogTransient(provider.id) {
+                    xtreamSupport.executeXtreamRequest(provider.id, XtreamAdaptiveSyncPolicy.Stage.LIGHTWEIGHT) {
+                        xtreamCatalogApiService.getLiveCategories(
+                            XtreamUrlFactory.buildPlayerApiUrl(
+                                serverUrl = provider.serverUrl,
+                                username = provider.username,
+                                password = provider.password,
+                                action = "get_live_categories"
+                            )
                         )
+                    }
+                }
+            }) {
+                is Attempt.Success -> attempt.value
+                is Attempt.Failure -> {
+                    Log.w(
+                        XTREAM_LIVE_STRATEGY_TAG,
+                        "Xtream live categories request failed for provider ${provider.id}: ${sanitizeThrowableMessage(attempt.error)}"
                     )
+                    null
                 }
             }
-        }) {
-            is Attempt.Success -> attempt.value
-            is Attempt.Failure -> {
-                Log.w(
-                    XTREAM_LIVE_STRATEGY_TAG,
-                    "Xtream live categories request failed for provider ${provider.id}: ${sanitizeThrowableMessage(attempt.error)}"
-                )
-                null
-            }
+            return rawLiveCategories
         }
-        val resolvedCategories = rawLiveCategories
+
+        // Full-first mobile onboarding intentionally postpones this lightweight request.
+        // A successful get_live_streams call must remain the only initial Live request;
+        // categories are fetched only if full decode falls back to category mode.
+        if (!mobileInitialFullFirst) {
+            loadLiveCategoriesIfNeeded()
+        }
+
+        var resolvedCategories = rawLiveCategories
             ?.let { categories -> api.mapCategories(ContentType.LIVE, categories) }
             ?.map { category -> category.toEntity(provider.id) }
             ?.takeIf { it.isNotEmpty() }
-        val filteredRawLiveCategories = rawLiveCategories.orEmpty().filterNot { category ->
+        var filteredRawLiveCategories = rawLiveCategories.orEmpty().filterNot { category ->
             category.categoryId.toLongOrNull() in hiddenLiveCategoryIds
         }
-        val visibleResolvedCategories = resolvedCategories
+        var visibleResolvedCategories = resolvedCategories
             ?.filterNot { category -> category.categoryId in hiddenLiveCategoryIds }
             ?.takeIf { it.isNotEmpty() }
         Log.i(
@@ -100,25 +120,36 @@ internal class SyncManagerXtreamLiveStrategy(
             "Live categories provider=${provider.id} rawApi=${rawLiveCategories?.size ?: -1} " +
                 "resolved=${resolvedCategories?.size ?: -1} hidden=${hiddenLiveCategoryIds.size} " +
                 "visiblePreferred=${visibleResolvedCategories?.size ?: 0} " +
-                "rawRequest=${if (rawLiveCategories != null) "ok" else "failed"}"
+                "rawRequest=${if (rawLiveCategories != null) "ok" else "deferred"}"
         )
 
         var fullPayload = CatalogSyncPayload<Channel>(
             catalogResult = CatalogStrategyResult.EmptyValid("full"),
             categories = null
         )
-        // The first login must become usable quickly. Some providers keep the full
-        // get_live_streams response open for a very long time, which leaves onboarding
-        // stuck at "Downloading Live TV..." with no persisted catalog. Use the bounded
-        // category requests for initial onboarding; full-catalog remains available for
-        // subsequent/background refreshes.
-        val shouldAttemptFullCatalog = !trackInitialLiveOnboarding &&
-            effectiveLiveSyncMethod == EffectiveXtreamLiveSyncMethod.STREAM_ALL &&
-            hiddenLiveCategoryIds.isEmpty() &&
-            runtimeProfile.shouldAttemptFullLiveCatalog(trackInitialLiveOnboarding)
+        // Mobile Live-first onboarding now tries the single get_live_streams request
+        // first. The streamed decoder publishes batches while the request is open, so
+        // the first usable channels can appear without issuing one request per category.
+        // TV/default onboarding keeps the existing category-first behavior unchanged.
+        val shouldAttemptFullCatalog = hiddenLiveCategoryIds.isEmpty() &&
+            runtimeProfile.shouldAttemptFullLiveCatalog(trackInitialLiveOnboarding) &&
+            (mobileInitialFullFirst || (!trackInitialLiveOnboarding &&
+                effectiveLiveSyncMethod == EffectiveXtreamLiveSyncMethod.STREAM_ALL))
         if (shouldAttemptFullCatalog) {
+            Log.i(
+                "SyncDiag",
+                "Live initial request provider=${provider.id} action=get_live_streams mode=FULL_STREAM " +
+                    "mobileFirst=$mobileInitialFullFirst"
+            )
             progress(provider.id, onProgress, "Downloading Live TV...")
-            fullPayload = loadXtreamLiveFull(provider, api, runtimeProfile)
+            fullPayload = loadXtreamLiveFull(
+                provider = provider,
+                api = api,
+                runtimeProfile = runtimeProfile,
+                onProgress = onProgress,
+                publishInitialLiveBatch = publishInitialLiveBatch,
+                onFirstBatchPublished = onFirstBatchPublished
+            )
             when (val fullResult = fullPayload.catalogResult) {
                 is CatalogStrategyResult.Success -> return fullPayload.copy(
                     categories = catalogStrategySupport.mergePreferredAndFallbackCategories(
@@ -151,6 +182,29 @@ internal class SyncManagerXtreamLiveStrategy(
             )
         }
 
+        if (mobileInitialFullFirst && !categoriesRequestAttempted) {
+            loadLiveCategoriesIfNeeded()
+            resolvedCategories = rawLiveCategories
+                ?.let { categories -> api.mapCategories(ContentType.LIVE, categories) }
+                ?.map { category -> category.toEntity(provider.id) }
+                ?.takeIf { it.isNotEmpty() }
+            filteredRawLiveCategories = rawLiveCategories.orEmpty().filterNot { category ->
+                category.categoryId.toLongOrNull() in hiddenLiveCategoryIds
+            }
+            visibleResolvedCategories = resolvedCategories
+                ?.filterNot { category -> category.categoryId in hiddenLiveCategoryIds }
+                ?.takeIf { it.isNotEmpty() }
+            Log.i(
+                "SyncDiag",
+                "Live categories fallback provider=${provider.id} rawApi=${rawLiveCategories?.size ?: -1} " +
+                    "resolved=${resolvedCategories?.size ?: -1} hidden=${hiddenLiveCategoryIds.size}"
+            )
+        }
+        Log.i(
+            "SyncDiag",
+            "Live fallback request provider=${provider.id} mode=CATEGORY_BY_CATEGORY " +
+                "categoryCount=${filteredRawLiveCategories.size}"
+        )
         progress(provider.id, onProgress, "Downloading Live TV by category...")
         val categoryPayload = loadXtreamLiveByCategory(
             provider = provider,
@@ -176,7 +230,7 @@ internal class SyncManagerXtreamLiveStrategy(
             stagedAcceptedCount = categoryPayload.stagedAcceptedCount,
             strategyFeedback = XtreamStrategyFeedback(
                 attemptedFullCatalog = shouldAttemptFullCatalog,
-                preferredSegmentedFirst = effectiveLiveSyncMethod == EffectiveXtreamLiveSyncMethod.CATEGORY_BY_CATEGORY || !shouldAttemptFullCatalog,
+                preferredSegmentedFirst = !shouldAttemptFullCatalog,
                 fullCatalogUnsafe = (fullPayload.catalogResult as? CatalogStrategyResult.Failure)?.error?.let(catalogStrategySupport::shouldAvoidFullCatalogStrategy) == true,
                 segmentedStressDetected = catalogStrategySupport.sawSegmentedStress(
                     warnings = catalogStrategySupport.strategyWarnings(fullPayload.catalogResult),
@@ -190,7 +244,10 @@ internal class SyncManagerXtreamLiveStrategy(
     suspend fun loadXtreamLiveFull(
         provider: Provider,
         api: XtreamProvider,
-        runtimeProfile: CatalogSyncRuntimeProfile
+        runtimeProfile: CatalogSyncRuntimeProfile,
+        onProgress: ((String) -> Unit)? = null,
+        publishInitialLiveBatch: Boolean = false,
+        onFirstBatchPublished: (suspend (stagedSessionId: Long?) -> Unit)? = null
     ): CatalogSyncPayload<Channel> {
         val endpoint = XtreamUrlFactory.buildPlayerApiUrl(
             serverUrl = provider.serverUrl,
@@ -206,7 +263,10 @@ internal class SyncManagerXtreamLiveStrategy(
                 failureNextStep = "category-bulk",
                 streamItems = { item -> xtreamCatalogHttpService.streamLiveStreams(endpoint, onItem = item) },
                 mapRawBatch = { batch -> api.mapLiveStreamsSequence(batch) },
-                runtimeProfile = runtimeProfile
+                runtimeProfile = runtimeProfile,
+                onProgress = onProgress,
+                publishInitialLiveBatch = publishInitialLiveBatch,
+                onFirstBatchPublished = onFirstBatchPublished
             )
         }
 
@@ -216,7 +276,10 @@ internal class SyncManagerXtreamLiveStrategy(
             failureNextStep = "legacy-full",
             streamItems = { item -> xtreamCatalogHttpService.streamLiveStreamRows(endpoint, onItem = item) },
             mapRawBatch = { batch -> api.mapLiveStreamRowsSequence(batch) },
-            runtimeProfile = runtimeProfile
+            runtimeProfile = runtimeProfile,
+            onProgress = onProgress,
+            publishInitialLiveBatch = publishInitialLiveBatch,
+            onFirstBatchPublished = onFirstBatchPublished
         )
         if (!thinPayload.shouldRetryLegacyFullDecode()) {
             return thinPayload
@@ -232,7 +295,10 @@ internal class SyncManagerXtreamLiveStrategy(
             failureNextStep = "category-bulk",
             streamItems = { item -> xtreamCatalogHttpService.streamLiveStreams(endpoint, onItem = item) },
             mapRawBatch = { batch -> api.mapLiveStreamsSequence(batch) },
-            runtimeProfile = runtimeProfile
+            runtimeProfile = runtimeProfile,
+            onProgress = onProgress,
+            publishInitialLiveBatch = publishInitialLiveBatch,
+            onFirstBatchPublished = onFirstBatchPublished
         )
     }
 
@@ -251,7 +317,10 @@ internal class SyncManagerXtreamLiveStrategy(
         failureNextStep: String,
         streamItems: suspend (suspend (RawItem) -> Unit) -> Int,
         mapRawBatch: suspend (Sequence<RawItem>) -> Sequence<Channel>,
-        runtimeProfile: CatalogSyncRuntimeProfile
+        runtimeProfile: CatalogSyncRuntimeProfile,
+        onProgress: ((String) -> Unit)?,
+        publishInitialLiveBatch: Boolean,
+        onFirstBatchPublished: (suspend (stagedSessionId: Long?) -> Unit)?
     ): CatalogSyncPayload<Channel> {
         val fallbackCollector = FallbackCategoryCollector(provider.id, ContentType.LIVE)
         val seenStreamIds = HashSet<Long>()
@@ -261,6 +330,7 @@ internal class SyncManagerXtreamLiveStrategy(
         var streamedRawCount = 0
         var fullChannelsFailure: Throwable? = null
         var flushCount = 0
+        var initialBatchPublished = false
         var mappingElapsedMs = 0L
         var stagingElapsedMs = 0L
 
@@ -306,17 +376,31 @@ internal class SyncManagerXtreamLiveStrategy(
             acceptedCount += staged.acceptedCount
             flushCount++
             rawBatch.clear()
-            // D10 — mode HIGH (full catalog) : pas de count par categorie disponible,
-            // on emet en indetermine (`total = 0`) une fois par flush de batch (cadence
-            // <= 1/s en pratique, jamais par item). Le label reste vide car aucune
-            // categorie ne correspond a la fenetre courante.
+            val visibleChannelCount = if (publishInitialLiveBatch) {
+                syncCatalogStore.publishStagedLiveBatchUpsertOnly(
+                    providerId = provider.id,
+                    sessionId = staged.sessionId
+                )
+            } else {
+                null
+            }
+            if (publishInitialLiveBatch && staged.acceptedCount > 0 && !initialBatchPublished) {
+                initialBatchPublished = true
+                onFirstBatchPublished?.invoke(staged.sessionId)
+            }
+            val displayedChannelCount = visibleChannelCount ?: acceptedCount
+            if (publishInitialLiveBatch) {
+                onProgress?.invoke("Live TV channels $displayedChannelCount")
+            }
+            // Full catalog has no category denominator; emit an indeterminate total,
+            // but keep itemsIndexed equal to the visible DB count after each flush.
             syncProgressBus.emit(
                 SyncProgress(
                     section = Section.LIVE,
                     current = 0,
                     total = 0,
                     currentLabel = "",
-                    itemsIndexed = acceptedCount
+                    itemsIndexed = displayedChannelCount
                 )
             )
             abortIfLowMemory()

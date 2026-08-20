@@ -808,6 +808,7 @@ class SyncManagerXtreamLiveStrategyTest {
     @Test
     fun `forced stream all attempts full catalog on otherwise segmented device`() = runBlocking {
         val requestCount = AtomicInteger(0)
+        val categoryRequestCount = AtomicInteger(0)
         val requestedCategoryIds = mutableListOf<String?>()
         val httpService = OkHttpXtreamApiService(
             client = OkHttpClient.Builder()
@@ -842,7 +843,8 @@ class SyncManagerXtreamLiveStrategyTest {
             liveCategories = listOf(
                 XtreamCategory(categoryId = "12", categoryName = "News"),
                 XtreamCategory(categoryId = "13", categoryName = "Sports")
-            )
+            ),
+            liveCategoriesCallCount = categoryRequestCount
         )
         val provider = Provider(
             id = 42L,
@@ -885,6 +887,7 @@ class SyncManagerXtreamLiveStrategyTest {
                 preferSegmentedLiveOnboarding = true
             ),
             trackInitialLiveOnboarding = true,
+            prioritizeInitialLiveOnboarding = true,
             effectiveLiveSyncMethod = EffectiveXtreamLiveSyncMethod.STREAM_ALL
         )
 
@@ -894,6 +897,7 @@ class SyncManagerXtreamLiveStrategyTest {
         assertThat(payload.stagedAcceptedCount).isEqualTo(1)
         assertThat(requestedCategoryIds).containsExactly(null)
         assertThat(requestCount.get()).isEqualTo(1)
+        assertThat(categoryRequestCount.get()).isEqualTo(0)
     }
 
     @Test
@@ -1061,13 +1065,17 @@ class SyncManagerXtreamLiveStrategyTest {
     )
 
     private class FakeXtreamApiService(
-        private val liveCategories: List<XtreamCategory> = emptyList()
+        private val liveCategories: List<XtreamCategory> = emptyList(),
+        private val liveCategoriesCallCount: AtomicInteger? = null
     ) : XtreamApiService {
         override suspend fun authenticate(endpoint: String, requestProfile: HttpRequestProfile): XtreamAuthResponse {
             return XtreamAuthResponse(XtreamUserInfo(auth = 1), XtreamServerInfo())
         }
 
-        override suspend fun getLiveCategories(endpoint: String, requestProfile: HttpRequestProfile): List<XtreamCategory> = liveCategories
+        override suspend fun getLiveCategories(endpoint: String, requestProfile: HttpRequestProfile): List<XtreamCategory> {
+            liveCategoriesCallCount?.incrementAndGet()
+            return liveCategories
+        }
 
         override suspend fun getLiveStreams(endpoint: String, requestProfile: HttpRequestProfile): List<XtreamStream> = emptyList()
 

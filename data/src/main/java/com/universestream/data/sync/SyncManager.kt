@@ -121,6 +121,7 @@ private const val XTREAM_AVOID_FULL_CATALOG_COOLDOWN_MILLIS = 6 * 60 * 60 * 1000
 private const val XTREAM_MOVIE_REQUEST_TIMEOUT_MILLIS = 60_000L
 private const val XTREAM_SERIES_REQUEST_TIMEOUT_MILLIS = 60_000L
 private const val XTREAM_INITIAL_LIVE_ONBOARDING_TIMEOUT_MILLIS = 45_000L
+private const val XTREAM_INITIAL_LIVE_FULL_REQUEST_TIMEOUT_MILLIS = 5 * 60_000L
 private const val XTREAM_SQLITE_LOOKUP_CHUNK_SIZE = 900
 private const val STALKER_GUIDE_PROGRAM_BATCH_SIZE = 500
 private const val XTREAM_ONBOARDING_PHASE_STARTING = "STARTING"
@@ -1190,8 +1191,15 @@ class SyncManager @Inject constructor(
                 )
             }
             progress(provider.id, onProgress, "Downloading Live TV...")
+            val mobileInitialLiveFirst = prioritizeInitialLiveOnboarding &&
+                !applicationContext.isTelevisionDeviceForSync()
+            val initialLiveTimeoutMillis = if (mobileInitialLiveFirst) {
+                XTREAM_INITIAL_LIVE_FULL_REQUEST_TIMEOUT_MILLIS
+            } else {
+                XTREAM_INITIAL_LIVE_ONBOARDING_TIMEOUT_MILLIS
+            }
             val liveSyncResult = if (trackInitialLiveOnboarding) {
-                withTimeoutOrNull(XTREAM_INITIAL_LIVE_ONBOARDING_TIMEOUT_MILLIS) {
+                withTimeoutOrNull(initialLiveTimeoutMillis) {
                     syncXtreamLiveCatalog(
                         provider = provider,
                         api = api,
@@ -1200,8 +1208,9 @@ class SyncManager @Inject constructor(
                         onProgress = onProgress,
                         runtimeProfile = runtimeProfile,
                         trackInitialLiveOnboarding = true,
-                        publishInitialLiveBatch = prioritizeInitialLiveOnboarding,
-                        onFirstBatchPublished = if (prioritizeInitialLiveOnboarding) {
+                        prioritizeInitialLiveOnboarding = mobileInitialLiveFirst,
+                        publishInitialLiveBatch = mobileInitialLiveFirst,
+                        onFirstBatchPublished = if (mobileInitialLiveFirst) {
                             { stagedSessionId ->
                                 // This callback is only supplied by the mobile Live-first path.
                                 // Do not alter the TV/default onboarding order here.
@@ -1234,7 +1243,7 @@ class SyncManager @Inject constructor(
                         } else {
                             null
                         },
-                        onCategoryCheckpoint = if (prioritizeInitialLiveOnboarding && !applicationContext.isTelevisionDeviceForSync()) {
+                        onCategoryCheckpoint = if (mobileInitialLiveFirst) {
                             { completedCategoryKeys, totalCategories ->
                                 persistXtreamLiveCategoryCheckpoint(
                                     providerId = provider.id,
@@ -1248,7 +1257,7 @@ class SyncManager @Inject constructor(
                         syncReason = syncReason
                     )
                 } ?: throw IOException(
-                    "Initial Live TV sync exceeded ${XTREAM_INITIAL_LIVE_ONBOARDING_TIMEOUT_MILLIS / 1_000L}s; continuing with the other libraries."
+                    "Initial Live TV sync exceeded ${initialLiveTimeoutMillis / 1_000L}s; continuing with the other libraries."
                 )
             } else {
                 syncXtreamLiveCatalog(
@@ -1259,6 +1268,7 @@ class SyncManager @Inject constructor(
                     onProgress = onProgress,
                     runtimeProfile = runtimeProfile,
                     trackInitialLiveOnboarding = false,
+                    prioritizeInitialLiveOnboarding = false,
                     publishInitialLiveBatch = false,
                     syncReason = syncReason
                 )
@@ -5896,6 +5906,7 @@ class SyncManager @Inject constructor(
         onProgress: ((String) -> Unit)?,
         runtimeProfile: CatalogSyncRuntimeProfile = CatalogSyncRuntimeProfile.from(applicationContext),
         trackInitialLiveOnboarding: Boolean = false,
+        prioritizeInitialLiveOnboarding: Boolean = false,
         publishInitialLiveBatch: Boolean = false,
         onFirstBatchPublished: (suspend (stagedSessionId: Long?) -> Unit)? = null,
         onCategoryCheckpoint: (suspend (completedCategoryKeys: List<String>, totalCategories: Int) -> Unit)? = null,
@@ -5935,6 +5946,7 @@ class SyncManager @Inject constructor(
             onProgress,
             runtimeProfile,
             trackInitialLiveOnboarding,
+            prioritizeInitialLiveOnboarding,
             publishInitialLiveBatch,
             onFirstBatchPublished = onFirstBatchPublished,
             onCategoryCheckpoint = onCategoryCheckpoint,
