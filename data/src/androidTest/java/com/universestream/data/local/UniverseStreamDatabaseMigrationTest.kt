@@ -1286,6 +1286,47 @@ class UniverseStreamDatabaseMigrationTest {
         migratedDb.close()
     }
 
+    @Test
+    fun migrate61To64_addsCompletedCategoryKeysAndChannelBrowseIndexes() {
+        migrationTestHelper.createDatabase("universestream-61-64-test", 61).close()
+
+        val migratedDb = migrationTestHelper.runMigrationsAndValidate(
+            "universestream-61-64-test",
+            64,
+            true,
+            UniverseStreamDatabase.MIGRATION_61_62,
+            UniverseStreamDatabase.MIGRATION_62_63,
+            UniverseStreamDatabase.MIGRATION_63_64
+        )
+
+        assertEquals(
+            1,
+            countRows(
+                migratedDb,
+                "SELECT COUNT(*) FROM pragma_table_info('xtream_index_jobs') " +
+                    "WHERE name = 'completed_category_keys'"
+            )
+        )
+        assertEquals(
+            1,
+            countRows(
+                migratedDb,
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' " +
+                    "AND name = 'index_channels_provider_id_number_id'"
+            )
+        )
+        assertEquals(
+            1,
+            countRows(
+                migratedDb,
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' " +
+                    "AND name = 'index_channels_provider_id_category_id_number_id'"
+            )
+        )
+
+        migratedDb.close()
+    }
+
     private fun countRows(db: androidx.sqlite.db.SupportSQLiteDatabase, sql: String): Int {
         db.query(sql).use { cursor ->
             if (!cursor.moveToFirst()) return 0

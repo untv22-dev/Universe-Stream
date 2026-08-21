@@ -184,7 +184,10 @@ fun MobileLiveTvContent(
         }
 
         Text(
-            text = "${uiState.channelTotalCount.coerceAtLeast(channels.size)} channels",
+            text = stringResource(
+                R.string.player_channel_count_format,
+                uiState.channelTotalCount.coerceAtLeast(channels.size)
+            ),
             color = AppColors.TextSecondary,
             style = MaterialTheme.typography.labelMedium
         )

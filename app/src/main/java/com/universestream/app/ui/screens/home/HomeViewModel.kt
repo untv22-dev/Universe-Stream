@@ -920,7 +920,14 @@ class HomeViewModel @Inject constructor(
                             } else if (trimmedQuery.length < MIN_CHANNEL_SEARCH_QUERY_LENGTH) {
                                 flowOf(emptyList())
                             } else {
-                                channelRepository.searchChannelsByCategory(providerId, category.id, trimmedQuery)
+                                _channelSearchLimit.flatMapLatest { limit ->
+                                    channelRepository.searchChannelsByCategoryPaged(
+                                        providerId,
+                                        category.id,
+                                        trimmedQuery,
+                                        limit
+                                    )
+                                }
                             }
                         } else if (trimmedQuery.isBlank()) {
                             _channelBrowseLimit.flatMapLatest { limit ->
@@ -977,18 +984,10 @@ class HomeViewModel @Inject constructor(
                     } else {
                         _channelSearchLimit.value
                     }
-                    val hasMore = if (mobileDatabaseFirst && !_uiState.value.isCombinedLiveSource && !category.isVirtual) {
-                        when {
-                            currentQuery.isBlank() -> rawCategoryCount > currentLimit
-                            currentQuery.length >= MIN_CHANNEL_SEARCH_QUERY_LENGTH -> displayedChannels.size >= currentLimit
-                            else -> false
-                        }
-                    } else {
-                        when {
-                            currentQuery.isBlank() -> rawCategoryCount > currentLimit
-                            currentQuery.length >= MIN_CHANNEL_SEARCH_QUERY_LENGTH -> displayedChannels.size >= currentLimit
-                            else -> false
-                        }
+                    val hasMore = when {
+                        currentQuery.isBlank() -> rawCategoryCount > currentLimit
+                        currentQuery.length >= MIN_CHANNEL_SEARCH_QUERY_LENGTH -> displayedChannels.size >= currentLimit
+                        else -> false
                     }
                     android.util.Log.i(
                         "HomeDiag",
