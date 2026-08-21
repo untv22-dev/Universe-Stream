@@ -422,11 +422,15 @@ class ProviderRepositoryImpl @Inject constructor(
             provider.copy(id = newId).copy(password = "")
         }
 
-        handleInitialOnboardingSync(
-            providerData = providerData,
-            syncResult = syncManager.sync(providerData.id, force = false, onProgress = onProgress),
-            syncFailurePrefix = "Playlist saved, but initial sync failed. The provider was saved and can be retried from Settings"
-        )
+        if (!applicationContext.isTelevisionDeviceForSync()) {
+            mobileFastLoginHandoff(providerData, onProgress)
+        } else {
+            handleInitialOnboardingSync(
+                providerData = providerData,
+                syncResult = syncManager.sync(providerData.id, force = false, onProgress = onProgress),
+                syncFailurePrefix = "Playlist saved, but initial sync failed. The provider was saved and can be retried from Settings"
+            )
+        }
     } catch (e: Exception) {
         Result.error("Failed to add M3U provider: ${e.message}", e)
     }
@@ -488,6 +492,9 @@ class ProviderRepositoryImpl @Inject constructor(
                 val newId = providerDao.insert(provider.toSecureEntity())
                 provider.copy(id = newId).copy(password = "")
             }
+            if (!applicationContext.isTelevisionDeviceForSync()) {
+                return mobileFastLoginHandoff(providerData, onProgress)
+            }
             handleInitialOnboardingSync(providerData = providerData,
                 syncResult = syncManager.sync(providerData.id, force = false, onProgress = onProgress),
                 syncFailurePrefix = "Jellyfin provider saved, but initial sync failed. The provider was saved and can be retried from Settings")
@@ -520,6 +527,9 @@ class ProviderRepositoryImpl @Inject constructor(
             val providerData = saveJellyfinProvider(providerName = providerName,
                 serverUrl = normalizedServerUrl, username = quickConnect.userName.ifBlank { providerName },
                 password = quickConnect.accessToken, existingProvider = existingProvider)
+            if (!applicationContext.isTelevisionDeviceForSync()) {
+                return mobileFastLoginHandoff(providerData, onProgress)
+            }
             handleInitialOnboardingSync(providerData = providerData,
                 syncResult = syncManager.sync(providerData.id, force = false, onProgress = onProgress),
                 syncFailurePrefix = "Jellyfin provider saved, but initial sync failed. The provider was saved and can be retried from Settings")
@@ -701,6 +711,9 @@ class ProviderRepositoryImpl @Inject constructor(
                     newData.copy(id = newId).copy(password = "")
                 }
 
+                if (!applicationContext.isTelevisionDeviceForSync()) {
+                    return mobileFastLoginHandoff(providerData, onProgress)
+                }
                 val prioritizeInitialLiveOnboarding = providerData.type == ProviderType.XTREAM_CODES &&
                     !applicationContext.isTelevisionDeviceForSync()
                 handleInitialOnboardingSync(
@@ -718,6 +731,25 @@ class ProviderRepositoryImpl @Inject constructor(
             is Result.Error -> Result.error(authResult.message, authResult.exception)
             is Result.Loading -> Result.error("Unexpected loading state")
         }
+    }
+
+    /**
+     * Mobile fast-login handoff: mirrors the Xtream login flow. Authentication and
+     * persistence are complete, so the provider becomes visible to Home immediately
+     * (PARTIAL + active) and WorkManager finishes Live TV / Movies / Series / EPG in
+     * the background while the setup UI leaves the screen. Television keeps the
+     * original synchronous onboarding so its behavior is untouched.
+     */
+    private suspend fun mobileFastLoginHandoff(
+        providerData: Provider,
+        onProgress: ((String) -> Unit)?
+    ): Result<Provider> {
+        providerDao.setActive(providerData.id)
+        onProgress?.invoke("Saved. Loading your library in the background...")
+        syncManager.scheduleProviderSyncResume(providerData.id)
+        return Result.success(
+            providerData.copy(status = ProviderStatus.PARTIAL, isActive = true)
+        )
     }
 
     private suspend fun handleInitialOnboardingSync(
