@@ -5,46 +5,50 @@
 # compilation so first launch and cold starts run the hot startup path
 # without JIT warm-up.
 #
+# Syntax: whole-class rules are bare descriptors (Lcom/pkg/Class;) with NO
+# flags — profgen rejects flags on class rules. Method rules would use
+# HSPLcom/pkg/Class;->method(...)ReturnType instead.
+#
 # Scope: classes executed on every cold start before first frame + the home
 # screen render. Kept deliberately narrow — over-broad profiles slow down
 # install-time dexopt for marginal gain.
 
 # Application shell
-HSPLcom/universestream/app/UniverseStreamApp;
-HSPLcom/universestream/app/MainActivity;
+Lcom/universestream/app/UniverseStreamApp;
+Lcom/universestream/app/MainActivity;
 
 # Crash handling installs during Application.onCreate
-HSPLcom/universestream/app/diagnostics/CrashReportStore;
+Lcom/universestream/app/diagnostics/CrashReportStore;
 
 # Navigation graph construction happens before first frame
-HSPLcom/universestream/app/navigation/AppNavigationKt;
+Lcom/universestream/app/navigation/AppNavigationKt;
 
 # Home surface (first screen on both TV and mobile)
-HSPLcom/universestream/app/ui/screens/home/HomeScreenKt;
-HSPLcom/universestream/app/ui/screens/home/HomeViewModel;
-HSPLcom/universestream/app/ui/screens/home/MobileLiveTvContentKt;
-HSPLcom/universestream/app/ui/screens/home/HomeScreenDialogsKt;
+Lcom/universestream/app/ui/screens/home/HomeScreenKt;
+Lcom/universestream/app/ui/screens/home/HomeViewModel;
+Lcom/universestream/app/ui/screens/home/MobileLiveTvContentKt;
+Lcom/universestream/app/ui/screens/home/HomeScreenDialogsKt;
 
 # Design system / theme resolution runs during first composition
 # (Theme.kt + Color.kt + Spacing.kt are top-level functions -> *Kt classes)
-HSPLcom/universestream/app/ui/theme/ThemeKt;
-HSPLcom/universestream/app/ui/theme/ColorKt;
-HSPLcom/universestream/app/ui/theme/SpacingKt;
-HSPLcom/universestream/app/ui/design/AppColors;
-HSPLcom/universestream/app/ui/design/AppTypographyKt;
-HSPLcom/universestream/app/ui/design/AppShapes;
-HSPLcom/universestream/app/ui/design/AppSpacing;
-HSPLcom/universestream/app/ui/design/AppMotion;
-HSPLcom/universestream/app/ui/design/AppWindowSizeClass;
+Lcom/universestream/app/ui/theme/ThemeKt;
+Lcom/universestream/app/ui/theme/ColorKt;
+Lcom/universestream/app/ui/theme/SpacingKt;
+Lcom/universestream/app/ui/design/AppColors;
+Lcom/universestream/app/ui/design/AppTypographyKt;
+Lcom/universestream/app/ui/design/AppShapes;
+Lcom/universestream/app/ui/design/AppSpacing;
+Lcom/universestream/app/ui/design/AppMotion;
+Lcom/universestream/app/ui/design/AppWindowSizeClass;
 
 # DI graph touched at startup (Hilt-generated, names are stable)
-HSPLcom/universestream/app/di/DatabaseModule;
-HSPLcom/universestream/app/di/NetworkModule;
-HSPLcom/universestream/app/di/RepositoryModule;
+Lcom/universestream/app/di/DatabaseModule;
+Lcom/universestream/app/di/NetworkModule;
+Lcom/universestream/app/di/RepositoryModule;
 
 # Room open + DAO lookup happen on the startup path
-HSPLcom/universestream/data/local/UniverseStreamDatabase_Impl;
-HSPLcom/universestream/data/preferences/PreferencesRepository;
+Lcom/universestream/data/local/UniverseStreamDatabase_Impl;
+Lcom/universestream/data/preferences/PreferencesRepository;
 
 # Sync trigger installed from onCreate
-HSPLcom/universestream/data/sync/ProviderSyncWorker;
+Lcom/universestream/data/sync/ProviderSyncWorker;
