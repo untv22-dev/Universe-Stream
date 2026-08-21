@@ -464,12 +464,23 @@ class SyncManager @Inject constructor(
                             .toSet()
                         val remoteIds = remoteResult.data.map { it.id }.toSet()
                         if (localIds != remoteIds) {
-                            Log.i(
-                                "SyncDiag",
-                                "Mobile category delta provider=$providerId section=${contentType.name} " +
-                                    "localCount=${localIds.size} remoteCount=${remoteIds.size}"
-                            )
-                            scheduleXtreamIndexSync(providerId, contentType, force = false)
+                            val existingIndexJob = xtreamIndexJobDao.get(providerId, contentType.name)
+                            val indexWorkActive = existingIndexJob?.state in setOf("QUEUED", "PARTIAL", "RUNNING")
+                            if (indexWorkActive) {
+                                Log.i(
+                                    "SyncDiag",
+                                    "Mobile category delta skipped while index continuation is active " +
+                                        "provider=$providerId section=${contentType.name} state=${existingIndexJob?.state} " +
+                                        "localCount=${localIds.size} remoteCount=${remoteIds.size}"
+                                )
+                            } else {
+                                Log.i(
+                                    "SyncDiag",
+                                    "Mobile category delta provider=$providerId section=${contentType.name} " +
+                                        "localCount=${localIds.size} remoteCount=${remoteIds.size}"
+                                )
+                                scheduleXtreamIndexSync(providerId, contentType, force = false)
+                            }
                         } else {
                             Log.i(
                                 "SyncDiag",
@@ -1661,11 +1672,19 @@ class SyncManager @Inject constructor(
             stagedFlushCount = stagedFlushCountFor(stagedState.channelCount),
             clearError = true
         )
-        syncCatalogStore.applyStagedLiveCatalog(
-            providerId = provider.id,
-            sessionId = sessionId,
-            categories = commitState.categories.takeIf { it.isNotEmpty() }
-        )
+        if (applicationContext.isTelevisionDeviceForSync()) {
+            syncCatalogStore.applyStagedLiveCatalog(
+                providerId = provider.id,
+                sessionId = sessionId,
+                categories = commitState.categories.takeIf { it.isNotEmpty() }
+            )
+        } else {
+            syncCatalogStore.applyStagedLiveCatalogUpsertOnly(
+                providerId = provider.id,
+                sessionId = sessionId,
+                categories = commitState.categories.takeIf { it.isNotEmpty() }
+            )
+        }
         return XtreamLiveCommitResult(
             acceptedCount = stagedState.channelCount,
             warnings = listOf("Live TV import resumed from saved staged session.")
@@ -4155,11 +4174,19 @@ class SyncManager @Inject constructor(
                     } else {
                         stagedState
                     }
-                    syncCatalogStore.applyStagedLiveCatalog(
-                        providerId = providerId,
-                        sessionId = sessionId,
-                        categories = commitState.categories.takeIf { it.isNotEmpty() }
-                    )
+                    if (applicationContext.isTelevisionDeviceForSync()) {
+                        syncCatalogStore.applyStagedLiveCatalog(
+                            providerId = providerId,
+                            sessionId = sessionId,
+                            categories = commitState.categories.takeIf { it.isNotEmpty() }
+                        )
+                    } else {
+                        syncCatalogStore.applyStagedLiveCatalogUpsertOnly(
+                            providerId = providerId,
+                            sessionId = sessionId,
+                            categories = commitState.categories.takeIf { it.isNotEmpty() }
+                        )
+                    }
                     val finishedAt = System.currentTimeMillis()
                     val indexedRows = backfillXtreamLiveIndex(providerId, finishedAt)
                     val storedCount = channelDao.getCount(providerId).first()
@@ -4577,7 +4604,13 @@ class SyncManager @Inject constructor(
         val now = System.currentTimeMillis()
 
         if (force || ContentCachePolicy.shouldRefresh(metadata.lastLiveSuccess, ContentCachePolicy.CATALOG_TTL_MILLIS, now)) {
-            val stats = withContext(Dispatchers.IO) { m3uImporter.importPlaylist(provider, onProgress) }
+            val stats = withContext(Dispatchers.IO) {
+                m3uImporter.importPlaylist(
+                    provider,
+                    onProgress,
+                    preserveExistingOnCommit = !applicationContext.isTelevisionDeviceForSync()
+                )
+            }
             if (stats.liveCount == 0 && stats.movieCount == 0) {
                 throw IllegalStateException("Playlist is empty or contains no supported entries")
             }
@@ -5556,8 +5589,7 @@ class SyncManager @Inject constructor(
                     previousHealthyStreak = currentMetadata.liveHealthySyncStreak,
                     sawSequentialStress = liveSequentialStress
                 )
-                val preserveExistingLiveOnRetry = syncReason == XtreamLiveSyncReason.MANUAL_SETTINGS &&
-                    !applicationContext.isTelevisionDeviceForSync()
+                val preserveExistingLiveOnMobile = !applicationContext.isTelevisionDeviceForSync()
                 val liveAvoidFullUntil = updateAvoidFullUntil(
                     previousAvoidFullUntil = currentMetadata.liveAvoidFullUntil,
                     now = now,
@@ -5571,7 +5603,7 @@ class SyncManager @Inject constructor(
                             liveSyncResult = liveSyncResult,
                             hiddenLiveCategoryIds = hiddenLiveCategoryIds,
                             onProgress = onProgress,
-                            preserveExistingOnCommit = preserveExistingLiveOnRetry
+                            preserveExistingOnCommit = preserveExistingLiveOnMobile
                         ).acceptedCount
                         syncMetadataRepository.updateMetadata(
                             currentMetadata.copy(
@@ -5591,7 +5623,7 @@ class SyncManager @Inject constructor(
                             hiddenLiveCategoryIds = hiddenLiveCategoryIds,
                             onProgress = onProgress,
                             partialCompletionWarning = "Live TV retry completed partially.",
-                            preserveExistingOnCommit = preserveExistingLiveOnRetry
+                            preserveExistingOnCommit = preserveExistingLiveOnMobile
                         )
                         val acceptedCount = commitResult.acceptedCount
                         syncMetadataRepository.updateMetadata(
@@ -5640,7 +5672,13 @@ class SyncManager @Inject constructor(
             ProviderType.M3U -> {
                 progress(provider.id, onProgress, "Retrying Live TV...")
                 val stats = withContext(Dispatchers.IO) {
-                    m3uImporter.importPlaylist(provider, onProgress, includeLive = true, includeMovies = false)
+                    m3uImporter.importPlaylist(
+                        provider,
+                        onProgress,
+                        includeLive = true,
+                        includeMovies = false,
+                        preserveExistingOnCommit = !applicationContext.isTelevisionDeviceForSync()
+                    )
                 }
                 if (stats.liveCount == 0) {
                     throw IllegalStateException("Playlist contains no live TV entries")
@@ -5749,7 +5787,13 @@ class SyncManager @Inject constructor(
             ProviderType.M3U -> {
                 progress(provider.id, onProgress, "Retrying Movies...")
                 val stats = withContext(Dispatchers.IO) {
-                    m3uImporter.importPlaylist(provider, onProgress, includeLive = false, includeMovies = true)
+                    m3uImporter.importPlaylist(
+                        provider,
+                        onProgress,
+                        includeLive = false,
+                        includeMovies = true,
+                        preserveExistingOnCommit = !applicationContext.isTelevisionDeviceForSync()
+                    )
                 }
                 if (stats.movieCount == 0) {
                     throw IllegalStateException("Playlist contains no movie entries")
@@ -6057,7 +6101,7 @@ class SyncManager @Inject constructor(
         hiddenLiveCategoryIds: Set<Long>,
         onProgress: ((String) -> Unit)? = null,
         partialCompletionWarning: String? = null,
-        preserveExistingOnCommit: Boolean = false
+        preserveExistingOnCommit: Boolean = !applicationContext.isTelevisionDeviceForSync()
     ): XtreamLiveCommitResult {
         progress(providerId, onProgress, "Saving Live TV channels...")
         val warnings = buildList {
@@ -6079,7 +6123,7 @@ class SyncManager @Inject constructor(
                     if (preserveExistingOnCommit) {
                         Log.w(
                             "SyncDiag",
-                            "Live retry mobile commit uses upsert-only provider=$providerId " +
+                            "Live mobile commit uses upsert-only provider=$providerId " +
                                 "stagedAccepted=${liveSyncResult.stagedAcceptedCount}"
                         )
                         syncCatalogStore.applyStagedLiveCatalogUpsertOnly(
@@ -6105,7 +6149,7 @@ class SyncManager @Inject constructor(
                     if (preserveExistingOnCommit) {
                         Log.w(
                             "SyncDiag",
-                            "Live retry mobile commit uses upsert-only provider=$providerId " +
+                            "Live mobile commit uses upsert-only provider=$providerId " +
                                 "channels=${liveCatalog.channels.size}"
                         )
                         syncCatalogStore.upsertLiveCatalog(
@@ -6515,20 +6559,36 @@ class SyncManager @Inject constructor(
                 .distinctBy { it.categoryId to it.type }
                 .takeIf { it.isNotEmpty() }
             if (acceptedCount == 0 || sessionId == null) {
-                syncCatalogStore.replaceLiveCatalog(
-                    providerId = provider.id,
-                    categories = categories,
-                    channels = emptyList()
-                )
+                if (applicationContext.isTelevisionDeviceForSync()) {
+                    syncCatalogStore.replaceLiveCatalog(
+                        providerId = provider.id,
+                        categories = categories,
+                        channels = emptyList()
+                    )
+                } else {
+                    syncCatalogStore.upsertLiveCatalog(
+                        providerId = provider.id,
+                        categories = categories,
+                        channels = emptyList()
+                    )
+                }
                 return StagedStalkerLiveCatalogResult(
-                    acceptedCount = 0,
+                    acceptedCount = syncCatalogStore.countStoredLiveChannels(provider.id),
                     warnings = (warnings + "Live TV provider exposed no live channels; continuing with VOD and series only.").distinct()
                 )
             }
-            syncCatalogStore.applyStagedLiveCatalog(provider.id, sessionId, categories)
-            return StagedStalkerLiveCatalogResult(acceptedCount, warnings)
+            if (applicationContext.isTelevisionDeviceForSync()) {
+                syncCatalogStore.applyStagedLiveCatalog(provider.id, sessionId, categories)
+            } else {
+                syncCatalogStore.applyStagedLiveCatalogUpsertOnly(provider.id, sessionId, categories)
+            }
+            val reportedCount = if (applicationContext.isTelevisionDeviceForSync()) {
+                acceptedCount
+            } else {
+                syncCatalogStore.countStoredLiveChannels(provider.id)
+            }
+            return StagedStalkerLiveCatalogResult(reportedCount, warnings)
         }
-
         try {
             var bulkFailure: Exception? = null
             when (val streamResult = api.streamLiveStreams { channel ->

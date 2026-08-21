@@ -615,7 +615,7 @@ class SyncManagerTest {
         assertThat(states.allValues.last { it.phase == "COMPLETED" }.stagedSessionId).isNull()
         verify(catalogSyncDao).updateChangedChannelsFromStage(1L, 123L)
         verify(catalogSyncDao).insertMissingChannelsFromStage(1L, 123L)
-        verify(catalogSyncDao).deleteStaleChannelsForStage(1L, 123L)
+        verify(catalogSyncDao, never()).deleteStaleChannelsForStage(1L, 123L)
         verify(catalogSyncDao).clearChannelStages(1L, 123L)
     }
 
@@ -750,15 +750,26 @@ class SyncManagerTest {
     }
 
     @Test
-    fun `retrySection_live_xtream_mobile_preserves_existing_catalog_when_result_is_smaller`() = runTest {
+    fun `retrySection_live_xtream_mobile_preserves_existing_catalog_for_all_sync_reasons`() = runTest {
         val mgr = buildManager(providerType = ProviderType.XTREAM_CODES)
         org.mockito.kotlin.whenever(channelDao.getCount(1L)).thenReturn(flowOf(2))
         stubXtreamLiveCatalog()
 
-        val result = mgr.retrySection(providerId = 1L, section = SyncRepairSection.LIVE)
-        advanceUntilIdle()
+        listOf(
+            XtreamLiveSyncReason.MANUAL_SETTINGS,
+            XtreamLiveSyncReason.BACKGROUND_STALE,
+            XtreamLiveSyncReason.FOREGROUND,
+            XtreamLiveSyncReason.INITIAL_ONBOARDING
+        ).forEach { reason ->
+            val result = mgr.retrySection(
+                providerId = 1L,
+                section = SyncRepairSection.LIVE,
+                syncReason = reason
+            )
+            advanceUntilIdle()
+            assertThat(result.isSuccess).isTrue()
+        }
 
-        assertThat(result.isSuccess).isTrue()
         verify(catalogSyncDao, never()).deleteStaleChannelsForStage(any(), any())
         assertThat(syncMetadataRepo.getMetadata(1L)?.liveCount).isEqualTo(2)
     }

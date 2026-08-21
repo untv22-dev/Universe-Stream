@@ -553,6 +553,32 @@ class SyncCatalogStoreTest {
         verify(movieDao).restoreWatchProgress(7L)
     }
 
+    @Test
+    fun `finalizeStagedImport preserve keeps existing catalog without stale deletion`() = runTest {
+        whenever(categoryDao.getByProviderAndTypeSync(7L, ContentType.LIVE.name)).thenReturn(emptyList())
+        whenever(categoryDao.getByProviderAndTypeSync(7L, ContentType.MOVIE.name)).thenReturn(emptyList())
+        whenever(catalogSyncDao.getCategoryStages(eq(7L), any(), eq(ContentType.LIVE.name))).thenReturn(emptyList())
+        whenever(catalogSyncDao.getCategoryStages(eq(7L), any(), eq(ContentType.MOVIE.name))).thenReturn(emptyList())
+
+        store().finalizeStagedImport(
+            providerId = 7L,
+            sessionId = 66L,
+            liveCategories = null,
+            movieCategories = null,
+            includeLive = true,
+            includeMovies = true,
+            preserveExistingOnCommit = true
+        )
+
+        verify(catalogSyncDao, never()).deleteStaleCategoriesForStage(any(), any(), any())
+        verify(catalogSyncDao, never()).deleteStaleChannelsForStage(any(), any())
+        verify(catalogSyncDao, never()).deleteStaleMoviesForStage(any(), any())
+        verify(catalogSyncDao).updateChangedChannelsFromStage(7L, 66L)
+        verify(catalogSyncDao).insertMissingChannelsFromStage(7L, 66L)
+        verify(catalogSyncDao).updateChangedMoviesFromStage(7L, 66L)
+        verify(catalogSyncDao).insertMissingMoviesFromStage(7L, 66L)
+    }
+
     private class TrackingTransactionRunner : DatabaseTransactionRunner {
         var calls: Int = 0
         private var depth: Int = 0

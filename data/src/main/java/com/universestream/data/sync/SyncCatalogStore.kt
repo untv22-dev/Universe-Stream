@@ -380,19 +380,38 @@ internal class SyncCatalogStore(
         liveCategories: List<CategoryEntity>?,
         movieCategories: List<CategoryEntity>?,
         includeLive: Boolean,
-        includeMovies: Boolean
+        includeMovies: Boolean,
+        preserveExistingOnCommit: Boolean = false
     ) {
         transactionRunner.inTransaction {
             if (includeLive) {
                 stageCategories(providerId, sessionId, liveCategories.orEmpty())
-                applyCategories(providerId, sessionId, "LIVE")
-                applyChannels(providerId, sessionId)
+                applyCategories(
+                    providerId,
+                    sessionId,
+                    "LIVE",
+                    pruneStale = !preserveExistingOnCommit
+                )
+                if (preserveExistingOnCommit) {
+                    upsertChannels(providerId, sessionId)
+                } else {
+                    applyChannels(providerId, sessionId)
+                }
                 catalogSyncDao.rebuildChannelFts()
             }
             if (includeMovies) {
                 stageCategories(providerId, sessionId, movieCategories.orEmpty())
-                applyCategories(providerId, sessionId, "MOVIE")
-                applyMovies(providerId, sessionId)
+                applyCategories(
+                    providerId,
+                    sessionId,
+                    "MOVIE",
+                    pruneStale = !preserveExistingOnCommit
+                )
+                if (preserveExistingOnCommit) {
+                    upsertMovies(providerId, sessionId)
+                } else {
+                    applyMovies(providerId, sessionId)
+                }
                 catalogSyncDao.rebuildMovieFts()
             }
         }
