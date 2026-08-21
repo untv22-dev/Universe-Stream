@@ -231,7 +231,7 @@ fun MobileLiveTvContent(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 contentPadding = PaddingValues(bottom = 20.dp)
             ) {
-                items(displayedChannels, key = { it.id }) { channel ->
+                items(channels, key = { it.id }) { channel ->
                     LiveChannelRowSurface(
                         channel = channel,
                         onClick = {
