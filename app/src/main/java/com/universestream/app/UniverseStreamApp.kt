@@ -1,8 +1,9 @@
 package com.universestream.app
 
-import android.app.Activity
 import android.app.Application
-import android.os.Bundle
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.ProcessLifecycleOwner
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -42,23 +43,14 @@ import okhttp3.OkHttpClient
 class UniverseStreamApp : Application(), SingletonImageLoader.Factory {
     private val runtimeDiagnosticsManager by lazy { RuntimeDiagnosticsManager(this) }
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var startedActivityCount = 0
-    private val mobileSyncActivityCallbacks = object : Application.ActivityLifecycleCallbacks {
-        override fun onActivityStarted(activity: Activity) {
-            if (startedActivityCount++ == 0 && !applicationContext.isTelevisionDeviceForSync()) {
-                ProviderSyncWorker.enqueueMobileLightweightCheck(applicationContext)
-            }
-        }
 
-        override fun onActivityStopped(activity: Activity) {
-            startedActivityCount = (startedActivityCount - 1).coerceAtLeast(0)
+    // Mobile app-open sync trigger. ProcessLifecycleOwner is the canonical foreground
+    // detector: it survives split-screen, activity restorations, and counts a single
+    // ON_START per foreground transition (the old startedActivityCount did this by hand).
+    private val mobileForegroundSyncObserver = LifecycleEventObserver { _, event ->
+        if (event == Lifecycle.Event.ON_START && !applicationContext.isTelevisionDeviceForSync()) {
+            ProviderSyncWorker.enqueueMobileLightweightCheck(applicationContext)
         }
-
-        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
-        override fun onActivityResumed(activity: Activity) = Unit
-        override fun onActivityPaused(activity: Activity) = Unit
-        override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
-        override fun onActivityDestroyed(activity: Activity) = Unit
     }
 
     @Inject
@@ -112,7 +104,7 @@ class UniverseStreamApp : Application(), SingletonImageLoader.Factory {
 
         ProviderSyncWorker.enqueuePeriodic(this)
         ProviderSyncWorker.enqueueLaunchStaleCheck(this)
-        registerActivityLifecycleCallbacks(mobileSyncActivityCallbacks)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(mobileForegroundSyncObserver)
         XtreamIndexWorker.enqueuePeriodic(this)
         XtreamIndexWorker.enqueueLaunchStaleCheck(this)
         RecordingReconcileWorker.enqueuePeriodic(this)

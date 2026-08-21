@@ -131,6 +131,19 @@ class ProviderSyncWorker(
                 return Result.success()
             }
 
+            // Reap zombie index jobs left RUNNING by a killed process. A zombie blocks the
+            // mobile category delta check and keeps VOD screens in "sync pending" forever.
+            // FAILED_RETRYABLE lets shouldRunIndexJob resume it on this pass.
+            val reaped = entryPoint.xtreamIndexJobDao().reapZombieRunningJobs(
+                staleThresholdMs = System.currentTimeMillis() - STALE_RUNNING_JOB_MILLIS,
+                now = System.currentTimeMillis()
+            )
+            if (reaped > 0) {
+                Log.i(TAG, "Reaped $reaped zombie RUNNING index job(s) for retry.")
+            }
+
+            val foregroundStalenessGateMs = inputData.getLong(KEY_MIN_STALENESS_MS, 0L)
+
             var sawRetryableFailure = false
             providers.forEach { provider ->
                 val hasIncompleteLiveOnboarding = shouldTrackInitialLiveOnboarding(
@@ -139,6 +152,24 @@ class ProviderSyncWorker(
                 )
                 val isFreshXtream = isFreshXtreamProvider(provider)
                 val isTelevision = applicationContext.isTelevisionDeviceForSync()
+
+                // Mobile foreground check gate: a quick app switch (open -> close -> open)
+                // must not hit the network again while every catalog is still fresh.
+                if (foregroundStalenessGateMs > 0L &&
+                    requestedProviderId == INVALID_PROVIDER_ID &&
+                    !hasIncompleteLiveOnboarding &&
+                    !isFreshXtream &&
+                    provider.isActive &&
+                    provider.lastSyncedAt > 0L &&
+                    System.currentTimeMillis() - provider.lastSyncedAt < foregroundStalenessGateMs
+                ) {
+                    Log.i(
+                        "SyncDiag",
+                        "provider=${provider.id} foreground-check skipped: synced ${System.currentTimeMillis() - provider.lastSyncedAt}ms ago (< ${foregroundStalenessGateMs}ms gate)"
+                    )
+                    return@forEach
+                }
+
                 val prioritizeInitialLiveOnboarding = !isTelevision &&
                     (hasIncompleteLiveOnboarding || isFreshXtream)
                 // Preserve the existing TV tracking behavior. The fresh-provider fallback
@@ -208,7 +239,15 @@ class ProviderSyncWorker(
         private const val UNIQUE_MOBILE_LIGHTWEIGHT_WORK_NAME = "provider-sync-mobile-lightweight-check"
         private const val UNIQUE_PROVIDER_WORK_PREFIX = "provider-sync-provider-"
         private const val KEY_PROVIDER_ID = "provider_id"
+        private const val KEY_MIN_STALENESS_MS = "min_staleness_ms"
         private const val INVALID_PROVIDER_ID = -1L
+
+        /**
+         * Mobile foreground gate: skip the app-open check when every provider synced
+         * more recently than this. Quick open/close/open cycles stay offline-cheap;
+         * anything older (or never synced) syncs immediately.
+         */
+        private const val MOBILE_FOREGROUND_STALENESS_MS = 15 * 60 * 1000L
 
         fun enqueuePeriodic(context: Context) {
             val request = PeriodicWorkRequestBuilder<ProviderSyncWorker>(6, TimeUnit.HOURS)
@@ -261,6 +300,9 @@ class ProviderSyncWorker(
             if (context.isTelevisionDeviceForSync()) return
 
             val request = OneTimeWorkRequestBuilder<ProviderSyncWorker>()
+                .setInputData(
+                    workDataOf(KEY_MIN_STALENESS_MS to MOBILE_FOREGROUND_STALENESS_MS)
+                )
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)

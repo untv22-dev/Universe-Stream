@@ -241,4 +241,15 @@ interface XtreamIndexJobDao {
 
     @Query("DELETE FROM xtream_index_jobs WHERE provider_id = :providerId")
     suspend fun deleteByProvider(providerId: Long): Int
+
+    @Query(
+        """
+        UPDATE xtream_index_jobs
+        SET state = 'FAILED_RETRYABLE',
+            updated_at = :now
+        WHERE state = 'RUNNING'
+          AND updated_at < :staleThresholdMs
+        """
+    )
+    suspend fun reapZombieRunningJobs(staleThresholdMs: Long, now: Long): Int
 }
