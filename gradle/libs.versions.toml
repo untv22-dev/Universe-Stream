@@ -16,6 +16,7 @@ hilt-work = "1.3.0"
 retrofit = "2.12.0"
 okhttp = "4.12.0"
 coil = "3.4.0"
+profileinstaller = "1.4.1"
 coroutines = "1.10.2"
 desugar-jdk-libs = "2.1.5"
 lifecycle = "2.10.0"
@@ -90,6 +91,7 @@ leakcanary-android = { group = "com.squareup.leakcanary", name = "leakcanary-and
 # Image Loading
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
+profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
 
 # Lifecycle
 lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }

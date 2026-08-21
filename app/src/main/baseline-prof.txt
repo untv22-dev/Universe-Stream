@@ -1,0 +1,50 @@
+# Baseline Profile — Universe Stream mobile startup path
+#
+# Human-readable baseline profile. AGP compiles this into the APK at
+# assets/dexopt/baseline.prof; profileinstaller triggers install-time AOT
+# compilation so first launch and cold starts run the hot startup path
+# without JIT warm-up.
+#
+# Scope: classes executed on every cold start before first frame + the home
+# screen render. Kept deliberately narrow — over-broad profiles slow down
+# install-time dexopt for marginal gain.
+
+# Application shell
+HSPLcom/universestream/app/UniverseStreamApp;
+HSPLcom/universestream/app/MainActivity;
+
+# Crash handling installs during Application.onCreate
+HSPLcom/universestream/app/diagnostics/CrashReportStore;
+
+# Navigation graph construction happens before first frame
+HSPLcom/universestream/app/navigation/AppNavigationKt;
+
+# Home surface (first screen on both TV and mobile)
+HSPLcom/universestream/app/ui/screens/home/HomeScreenKt;
+HSPLcom/universestream/app/ui/screens/home/HomeViewModel;
+HSPLcom/universestream/app/ui/screens/home/MobileLiveTvContentKt;
+HSPLcom/universestream/app/ui/screens/home/HomeScreenDialogsKt;
+
+# Design system / theme resolution runs during first composition
+# (Theme.kt + Color.kt + Spacing.kt are top-level functions -> *Kt classes)
+HSPLcom/universestream/app/ui/theme/ThemeKt;
+HSPLcom/universestream/app/ui/theme/ColorKt;
+HSPLcom/universestream/app/ui/theme/SpacingKt;
+HSPLcom/universestream/app/ui/design/AppColors;
+HSPLcom/universestream/app/ui/design/AppTypographyKt;
+HSPLcom/universestream/app/ui/design/AppShapes;
+HSPLcom/universestream/app/ui/design/AppSpacing;
+HSPLcom/universestream/app/ui/design/AppMotion;
+HSPLcom/universestream/app/ui/design/AppWindowSizeClass;
+
+# DI graph touched at startup (Hilt-generated, names are stable)
+HSPLcom/universestream/app/di/DatabaseModule;
+HSPLcom/universestream/app/di/NetworkModule;
+HSPLcom/universestream/app/di/RepositoryModule;
+
+# Room open + DAO lookup happen on the startup path
+HSPLcom/universestream/data/local/UniverseStreamDatabase_Impl;
+HSPLcom/universestream/data/preferences/PreferencesRepository;
+
+# Sync trigger installed from onCreate
+HSPLcom/universestream/data/sync/ProviderSyncWorker;
