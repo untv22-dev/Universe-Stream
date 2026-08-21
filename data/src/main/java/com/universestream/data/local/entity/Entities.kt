@@ -90,6 +90,8 @@ data class ProviderEntity(
     indices = [
         Index(value = ["provider_id"]),
         Index(value = ["provider_id", "category_id"]),
+        Index(value = ["provider_id", "number", "id"]),
+        Index(value = ["provider_id", "category_id", "number", "id"]),
         Index(value = ["provider_id", "stream_id"], unique = true),
         Index(value = ["logical_group_id"]),
         Index(value = ["provider_id", "category_id", "logical_group_id"])

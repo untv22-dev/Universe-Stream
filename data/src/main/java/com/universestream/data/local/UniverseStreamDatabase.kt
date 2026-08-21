@@ -50,7 +50,7 @@ import com.universestream.data.local.entity.*
         XtreamLiveOnboardingStateEntity::class,
         DownloadEntity::class
     ],
-    version = 63,
+    version = 64,
     exportSchema = true   // ← was false; schema JSON now tracked in version control
 )
 @TypeConverters(RoomEnumConverters::class)
@@ -2709,6 +2709,19 @@ abstract class UniverseStreamDatabase : RoomDatabase() {
                     tableName = "xtream_index_jobs",
                     columnName = "completed_category_keys",
                     columnDefinition = "TEXT NOT NULL DEFAULT ''"
+                )
+            }
+        }
+
+        val MIGRATION_63_64 = object : Migration(63, 64) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_channels_provider_id_number_id " +
+                        "ON channels(provider_id, number, id)"
+                )
+                database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_channels_provider_id_category_id_number_id " +
+                        "ON channels(provider_id, category_id, number, id)"
                 )
             }
         }

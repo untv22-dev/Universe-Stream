@@ -52,8 +52,8 @@ import com.universestream.domain.repository.ChannelRepository
  *    sized category instead of the full multi-thousand channel list.
  *  - "All channels" stays available as the first chip, but it is a choice,
  *    not the default.
- *  - Channels for the selected category come back complete from Room via the
- *    ViewModel's mobile database-first path, so no scroll pagination is needed.
+ *  - Channels for the selected category are loaded page-first from Room on mobile;
+ *    the total count remains visible while more pages are loaded on scroll.
  */
 @Composable
 fun MobileLiveTvContent(
@@ -65,7 +65,7 @@ fun MobileLiveTvContent(
     isCategoryLocked: (Category) -> Boolean,
     isChannelLocked: (Channel) -> Boolean
 ) {
-    // Read the complete synchronised catalog from Room for the mobile renderer.
+    // Enable the bounded, page-first Room flow for the mobile renderer.
     // Television and the existing non-compact Home renderer never enable this.
     LaunchedEffect(Unit) {
         viewModel.enableMobileDatabaseFirst()
@@ -104,29 +104,9 @@ fun MobileLiveTvContent(
     val channels = uiState.filteredChannels
     val channelListState = rememberLazyListState()
 
-    // All Channels can hold thousands of rows. Rendering them all at once is what
-    // makes that surface feel heavy, so cap how many are shown and grow the cap as
-    // the user scrolls. Real categories are small and render in full, so this only
-    // affects the aggregated surface. Purely client-side; the ViewModel already
-    // handed us the complete cached list, so no extra loads happen here.
-    val allChannelsPageSize = 300
-    var displayLimit by remember(selectedId) { mutableStateOf(allChannelsPageSize) }
-    val displayedChannels = remember(channels, displayLimit, isAllSelected) {
-        if (isAllSelected && channels.size > displayLimit) channels.take(displayLimit) else channels
-    }
-    LaunchedEffect(isAllSelected, channelListState, channels.size) {
-        if (!isAllSelected) return@LaunchedEffect
-        snapshotFlow {
-            val last = channelListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
-            last to channelListState.layoutInfo.totalItemsCount
-        }
-            .distinctUntilChanged()
-            .collect { (lastVisible, total) ->
-                if (total > 0 && lastVisible >= total - 10 && displayLimit < channels.size) {
-                    displayLimit = (displayLimit + allChannelsPageSize).coerceAtMost(channels.size)
-                }
-            }
-    }
+    // The ViewModel owns paging and Room remains the source of truth. The list
+    // below is already bounded, so Compose never receives all thousands of rows
+    // before the first mobile emission.
 
     var loadingTimedOut by rememberSaveable(selectedId) { mutableStateOf(false) }
     LaunchedEffect(uiState.isLoading, uiState.isCategoriesLoading, selectedId) {
@@ -139,7 +119,11 @@ fun MobileLiveTvContent(
 
     // Never hide real cached channels behind a synchronization placeholder.
     val hasCachedChannels = channels.isNotEmpty()
-    val showLoading = !hasCachedChannels && (uiState.isCategoriesLoading || (uiState.isLoading && !loadingTimedOut))
+    val showLoading = !hasCachedChannels && (
+        uiState.isCategoriesLoading ||
+            uiState.isLocalChannelQueryLoading ||
+            (uiState.isLoading && !loadingTimedOut)
+        )
 
     Column(
         modifier = Modifier
@@ -200,15 +184,27 @@ fun MobileLiveTvContent(
         }
 
         Text(
-            text = "${channels.size} channels",
+            text = "${uiState.channelTotalCount.coerceAtLeast(channels.size)} channels",
             color = AppColors.TextSecondary,
             style = MaterialTheme.typography.labelMedium
         )
 
+        if (uiState.isLocalChannelQueryLoading && hasCachedChannels) {
+            Text(
+                text = stringResource(R.string.home_loading_local_catalog),
+                color = AppColors.TextSecondary,
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+
         if (showLoading) {
             TvEmptyState(
                 title = stringResource(R.string.home_loading_channels),
-                subtitle = stringResource(R.string.home_live_retry_subtitle)
+                subtitle = if (uiState.isLocalChannelQueryLoading) {
+                    stringResource(R.string.home_loading_local_catalog)
+                } else {
+                    stringResource(R.string.home_live_retry_subtitle)
+                }
             )
         } else if (!hasCachedChannels && (uiState.errorMessage != null || loadingTimedOut)) {
             TvEmptyState(

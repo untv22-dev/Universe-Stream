@@ -104,6 +104,7 @@ object DatabaseModule {
                 UniverseStreamDatabase.MIGRATION_60_61,
                 UniverseStreamDatabase.MIGRATION_61_62,
                 UniverseStreamDatabase.MIGRATION_62_63,
+                UniverseStreamDatabase.MIGRATION_63_64,
             )
             // NOTE: fallbackToDestructiveMigration() intentionally removed.
             // All future schema changes MUST add a corresponding Migration in UniverseStreamDatabase.
