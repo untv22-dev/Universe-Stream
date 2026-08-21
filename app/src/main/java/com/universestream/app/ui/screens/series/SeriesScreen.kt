@@ -112,6 +112,7 @@ fun SeriesScreen(
     var pendingSeries by remember { mutableStateOf<Series?>(null) }
     var pendingCategory by remember { mutableStateOf<Category?>(null) }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val isTelevisionDevice = rememberIsTelevisionDevice()
 
     HandleVodUserMessage(
         userMessage = uiState.userMessage,
@@ -198,7 +199,20 @@ fun SeriesScreen(
                     subtitle = stringResource(R.string.home_add_first_provider_subtitle)
                 )
             }
-        } else if (!uiState.hasActiveProvider || (uiState.selectedCategory == null && uiState.seriesByCategory.isEmpty() && uiState.libraryCount == 0 && uiState.searchQuery.isBlank() && !uiState.isLoadingPreviewRows)) {
+        } else if (!isTelevisionDevice && uiState.isVodSyncPending && uiState.selectedCategory == null && uiState.seriesByCategory.isEmpty() && uiState.libraryCount == 0 && uiState.searchQuery.isBlank()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CircularProgressIndicator(color = Color.White)
+                    Text(
+                        text = stringResource(R.string.series_loading),
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        } else if (!uiState.hasActiveProvider || (uiState.selectedCategory == null && uiState.seriesByCategory.isEmpty() && uiState.libraryCount == 0 && uiState.searchQuery.isBlank() && !uiState.isLoadingPreviewRows && (isTelevisionDevice || !uiState.isVodSyncPending))) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 AppMessageState(
                     title = stringResource(R.string.vod_sync_needed_title),

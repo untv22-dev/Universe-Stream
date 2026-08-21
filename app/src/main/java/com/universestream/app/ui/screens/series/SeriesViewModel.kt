@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.universestream.app.ui.model.applyProviderCategoryDisplayPreferences
 import com.universestream.app.ui.model.VodViewMode
 import com.universestream.data.preferences.PreferencesRepository
+import com.universestream.domain.manager.ProviderSyncStateReader
 import com.universestream.domain.manager.ParentalControlManager
 import com.universestream.domain.model.Category
 import com.universestream.domain.model.CategorySortMode
@@ -14,6 +15,7 @@ import com.universestream.domain.model.LibraryFilterType
 import com.universestream.domain.model.LibraryBrowseQuery
 import com.universestream.domain.model.LibrarySortBy
 import com.universestream.domain.model.PlaybackHistory
+import com.universestream.domain.model.ProviderStatus
 import com.universestream.domain.model.ProviderType
 import com.universestream.domain.model.Result
 import com.universestream.domain.model.Series
@@ -79,7 +81,8 @@ class SeriesViewModel @Inject constructor(
     private val favoriteRepository: FavoriteRepository,
     private val getContinueWatching: GetContinueWatching,
     private val getCustomCategories: GetCustomCategories,
-    private val parentalControlManager: ParentalControlManager
+    private val parentalControlManager: ParentalControlManager,
+    private val providerSyncStateReader: ProviderSyncStateReader
 ) : ViewModel() {
     private companion object {
         const val UNCATEGORIZED = "Uncategorized"
@@ -134,6 +137,20 @@ class SeriesViewModel @Inject constructor(
                     )
                 }
             }
+        }
+
+        viewModelScope.launch {
+            providerRepository.getActiveProvider()
+                .filterNotNull()
+                .flatMapLatest { provider ->
+                    providerSyncStateReader.observeBackgroundIndexingActive(provider.id)
+                        .map { indexingActive ->
+                            provider.status == ProviderStatus.PARTIAL || indexingActive
+                        }
+                }
+                .collect { isVodSyncPending ->
+                    _uiState.update { it.copy(isVodSyncPending = isVodSyncPending) }
+                }
         }
 
         viewModelScope.launch {
@@ -1335,6 +1352,7 @@ data class SeriesUiState(
     val hasActiveProvider: Boolean = false,
     val isLoading: Boolean = true,
     val isLoadingPreviewRows: Boolean = false,
+    val isVodSyncPending: Boolean = false,
     val hasMorePreviewRows: Boolean = false,
     val parentalControlLevel: Int = 0,
     val unlockedCategoryIds: Set<Long> = emptySet(),
