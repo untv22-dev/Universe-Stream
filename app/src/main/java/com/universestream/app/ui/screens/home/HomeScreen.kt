@@ -1031,6 +1031,11 @@ fun HomeScreen(
                                 .padding(start = 8.dp, top = 2.dp, bottom = if (isDenseMode) 4.dp else 6.dp, end = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(if (isDenseMode) 2.dp else 4.dp)
                         ) {
+                            val channelCountForHeader = if (uiState.channelSearchQuery.trim().isEmpty()) {
+                                uiState.channelTotalCount.coerceAtLeast(uiState.filteredChannels.size)
+                            } else {
+                                uiState.filteredChannels.size
+                            }
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1071,7 +1076,7 @@ fun HomeScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = stringResource(R.string.live_channel_results, uiState.filteredChannels.size),
+                                        text = stringResource(R.string.live_channel_results, channelCountForHeader),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = OnSurfaceDim,
                                         maxLines = 1
@@ -1080,7 +1085,7 @@ fun HomeScreen(
                             } else {
                                 ContentMetadataStrip(
                                     values = buildList {
-                                        add(stringResource(R.string.live_channel_results, uiState.filteredChannels.size))
+                                        add(stringResource(R.string.live_channel_results, channelCountForHeader))
                                         uiState.lastVisitedCategory?.name?.let {
                                             add(stringResource(R.string.label_colon_value_format, stringResource(R.string.live_shell_last_group), it))
                                         }
