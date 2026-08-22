@@ -27,6 +27,8 @@
     <string name="home_loading_categories">جارٍ تحميل الفئات…</string>
     <string name="home_loading_channels">جارٍ تحميل القنوات…</string>
     <string name="home_loading_local_catalog">جارٍ تحميل القنوات من الكتالوج المحلي…</string>
+    <string name="home_refresh_playlist">تحديث قائمة التشغيل</string>
+    <string name="home_refresh_playlist_running">جارٍ تحديث قائمة التشغيل — القنوات والأفلام والمسلسلات ستتحدث تلقائياً…</string>
     <string name="home_live_loading">جارٍ تحميل القنوات المباشرة…</string>
     <string name="home_live_retry">إعادة محاولة البث المباشر</string>
     <string name="home_live_taking_longer">يستغرق البث المباشر وقتًا أطول من المتوقع</string>

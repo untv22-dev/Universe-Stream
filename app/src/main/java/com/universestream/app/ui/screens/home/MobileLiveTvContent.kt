@@ -4,10 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -23,10 +26,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
 import com.universestream.app.R
 import com.universestream.app.ui.components.SearchInput
 import com.universestream.app.ui.components.LiveSourceSwitcher
@@ -183,14 +192,51 @@ fun MobileLiveTvContent(
             }
         }
 
-        Text(
-            text = stringResource(
-                R.string.player_channel_count_format,
-                uiState.channelTotalCount.coerceAtLeast(channels.size)
-            ),
-            color = AppColors.TextSecondary,
-            style = MaterialTheme.typography.labelMedium
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = stringResource(
+                    R.string.player_channel_count_format,
+                    uiState.channelTotalCount.coerceAtLeast(channels.size)
+                ),
+                color = AppColors.TextSecondary,
+                style = MaterialTheme.typography.labelMedium
+            )
+            // Standalone manual playlist refresh — always visible on the home surface.
+            TextButton(
+                onClick = { viewModel.refreshPlaylist() },
+                enabled = !uiState.isRefreshingPlaylist && !uiState.isSyncing
+            ) {
+                if (uiState.isRefreshingPlaylist) {
+                    CircularProgressIndicator(
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(14.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = stringResource(R.string.home_refresh_playlist),
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+        }
+
+        if (uiState.isRefreshingPlaylist) {
+            Text(
+                text = stringResource(R.string.home_refresh_playlist_running),
+                color = AppColors.TextSecondary,
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
 
         if (uiState.isLocalChannelQueryLoading && hasCachedChannels) {
             Text(

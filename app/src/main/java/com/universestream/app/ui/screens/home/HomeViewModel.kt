@@ -61,8 +61,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launchimport javax.inject.Inject
 import android.app.Application
 import javax.inject.Provider as InjectProvider
 
@@ -1194,6 +1194,34 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(channelSearchQuery = query) }
     }
 
+    /**
+     * Manual playlist refresh from the mobile Live TV surface. Forces a full
+     * provider re-sync (Live + Movies + Series + EPG); Room flows stream the
+     * updated catalog into the UI as sections commit. Guarded so repeated taps
+     * or an active background sync never stack duplicate runs.
+     */
+    fun refreshPlaylist() {
+        val currentState = _uiState.value
+        if (currentState.isRefreshingPlaylist || currentState.isSyncing) return
+        val providerId = currentState.provider?.id ?: return
+        _uiState.update { it.copy(isRefreshingPlaylist = true) }
+        viewModelScope.launch {
+            try {
+                syncManager.sync(
+                    providerId,
+                    force = true,
+                    onProgress = null
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("HomeDiag", "Manual playlist refresh failed: ${e.message}")
+            } finally {
+                _uiState.update { it.copy(isRefreshingPlaylist = false) }
+            }
+        }
+    }
+
     fun loadMoreChannels() {
         val currentState = _uiState.value
         if (currentState.isLocalChannelQueryLoading || !currentState.hasMoreChannels) return
@@ -2223,6 +2251,7 @@ data class HomeUiState(
     val activeLiveSource: ActiveLiveSource? = null,
     val activeLiveSourceTitle: String = "",
     val isCombinedLiveSource: Boolean = false,
+    val isRefreshingPlaylist: Boolean = false,
     val liveSourceOptions: List<ActiveLiveSourceOption> = emptyList(),
     val currentCombinedProfileMembers: List<CombinedM3uProfileMember> = emptyList(),
     val selectedCombinedSourceProviderId: Long? = null,
