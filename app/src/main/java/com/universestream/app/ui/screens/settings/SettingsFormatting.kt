@@ -189,30 +189,6 @@ internal fun formatQualityCapLabel(maxHeight: Int?, autoLabel: String): String {
     return maxHeight?.let { "${it}p" } ?: autoLabel
 }
 
-internal fun formatSpeedTestValueLabel(speedTest: InternetSpeedTestUiModel): String {
-    return String.format(Locale.getDefault(), "%.1f Mbps", speedTest.megabitsPerSecond)
-}
-
-internal fun formatSpeedTestSummary(
-    speedTest: InternetSpeedTestUiModel,
-    context: android.content.Context,
-    dateTimeFormat: DateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
-): String {
-    val transportLabel = when (speedTest.transportLabel) {
-        InternetSpeedTestTransport.WIFI.name -> context.getString(R.string.settings_speed_test_transport_wifi)
-        InternetSpeedTestTransport.ETHERNET.name -> context.getString(R.string.settings_speed_test_transport_ethernet)
-        InternetSpeedTestTransport.CELLULAR.name -> context.getString(R.string.settings_speed_test_transport_cellular)
-        InternetSpeedTestTransport.OTHER.name -> context.getString(R.string.settings_speed_test_transport_other)
-        else -> context.getString(R.string.settings_speed_test_transport_unknown)
-    }
-    val measuredAtLabel = formatTimestamp(speedTest.measuredAtMs, dateTimeFormat)
-    return if (speedTest.isEstimated) {
-        context.getString(R.string.settings_speed_test_summary_estimated, transportLabel, measuredAtLabel)
-    } else {
-        context.getString(R.string.settings_speed_test_summary_measured, transportLabel, measuredAtLabel)
-    }
-}
-
 internal fun sortModeLabel(mode: CategorySortMode, context: android.content.Context): String {
     return when (mode) {
         CategorySortMode.DEFAULT -> context.getString(R.string.settings_category_sort_default)

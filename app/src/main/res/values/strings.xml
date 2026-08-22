@@ -499,26 +499,6 @@
     <string name="settings_wifi_quality_cap">Wi-Fi Quality Preference</string>
     <string name="settings_ethernet_quality_cap">Ethernet Quality Preference</string>
     <string name="settings_quality_cap_auto">Auto</string>
-    <string name="settings_speed_test_title">Internet Speed Test</string>
-    <string name="settings_speed_test_not_run">Not tested yet</string>
-    <string name="settings_speed_test_summary_default">Run a quick download test and use the result to pick stable playback quality limits.</string>
-    <string name="settings_speed_test_summary_measured">Measured on %1$s at %2$s.</string>
-    <string name="settings_speed_test_summary_estimated">Estimated on %1$s at %2$s because the active network did not complete the download probe.</string>
-    <string name="settings_speed_test_recommendation">Recommended quality cap: %1$s</string>
-    <string name="settings_speed_test_run_action">Run Test</string>
-    <string name="settings_speed_test_running_action">Testing…</string>
-    <string name="settings_speed_test_apply_wifi">Apply to Wi-Fi</string>
-    <string name="settings_speed_test_apply_ethernet">Apply to Ethernet</string>
-    <string name="settings_speed_test_complete">Speed test complete.</string>
-    <string name="settings_speed_test_estimate_complete">Network estimate saved.</string>
-    <string name="settings_speed_test_failed">Speed test failed: %1$s</string>
-    <string name="settings_speed_test_wifi_applied">Applied the recommended Wi-Fi quality cap.</string>
-    <string name="settings_speed_test_ethernet_applied">Applied the recommended Ethernet quality cap.</string>
-    <string name="settings_speed_test_transport_wifi">Wi-Fi</string>
-    <string name="settings_speed_test_transport_ethernet">Ethernet</string>
-    <string name="settings_speed_test_transport_cellular">Cellular</string>
-    <string name="settings_speed_test_transport_other">Other network</string>
-    <string name="settings_speed_test_transport_unknown">Unknown network</string>
     <string name="settings_select_playback_speed">Select Default Playback Speed</string>
     <plurals name="settings_timeout_seconds">
         <item quantity="one">%d second</item>
@@ -1798,4 +1778,5 @@
     <string name="settings_provider_expires">Expires %1$s</string>
     <string name="settings_provider_syncing">Syncing</string>
     <string name="settings_provider_manage">Tap to manage</string>
+    <string name="settings_provider_refresh">Refresh playlist</string>
 </resources>

@@ -48,9 +48,6 @@ internal data class SettingsScreenLabels(
     val timeshiftBackendLabel: String,
     val defaultStopTimerLabel: String,
     val defaultIdleTimerLabel: String,
-    val lastSpeedTestLabel: String,
-    val lastSpeedTestSummary: String,
-    val speedTestRecommendationLabel: String,
     val protectionSummary: String,
     val guideDefaultCategoryLabel: String,
     val externalPlaybackModeLabel: String
@@ -150,20 +147,6 @@ internal fun rememberSettingsScreenLabels(
     val defaultIdleTimerLabel = remember(uiState.defaultIdleStandbyTimerMinutes, context) {
         formatPlaybackTimerMinutesLabel(uiState.defaultIdleStandbyTimerMinutes, context)
     }
-    val lastSpeedTestLabel = remember(uiState.lastSpeedTest, context) {
-        uiState.lastSpeedTest?.let(::formatSpeedTestValueLabel)
-            ?: context.getString(R.string.settings_speed_test_not_run)
-    }
-    val lastSpeedTestSummary = remember(uiState.lastSpeedTest, context, dateTimeFormat) {
-        uiState.lastSpeedTest?.let { formatSpeedTestSummary(it, context, dateTimeFormat) }
-            ?: context.getString(R.string.settings_speed_test_summary_default)
-    }
-    val speedTestRecommendationLabel = remember(uiState.lastSpeedTest, context) {
-        formatQualityCapLabel(
-            uiState.lastSpeedTest?.recommendedMaxVideoHeight,
-            context.getString(R.string.settings_quality_cap_auto)
-        )
-    }
     val protectionSummary = remember(uiState.parentalControlLevel, context) {
         when (uiState.parentalControlLevel) {
             0 -> context.getString(R.string.settings_level_off)
@@ -217,9 +200,6 @@ internal fun rememberSettingsScreenLabels(
         timeshiftBackendLabel = timeshiftBackendLabel,
         defaultStopTimerLabel = defaultStopTimerLabel,
         defaultIdleTimerLabel = defaultIdleTimerLabel,
-        lastSpeedTestLabel = lastSpeedTestLabel,
-        lastSpeedTestSummary = lastSpeedTestSummary,
-        speedTestRecommendationLabel = speedTestRecommendationLabel,
         protectionSummary = protectionSummary,
         guideDefaultCategoryLabel = guideDefaultCategoryLabel,
         externalPlaybackModeLabel = externalPlaybackModeLabel

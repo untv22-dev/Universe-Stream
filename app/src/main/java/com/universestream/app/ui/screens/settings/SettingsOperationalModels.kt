@@ -146,14 +146,6 @@ internal fun DatabaseMaintenanceSnapshot.toUiModel(): DatabaseMaintenanceUiModel
         favoriteRows = favoriteRows
     )
 
-data class InternetSpeedTestUiModel(
-    val megabitsPerSecond: Double,
-    val measuredAtMs: Long,
-    val transportLabel: String,
-    val recommendedMaxVideoHeight: Int?,
-    val isEstimated: Boolean
-)
-
 internal data class CategoryManagementSnapshot(
     val categorySortModes: Map<ContentType, CategorySortMode> = emptyMap(),
     val hiddenCategories: List<Category> = emptyList()

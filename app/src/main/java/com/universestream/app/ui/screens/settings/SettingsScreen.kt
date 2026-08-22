@@ -283,7 +283,10 @@ fun SettingsScreen(
                         MobileProvidersContent(
                             uiState = uiState,
                             onAddProvider = onAddProvider,
-                            onEditProvider = onEditProvider
+                            onEditProvider = onEditProvider,
+                            onRefreshProvider = { providerId ->
+                                viewModel.refreshProvider(providerId)
+                            }
                         )
                     } else {
                         SettingsContentPane(

@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,7 +48,8 @@ import java.util.Locale
 internal fun MobileProvidersContent(
     uiState: SettingsUiState,
     onAddProvider: () -> Unit,
-    onEditProvider: (Provider) -> Unit
+    onEditProvider: (Provider) -> Unit,
+    onRefreshProvider: (Long) -> Unit = {}
 ) {
     LazyColumn(
         modifier = Modifier
@@ -76,7 +81,8 @@ internal fun MobileProvidersContent(
                     provider = provider,
                     isActive = provider.id == uiState.activeProviderId,
                     isSyncing = uiState.isSyncing && provider.id == uiState.activeProviderId,
-                    onClick = { onEditProvider(provider) }
+                    onClick = { onEditProvider(provider) },
+                    onRefresh = { onRefreshProvider(provider.id) }
                 )
             }
         }
@@ -109,7 +115,8 @@ private fun MobileProviderCard(
     provider: Provider,
     isActive: Boolean,
     isSyncing: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onRefresh: () -> Unit = {}
 ) {
     val expirationDate = provider.expirationDate
     val expirationText = when (expirationDate) {
@@ -179,6 +186,20 @@ private fun MobileProviderCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = if (isExpired) ErrorColor else OnSurfaceDim
                 )
+                Spacer(modifier = Modifier.weight(1f))
+                // Manual playlist refresh: re-syncs every section of this provider.
+                IconButton(
+                    onClick = onRefresh,
+                    enabled = !isSyncing,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = stringResource(R.string.settings_provider_refresh),
+                        tint = if (isSyncing) OnSurfaceDim else Primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
             Text(

@@ -195,11 +195,6 @@ class PreferencesRepository @Inject constructor(
         val PLAYER_TIMESHIFT_BACKEND = stringPreferencesKey("player_timeshift_backend")
         val DEFAULT_STOP_PLAYBACK_TIMER_MINUTES = intPreferencesKey("default_stop_playback_timer_minutes")
         val DEFAULT_IDLE_STANDBY_TIMER_MINUTES = intPreferencesKey("default_idle_standby_timer_minutes")
-        val LAST_SPEED_TEST_MEGABITS = stringPreferencesKey("last_speed_test_megabits")
-        val LAST_SPEED_TEST_TIMESTAMP = longPreferencesKey("last_speed_test_timestamp")
-        val LAST_SPEED_TEST_TRANSPORT = stringPreferencesKey("last_speed_test_transport")
-        val LAST_SPEED_TEST_RECOMMENDED_HEIGHT = intPreferencesKey("last_speed_test_recommended_height")
-        val LAST_SPEED_TEST_ESTIMATED = booleanPreferencesKey("last_speed_test_estimated")
         val GUIDE_SCHEDULED_ONLY = intPreferencesKey("guide_scheduled_only")
         val RECENT_SEARCH_QUERIES = stringPreferencesKey("recent_search_queries")
         val XTREAM_TEXT_CLASSIFICATION = booleanPreferencesKey("xtream_text_classification")
@@ -498,26 +493,6 @@ class PreferencesRepository @Inject constructor(
 
     val defaultIdleStandbyTimerMinutes: Flow<Int> = context.dataStore.data.map { preferences ->
         sanitizePlaybackTimerMinutes(preferences[PreferencesKeys.DEFAULT_IDLE_STANDBY_TIMER_MINUTES] ?: 0)
-    }
-
-    val lastSpeedTestMegabits: Flow<Double?> = context.dataStore.data.map { preferences ->
-        preferences[PreferencesKeys.LAST_SPEED_TEST_MEGABITS]?.toDoubleOrNull()
-    }
-
-    val lastSpeedTestTimestamp: Flow<Long?> = context.dataStore.data.map { preferences ->
-        preferences[PreferencesKeys.LAST_SPEED_TEST_TIMESTAMP]?.takeIf { it > 0L }
-    }
-
-    val lastSpeedTestTransport: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[PreferencesKeys.LAST_SPEED_TEST_TRANSPORT]?.takeIf { it.isNotBlank() }
-    }
-
-    val lastSpeedTestRecommendedHeight: Flow<Int?> = context.dataStore.data.map { preferences ->
-        preferences[PreferencesKeys.LAST_SPEED_TEST_RECOMMENDED_HEIGHT]?.takeIf { it > 0 }
-    }
-
-    val lastSpeedTestEstimated: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[PreferencesKeys.LAST_SPEED_TEST_ESTIMATED] ?: false
     }
 
     val recentSearchQueries: Flow<List<String>> = getRecentSearchQueries(SearchHistoryScope.ALL, null)
@@ -1173,39 +1148,6 @@ class PreferencesRepository @Inject constructor(
     suspend fun setDefaultIdleStandbyTimerMinutes(minutes: Int) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.DEFAULT_IDLE_STANDBY_TIMER_MINUTES] = sanitizePlaybackTimerMinutes(minutes)
-        }
-    }
-
-    suspend fun setLastSpeedTestResult(
-        megabitsPerSecond: Double?,
-        measuredAtMs: Long?,
-        transport: String?,
-        recommendedMaxHeight: Int?,
-        estimated: Boolean
-    ) {
-        context.dataStore.edit { preferences ->
-            val normalizedMbps = megabitsPerSecond?.takeIf { it > 0.0 }
-            val normalizedTimestamp = measuredAtMs?.takeIf { it > 0L }
-            val normalizedTransport = transport?.trim()?.takeIf { it.isNotBlank() }
-            val normalizedHeight = recommendedMaxHeight?.takeIf { it > 0 }
-
-            if (normalizedMbps == null || normalizedTimestamp == null || normalizedTransport == null) {
-                preferences.remove(PreferencesKeys.LAST_SPEED_TEST_MEGABITS)
-                preferences.remove(PreferencesKeys.LAST_SPEED_TEST_TIMESTAMP)
-                preferences.remove(PreferencesKeys.LAST_SPEED_TEST_TRANSPORT)
-                preferences.remove(PreferencesKeys.LAST_SPEED_TEST_RECOMMENDED_HEIGHT)
-                preferences.remove(PreferencesKeys.LAST_SPEED_TEST_ESTIMATED)
-            } else {
-                preferences[PreferencesKeys.LAST_SPEED_TEST_MEGABITS] = normalizedMbps.toString()
-                preferences[PreferencesKeys.LAST_SPEED_TEST_TIMESTAMP] = normalizedTimestamp
-                preferences[PreferencesKeys.LAST_SPEED_TEST_TRANSPORT] = normalizedTransport
-                if (normalizedHeight == null) {
-                    preferences.remove(PreferencesKeys.LAST_SPEED_TEST_RECOMMENDED_HEIGHT)
-                } else {
-                    preferences[PreferencesKeys.LAST_SPEED_TEST_RECOMMENDED_HEIGHT] = normalizedHeight
-                }
-                preferences[PreferencesKeys.LAST_SPEED_TEST_ESTIMATED] = estimated
-            }
         }
     }
 

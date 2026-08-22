@@ -336,26 +336,6 @@
     <string name="settings_wifi_quality_cap">تفضيل جودة Wi‑Fi</string>
     <string name="settings_ethernet_quality_cap">تفضيل جودة Ethernet</string>
     <string name="settings_quality_cap_auto">تلقائي</string>
-    <string name="settings_speed_test_title">اختبار سرعة الإنترنت</string>
-    <string name="settings_speed_test_not_run">لم يتم الاختبار بعد</string>
-    <string name="settings_speed_test_summary_default">شغّل اختبار تنزيل سريع واستخدم النتيجة لاختيار حدود جودة تشغيل مستقرة.</string>
-    <string name="settings_speed_test_summary_measured">تم القياس على %1$s عند %2$s.</string>
-    <string name="settings_speed_test_summary_estimated">تم التقدير على %1$s عند %2$s لأن الشبكة النشطة لم تكمل فحص التنزيل.</string>
-    <string name="settings_speed_test_recommendation">حد الجودة الموصى به: %1$s</string>
-    <string name="settings_speed_test_run_action">تشغيل الاختبار</string>
-    <string name="settings_speed_test_running_action">جارٍ الاختبار…</string>
-    <string name="settings_speed_test_apply_wifi">تطبيق على Wi‑Fi</string>
-    <string name="settings_speed_test_apply_ethernet">تطبيق على Ethernet</string>
-    <string name="settings_speed_test_complete">اكتمل اختبار السرعة.</string>
-    <string name="settings_speed_test_estimate_complete">تم حفظ تقدير الشبكة.</string>
-    <string name="settings_speed_test_failed">فشل اختبار السرعة: %1$s</string>
-    <string name="settings_speed_test_wifi_applied">تم تطبيق حد الجودة الموصى به للـ Wi‑Fi.</string>
-    <string name="settings_speed_test_ethernet_applied">تم تطبيق حد الجودة الموصى به للإيثرنت.</string>
-    <string name="settings_speed_test_transport_wifi">Wi‑Fi</string>
-    <string name="settings_speed_test_transport_ethernet">إيثرنت</string>
-    <string name="settings_speed_test_transport_cellular">شبكة خلوية</string>
-    <string name="settings_speed_test_transport_other">شبكة أخرى</string>
-    <string name="settings_speed_test_transport_unknown">شبكة غير معروفة</string>
     <string name="settings_select_playback_speed">اختر سرعة التشغيل الافتراضية</string>
     <string name="settings_select_audio_language">اختر لغة الصوت المفضلة</string>
     <string name="settings_select_subtitle_size">اختر حجم الترجمة</string>
@@ -1498,5 +1478,6 @@
     <string name="settings_provider_expires">ينتهي: %1$s</string>
     <string name="settings_provider_syncing">جارٍ المزامنة</string>
     <string name="settings_provider_manage">اضغط للإدارة</string>
+    <string name="settings_provider_refresh">تحديث قائمة التشغيل</string>
 </resources>
 

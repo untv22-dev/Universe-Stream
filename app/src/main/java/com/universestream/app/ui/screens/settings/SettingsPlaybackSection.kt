@@ -58,9 +58,6 @@ internal fun LazyListScope.settingsPlaybackSection(
     liveTranslationEndpointLabel: String,
     wifiQualityLabel: String,
     ethernetQualityLabel: String,
-    lastSpeedTestLabel: String,
-    lastSpeedTestSummary: String,
-    speedTestRecommendationLabel: String,
     onShowTimeshiftDepthDialogChange: (Boolean) -> Unit,
     onShowTimeshiftBackendDialogChange: (Boolean) -> Unit,
     onShowAudioDecoderModeDialogChange: (Boolean) -> Unit,
@@ -518,19 +515,6 @@ internal fun LazyListScope.settingsPlaybackSection(
             label = stringResource(R.string.settings_ethernet_quality_cap),
             value = ethernetQualityLabel,
             onClick = { onShowEthernetQualityDialogChange(true) }
-        )
-    }
-
-    item {
-        InternetSpeedTestCard(
-            valueLabel = lastSpeedTestLabel,
-            summary = lastSpeedTestSummary,
-            recommendationLabel = speedTestRecommendationLabel,
-            isRunning = uiState.isRunningInternetSpeedTest,
-            canApplyRecommendation = uiState.lastSpeedTest != null,
-            onRunTest = viewModel::runInternetSpeedTest,
-            onApplyWifi = viewModel::applySpeedTestRecommendationToWifi,
-            onApplyEthernet = viewModel::applySpeedTestRecommendationToEthernet
         )
     }
 }

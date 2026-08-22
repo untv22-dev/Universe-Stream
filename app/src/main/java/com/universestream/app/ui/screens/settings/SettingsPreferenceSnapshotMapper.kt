@@ -44,15 +44,6 @@ internal fun SettingsUiState.applyPreferenceSnapshot(snapshot: SettingsPreferenc
         playerTimeshiftBackend = snapshot.playerTimeshiftBackend,
         defaultStopPlaybackTimerMinutes = snapshot.defaultStopPlaybackTimerMinutes,
         defaultIdleStandbyTimerMinutes = snapshot.defaultIdleStandbyTimerMinutes,
-        lastSpeedTest = snapshot.lastSpeedTestMegabits?.let {
-            InternetSpeedTestUiModel(
-                megabitsPerSecond = it,
-                measuredAtMs = snapshot.lastSpeedTestTimestamp ?: 0L,
-                transportLabel = snapshot.lastSpeedTestTransport ?: InternetSpeedTestTransport.UNKNOWN.name,
-                recommendedMaxVideoHeight = snapshot.lastSpeedTestRecommendedHeight,
-                isEstimated = snapshot.lastSpeedTestEstimated
-            )
-        },
         isIncognitoMode = snapshot.isIncognitoMode,
         useXtreamTextClassification = snapshot.useXtreamTextClassification,
         xtreamBase64TextCompatibility = snapshot.xtreamBase64TextCompatibility,

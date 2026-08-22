@@ -106,7 +106,6 @@ class SettingsViewModel @Inject constructor(
     private val seriesRepository: SeriesRepository,
     private val programDao: ProgramDao,
     private val preferencesRepository: PreferencesRepository,
-    private val internetSpeedTestRunner: InternetSpeedTestRunner,
     private val backupManager: BackupManager,
     private val driveBackupSyncManager: DriveBackupSyncManager,
     private val recordingManager: RecordingManager,
@@ -942,59 +941,6 @@ class SettingsViewModel @Inject constructor(
     fun setEthernetQualityCap(maxHeight: Int?) {
         viewModelScope.launch {
             preferencesRepository.setPlayerEthernetMaxVideoHeight(maxHeight)
-        }
-    }
-
-    fun runInternetSpeedTest() {
-        if (_uiState.value.isRunningInternetSpeedTest) return
-        viewModelScope.launch {
-            _uiState.update { it.copy(isRunningInternetSpeedTest = true) }
-            when (val result = internetSpeedTestRunner.run()) {
-                is InternetSpeedTestResult.Success -> {
-                    val snapshot = result.snapshot
-                    preferencesRepository.setLastSpeedTestResult(
-                        megabitsPerSecond = snapshot.megabitsPerSecond,
-                        measuredAtMs = snapshot.measuredAtMs,
-                        transport = snapshot.transport.name,
-                        recommendedMaxHeight = snapshot.recommendedMaxVideoHeight,
-                        estimated = snapshot.isEstimated
-                    )
-                    _uiState.update {
-                        it.copy(
-                            isRunningInternetSpeedTest = false,
-                            userMessage = if (snapshot.isEstimated) {
-                                appContext.getString(R.string.settings_speed_test_estimate_complete)
-                            } else {
-                                appContext.getString(R.string.settings_speed_test_complete)
-                            }
-                        )
-                    }
-                }
-                is InternetSpeedTestResult.Error -> {
-                    _uiState.update {
-                        it.copy(
-                            isRunningInternetSpeedTest = false,
-                            userMessage = appContext.getString(R.string.settings_speed_test_failed, result.message)
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    fun applySpeedTestRecommendationToWifi() {
-        viewModelScope.launch {
-            val recommendation = _uiState.value.lastSpeedTest?.recommendedMaxVideoHeight
-            preferencesRepository.setPlayerWifiMaxVideoHeight(recommendation)
-            _uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_speed_test_wifi_applied)) }
-        }
-    }
-
-    fun applySpeedTestRecommendationToEthernet() {
-        viewModelScope.launch {
-            val recommendation = _uiState.value.lastSpeedTest?.recommendedMaxVideoHeight
-            preferencesRepository.setPlayerEthernetMaxVideoHeight(recommendation)
-            _uiState.update { it.copy(userMessage = appContext.getString(R.string.settings_speed_test_ethernet_applied)) }
         }
     }
 

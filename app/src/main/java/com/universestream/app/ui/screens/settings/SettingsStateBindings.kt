@@ -81,11 +81,6 @@ internal fun observeSettingsPreferenceSnapshot(
             playerTimeshiftBackend = TimeshiftBackendPreference.AUTOMATIC,
             defaultStopPlaybackTimerMinutes = 0,
             defaultIdleStandbyTimerMinutes = 0,
-            lastSpeedTestMegabits = null,
-            lastSpeedTestTimestamp = null,
-            lastSpeedTestTransport = null,
-            lastSpeedTestRecommendedHeight = null,
-            lastSpeedTestEstimated = false,
             isIncognitoMode = false,
             useXtreamTextClassification = true,
             xtreamBase64TextCompatibility = false,
@@ -196,16 +191,6 @@ internal fun observeSettingsPreferenceSnapshot(
         snapshot.copy(defaultStopPlaybackTimerMinutes = minutes)
     }.combine(preferencesRepository.defaultIdleStandbyTimerMinutes) { snapshot, minutes ->
         snapshot.copy(defaultIdleStandbyTimerMinutes = minutes)
-    }.combine(preferencesRepository.lastSpeedTestMegabits) { snapshot, lastSpeedTestMegabits ->
-        snapshot.copy(lastSpeedTestMegabits = lastSpeedTestMegabits)
-    }.combine(preferencesRepository.lastSpeedTestTimestamp) { snapshot, lastSpeedTestTimestamp ->
-        snapshot.copy(lastSpeedTestTimestamp = lastSpeedTestTimestamp)
-    }.combine(preferencesRepository.lastSpeedTestTransport) { snapshot, lastSpeedTestTransport ->
-        snapshot.copy(lastSpeedTestTransport = lastSpeedTestTransport)
-    }.combine(preferencesRepository.lastSpeedTestRecommendedHeight) { snapshot, lastSpeedTestRecommendedHeight ->
-        snapshot.copy(lastSpeedTestRecommendedHeight = lastSpeedTestRecommendedHeight)
-    }.combine(preferencesRepository.lastSpeedTestEstimated) { snapshot, lastSpeedTestEstimated ->
-        snapshot.copy(lastSpeedTestEstimated = lastSpeedTestEstimated)
     }.combine(preferencesRepository.isIncognitoMode) { snapshot, incognito ->
         snapshot.copy(isIncognitoMode = incognito)
     }.combine(preferencesRepository.useXtreamTextClassification) { snapshot, useTextClass ->
