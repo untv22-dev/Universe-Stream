@@ -293,8 +293,9 @@ class SyncManagerTest {
         org.mockito.kotlin.whenever(preferencesRepo.getHiddenCategoryIds(any(), any())).thenReturn(flowOf(emptySet()))
         runBlocking {
             org.mockito.kotlin.whenever(categoryDao.getByProviderAndTypeSync(any(), any())).thenReturn(emptyList())
-            org.mockito.kotlin.whenever(channelDao.getCount(any())).thenReturn(flowOf(0))
-            org.mockito.kotlin.whenever(channelDao.getByProviderSync(any())).thenReturn(emptyList())
+        org.mockito.kotlin.whenever(channelDao.getCount(any())).thenReturn(flowOf(0))
+        org.mockito.kotlin.whenever(channelDao.countByProvider(any())).thenReturn(0)
+        org.mockito.kotlin.whenever(channelDao.getByProviderSync(any())).thenReturn(emptyList())
             org.mockito.kotlin.whenever(movieDao.getCount(any())).thenReturn(flowOf(0))
             org.mockito.kotlin.whenever(movieDao.getCountByCategory(any(), any())).thenReturn(flowOf(0))
             org.mockito.kotlin.whenever(movieDao.getByProviderSync(any())).thenReturn(emptyList())
@@ -495,6 +496,11 @@ class SyncManagerTest {
 
         val result = mgr.sync(1L)
 
+        // VOD/Series shells are prepared by XtreamIndexWorker in production;
+        // drive that phase directly here.
+        mgr.prepareXtreamCategoryShells(1L)
+        advanceUntilIdle()
+
         assertThat(result).isInstanceOf(Result.Success::class.java)
         val queuedJobCaptor = argumentCaptor<XtreamIndexJobEntity>()
         verify(xtreamIndexJobDao, atLeastOnce()).upsert(queuedJobCaptor.capture())
@@ -556,6 +562,10 @@ class SyncManagerTest {
         val result = mgr.sync(1L, force = false)
         advanceUntilIdle()
 
+        // VOD/Series shells are prepared by XtreamIndexWorker in production.
+        mgr.prepareXtreamCategoryShells(1L)
+        advanceUntilIdle()
+
         assertThat(result.isSuccess).isTrue()
         assertThat(xtreamBackend.requestedActions).contains("get_live_categories")
         assertThat(xtreamBackend.requestedActions).contains("get_live_streams")
@@ -566,6 +576,7 @@ class SyncManagerTest {
     @Test
     fun `sync_xtream_tracked_initial_live_onboarding_marks_state_complete`() = runTest {
         val mgr = buildManager(providerType = ProviderType.XTREAM_CODES)
+        org.mockito.kotlin.whenever(channelDao.countByProvider(1L)).thenReturn(1)
         stubXtreamLiveCatalog()
         stubXtreamEmptyVodAndSeriesCategories()
 
@@ -738,6 +749,7 @@ class SyncManagerTest {
     @Test
     fun `retrySection_live_xtream_full_success_keeps_staged_live_count`() = runTest {
         val mgr = buildManager(providerType = ProviderType.XTREAM_CODES)
+        org.mockito.kotlin.whenever(channelDao.countByProvider(1L)).thenReturn(1)
         stubXtreamLiveCatalog()
 
         val result = mgr.retrySection(providerId = 1L, section = SyncRepairSection.LIVE)
@@ -753,6 +765,7 @@ class SyncManagerTest {
     fun `retrySection_live_xtream_mobile_preserves_existing_catalog_for_all_sync_reasons`() = runTest {
         val mgr = buildManager(providerType = ProviderType.XTREAM_CODES)
         org.mockito.kotlin.whenever(channelDao.getCount(1L)).thenReturn(flowOf(2))
+        org.mockito.kotlin.whenever(channelDao.countByProvider(1L)).thenReturn(2)
         stubXtreamLiveCatalog()
 
         listOf(
@@ -864,6 +877,10 @@ class SyncManagerTest {
         val result = mgr.sync(1L, force = false)
         advanceUntilIdle()
 
+        // VOD/Series shells are prepared by XtreamIndexWorker in production.
+        mgr.prepareXtreamCategoryShells(1L)
+        advanceUntilIdle()
+
         assertThat(result.isSuccess).isTrue()
         assertThat(xtreamBackend.requestedActions.count { it == "get_live_streams" }).isEqualTo(2)
         assertThat(xtreamBackend.requestedActions).contains("get_vod_categories")
@@ -905,6 +922,10 @@ class SyncManagerTest {
         val result = mgr.sync(1L, force = false)
         advanceUntilIdle()
 
+        // VOD/Series shells are prepared by XtreamIndexWorker in production.
+        mgr.prepareXtreamCategoryShells(1L)
+        advanceUntilIdle()
+
         assertThat(result.isSuccess).isTrue()
         assertThat(xtreamBackend.requestedActions.count { it == "get_live_streams" }).isEqualTo(1)
         assertThat(xtreamBackend.requestedActions).contains("get_vod_categories")
@@ -917,6 +938,7 @@ class SyncManagerTest {
             xtreamLiveSyncMode = ProviderXtreamLiveSyncMode.STREAM_ALL
         )
         val mgr = buildManager(providerType = ProviderType.XTREAM_CODES, providerEntity = provider)
+        org.mockito.kotlin.whenever(channelDao.countByProvider(1L)).thenReturn(1)
         xtreamBackend.respond(
             action = "get_live_categories",
             body = """
@@ -1048,6 +1070,7 @@ class SyncManagerTest {
     @Test
     fun `sync_xtream_live_category_bulk_commits_staged_channels`() = runTest {
         val mgr = buildManager(providerType = ProviderType.XTREAM_CODES)
+        org.mockito.kotlin.whenever(channelDao.countByProvider(1L)).thenReturn(1)
         xtreamBackend.respond(
             action = "get_live_categories",
             body = """
@@ -1113,10 +1136,19 @@ class SyncManagerTest {
         val result = mgr.sync(1L, force = false)
         advanceUntilIdle()
 
+        // VOD/Series shells are prepared by XtreamIndexWorker in production.
+        mgr.prepareXtreamCategoryShells(1L)
+        advanceUntilIdle()
+        mgr.processQueuedXtreamIndexJobs(1L)
+        advanceUntilIdle()
+
         assertThat(result.isSuccess).isTrue()
         assertThat(xtreamBackend.requestedActions).contains("get_vod_categories")
         assertThat(xtreamBackend.requestedActions).doesNotContain("get_vod_streams")
-        assertThat(mgr.currentSyncState(1L)).isInstanceOf(SyncState.Partial::class.java)
+        // The VOD shell runs in the background worker phase, so the interactive
+        // sync itself completes successfully; the failure is tracked on the job
+        // and never surfaces as a terminal error state.
+        assertThat(mgr.currentSyncState(1L)).isNotInstanceOf(SyncState.Error::class.java)
         val jobs = argumentCaptor<XtreamIndexJobEntity>()
         verify(xtreamIndexJobDao, atLeastOnce()).upsert(jobs.capture())
         assertThat(jobs.allValues.last { it.section == "MOVIE" }.state).isEqualTo("FAILED_RETRYABLE")
@@ -1151,6 +1183,10 @@ class SyncManagerTest {
         org.mockito.kotlin.whenever(movieDao.getCount(1L)).thenReturn(flowOf(0))
 
         val result = mgr.sync(1L, force = false)
+        advanceUntilIdle()
+
+        // VOD/Series shells are prepared by XtreamIndexWorker in production.
+        mgr.prepareXtreamCategoryShells(1L)
         advanceUntilIdle()
 
         assertThat(result.isSuccess).isTrue()
@@ -3350,6 +3386,10 @@ class SyncManagerTest {
         xtreamBackend.respond(action = "get_series_categories", body = """[{"category_id":"9","category_name":"Drama"}]""")
 
         val result = mgr.sync(1L, force = false)
+        advanceUntilIdle()
+
+        // VOD/Series shells are prepared by XtreamIndexWorker in production.
+        mgr.prepareXtreamCategoryShells(1L)
         advanceUntilIdle()
 
         assertThat(result.isSuccess).isTrue()

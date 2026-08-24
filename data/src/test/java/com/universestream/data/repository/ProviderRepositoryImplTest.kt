@@ -1,5 +1,9 @@
 package com.universestream.data.repository
 
+import android.content.Context
+import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.content.res.Resources
 import com.google.common.truth.Truth.assertThat
 import com.universestream.data.local.DatabaseTransactionRunner
 import com.universestream.data.local.dao.CategoryDao
@@ -66,6 +70,9 @@ class ProviderRepositoryImplTest {
     private val recordingAlarmScheduler: RecordingAlarmScheduler = mock()
     private val programReminderAlarmScheduler: ProgramReminderAlarmScheduler = mock()
     private val jellyfinProvider: JellyfinProvider = mock()
+    private val applicationContext: Context = mock()
+    private val packageManager: PackageManager = mock()
+    private val resources: Resources = mock()
     private val transactionRunner = object : DatabaseTransactionRunner {
         override suspend fun <T> inTransaction(block: suspend () -> T): T = block()
     }
@@ -73,6 +80,7 @@ class ProviderRepositoryImplTest {
     private fun createRepository(
         transactionRunner: DatabaseTransactionRunner = this.transactionRunner
     ) = ProviderRepositoryImpl(
+        applicationContext = applicationContext,
         providerDao = providerDao,
         categoryDao = categoryDao,
         channelDao = channelDao,
@@ -95,7 +103,32 @@ class ProviderRepositoryImplTest {
 
     private val repository = createRepository()
 
+    /**
+     * The production login/validate flows branch on device type: mobile uses a fast
+     * handoff that never runs an inline sync, while TV keeps the synchronous
+     * onboarding path. These tests pin the TV behavior.
+     */
+    private fun stubTelevisionDevice() {
+        whenever(packageManager.hasSystemFeature(any())).thenReturn(false)
+        whenever(resources.configuration).thenReturn(
+            Configuration().apply {
+                screenWidthDp = 1000
+            }
+        )
+    }
+
     init {
+        whenever(applicationContext.packageManager).thenReturn(packageManager)
+        whenever(applicationContext.resources).thenReturn(resources)
+        whenever(applicationContext.getSystemService(Context.UI_MODE_SERVICE)).thenReturn(null)
+        whenever(packageManager.hasSystemFeature(any())).thenAnswer { invocation ->
+            invocation.getArgument<String>(0) == PackageManager.FEATURE_TOUCHSCREEN
+        }
+        whenever(resources.configuration).thenReturn(
+            Configuration().apply {
+                screenWidthDp = 500
+            }
+        )
         whenever(preferencesRepository.xtreamBase64TextCompatibility).thenReturn(flowOf(false))
         runBlocking {
             whenever(categoryDao.getByProviderAndTypeSync(any(), any())).thenReturn(emptyList())
@@ -218,6 +251,7 @@ class ProviderRepositoryImplTest {
 
     @Test
     fun `validateM3u returns saved provider sync error exception when initial sync fails after save`() = runTest {
+        stubTelevisionDevice()
         whenever(providerDao.getByUrlAndUser("https://example.com/list.m3u", "", "")).thenReturn(null)
         whenever(credentialCrypto.encryptIfNeeded("")).thenReturn("")
         whenever(providerDao.insert(any())).thenReturn(9L)
@@ -232,7 +266,7 @@ class ProviderRepositoryImplTest {
                 status = ProviderStatus.PARTIAL
             )
         )
-        whenever(syncManager.sync(eq(9L), eq(false), anyOrNull(), anyOrNull(), anyOrNull(), eq(false)))
+        whenever(syncManager.sync(eq(9L), eq(false), anyOrNull(), anyOrNull(), anyOrNull(), eq(false), eq(false)))
             .thenReturn(Result.error("timeout"))
 
         val result = repository.validateM3u(
@@ -478,17 +512,10 @@ class ProviderRepositoryImplTest {
     }
 
     @Test
-    fun `loginXtream does not fail onboarding when provider has no live but committed vod`() = runTest {
+    fun `loginXtream succeeds and schedules background resume when provider has no live but committed vod`() = runTest {
         whenever(providerDao.getByUrlAndUser("https://example.com", "user")).thenReturn(null)
         whenever(credentialCrypto.encryptIfNeeded("pass")).thenReturn("pass")
         whenever(providerDao.insert(any())).thenReturn(9L)
-        whenever(syncManager.sync(eq(9L), eq(false), anyOrNull(), anyOrNull(), anyOrNull(), eq(true)))
-            .thenReturn(Result.success(Unit))
-        whenever(syncManager.currentSyncState(9L)).thenReturn(SyncState.Success(123L))
-        whenever(channelDao.getCount(9L)).thenReturn(flowOf(0))
-        whenever(syncMetadataRepository.getMetadata(9L)).thenReturn(
-            SyncMetadata(providerId = 9L, movieCount = 3)
-        )
         whenever(xtreamApiService.authenticate(any(), any())).thenReturn(
             XtreamAuthResponse(
                 userInfo = XtreamUserInfo(
@@ -521,31 +548,16 @@ class ProviderRepositoryImplTest {
 
         assertThat(result.isSuccess).isTrue()
         verify(providerDao).setActive(9L)
-        verify(syncManager, never()).scheduleProviderSyncResume(9L)
+        // Mobile/TV fast handoff: the provider is visible immediately and WorkManager
+        // finishes the catalog in the background via a scheduled sync resume.
+        verify(syncManager).scheduleProviderSyncResume(9L)
     }
 
     @Test
-    fun `loginXtream does not fail onboarding when provider has no live but committed vod categories`() = runTest {
+    fun `loginXtream succeeds and schedules background resume when provider has no live but committed vod categories`() = runTest {
         whenever(providerDao.getByUrlAndUser("https://example.com", "user")).thenReturn(null)
         whenever(credentialCrypto.encryptIfNeeded("pass")).thenReturn("pass")
         whenever(providerDao.insert(any())).thenReturn(9L)
-        whenever(syncManager.sync(eq(9L), eq(false), anyOrNull(), anyOrNull(), anyOrNull(), eq(true)))
-            .thenReturn(Result.success(Unit))
-        whenever(syncManager.currentSyncState(9L)).thenReturn(SyncState.Success(123L))
-        whenever(channelDao.getCount(9L)).thenReturn(flowOf(0))
-        whenever(syncMetadataRepository.getMetadata(9L)).thenReturn(SyncMetadata(providerId = 9L))
-        whenever(categoryDao.getByProviderAndTypeSync(9L, "MOVIE")).thenReturn(
-            listOf(
-                CategoryEntity(
-                    providerId = 9L,
-                    categoryId = 42L,
-                    name = "Action",
-                    parentId = null,
-                    type = com.universestream.domain.model.ContentType.MOVIE
-                )
-            )
-        )
-        whenever(categoryDao.getByProviderAndTypeSync(9L, "SERIES")).thenReturn(emptyList())
         whenever(xtreamApiService.authenticate(any(), any())).thenReturn(
             XtreamAuthResponse(
                 userInfo = XtreamUserInfo(
@@ -578,6 +590,6 @@ class ProviderRepositoryImplTest {
 
         assertThat(result.isSuccess).isTrue()
         verify(providerDao).setActive(9L)
-        verify(syncManager, never()).scheduleProviderSyncResume(9L)
+        verify(syncManager).scheduleProviderSyncResume(9L)
     }
 }

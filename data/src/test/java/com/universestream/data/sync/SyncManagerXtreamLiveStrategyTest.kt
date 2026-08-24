@@ -129,7 +129,9 @@ class SyncManagerXtreamLiveStrategyTest {
     }
 
     @Test
-    fun `initial live sync uses bounded categories instead of full catalog`() = runTest {
+    fun `initial live sync uses bounded categories instead of full catalog`() = runBlocking {
+        // runBlocking (not runTest): the strategy applies real per-request timeouts
+        // around live OkHttp calls; the virtual test clock would cancel them.
         val requestCount = AtomicInteger(0)
         val requestedCategoryIds = mutableListOf<String?>()
         val httpService = OkHttpXtreamApiService(
@@ -382,9 +384,11 @@ class SyncManagerXtreamLiveStrategyTest {
             runtimeProfile = testRuntimeProfile(
                 tier = DeviceSyncTier.LOW,
                 batchSize = 100,
-                maxCategoryConcurrency = 1
+                maxCategoryConcurrency = 1,
+                isTelevision = false
             ),
-            trackInitialLiveOnboarding = true
+            trackInitialLiveOnboarding = true,
+            prioritizeInitialLiveOnboarding = true
         )
 
         val result = payload.catalogResult as CatalogStrategyResult.Success
@@ -505,9 +509,11 @@ class SyncManagerXtreamLiveStrategyTest {
             runtimeProfile = testRuntimeProfile(
                 tier = DeviceSyncTier.LOW,
                 batchSize = 1,
-                maxCategoryConcurrency = 1
+                maxCategoryConcurrency = 1,
+                isTelevision = false
             ),
-            trackInitialLiveOnboarding = true
+            trackInitialLiveOnboarding = true,
+            prioritizeInitialLiveOnboarding = true
         )
 
         val result = payload.catalogResult as CatalogStrategyResult.Success
@@ -886,7 +892,8 @@ class SyncManagerXtreamLiveStrategyTest {
                 tier = DeviceSyncTier.LOW,
                 batchSize = 100,
                 maxCategoryConcurrency = 1,
-                preferSegmentedLiveOnboarding = true
+                preferSegmentedLiveOnboarding = true,
+                isTelevision = false
             ),
             trackInitialLiveOnboarding = true,
             prioritizeInitialLiveOnboarding = true,
@@ -1047,7 +1054,8 @@ class SyncManagerXtreamLiveStrategyTest {
         batchSize: Int = 500,
         maxCategoryConcurrency: Int = Int.MAX_VALUE,
         preferSegmentedLiveOnboarding: Boolean = false,
-        isCurrentlyLowOnMemory: Boolean = false
+        isCurrentlyLowOnMemory: Boolean = false,
+        isTelevision: Boolean = true
     ): CatalogSyncRuntimeProfile = CatalogSyncRuntimeProfile(
         tier = tier,
         stageBatchSize = batchSize,
@@ -1061,7 +1069,7 @@ class SyncManagerXtreamLiveStrategyTest {
             isCurrentlyLowOnMemory = isCurrentlyLowOnMemory,
             availableMemMb = 1024L,
             maxHeapMb = 512L,
-            isTelevision = true,
+            isTelevision = isTelevision,
             manufacturer = "test",
             model = "test",
             sdkInt = 35

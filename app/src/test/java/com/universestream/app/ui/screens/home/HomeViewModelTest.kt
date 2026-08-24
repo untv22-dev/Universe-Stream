@@ -94,6 +94,8 @@ class HomeViewModelTest {
         whenever(preferencesRepository.multiViewCenterTwoSlotLayout).thenReturn(flowOf(false))
         whenever(preferencesRepository.liveChannelNumberingMode).thenReturn(flowOf(ChannelNumberingMode.PROVIDER))
         whenever(preferencesRepository.isIncognitoMode).thenReturn(flowOf(false))
+        whenever(channelRepository.getChannelCount(any())).thenReturn(flowOf(0))
+        whenever(channelRepository.getChannelCountByCategory(any(), any())).thenReturn(flowOf(0))
         whenever(preferencesRepository.getHiddenCategoryIds(any(), any())).thenReturn(flowOf(emptySet()))
         whenever(preferencesRepository.getHiddenChannelIds(any())).thenReturn(flowOf(emptySet()))
         whenever(preferencesRepository.getCategorySortMode(any(), any())).thenReturn(flowOf(CategorySortMode.DEFAULT))
@@ -267,7 +269,7 @@ class HomeViewModelTest {
             type = ProviderType.M3U,
             serverUrl = "http://test"
         )
-        val sportsCategory = Category(id = 12L, name = "Sports", type = ContentType.LIVE)
+        val sportsCategory = Category(id = 12L, name = "Sports", type = ContentType.LIVE, count = 5)
 
         whenever(providerRepository.getActiveProvider()).thenReturn(flowOf(provider))
         whenever(channelRepository.getCategories(provider.id)).thenReturn(flowOf(listOf(sportsCategory)))

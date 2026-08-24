@@ -174,6 +174,7 @@ class GetCustomCategoriesTest {
     ) : ChannelRepository {
         override fun getChannels(providerId: Long): Flow<List<Channel>> = error("Not used in test")
         override fun getChannelCount(providerId: Long): Flow<Int> = error("Not used in test")
+        override fun getChannelCountByCategory(providerId: Long, categoryId: Long): Flow<Int> = error("Not used in test")
         override fun getChannelsByCategory(providerId: Long, categoryId: Long): Flow<List<Channel>> = error("Not used in test")
         override fun getChannelsByCategoryMobileOrdered(providerId: Long, categoryId: Long): Flow<List<Channel>> = error("Not used in test")
         override fun getChannelsByCategoryPage(providerId: Long, categoryId: Long, limit: Int): Flow<List<Channel>> = error("Not used in test")

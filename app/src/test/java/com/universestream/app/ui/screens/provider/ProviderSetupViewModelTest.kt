@@ -3,6 +3,8 @@ package com.universestream.app.ui.screens.provider
 import com.google.common.truth.Truth.assertThat
 import com.universestream.app.pairing.ProviderQrPairingManager
 import com.universestream.app.pairing.ProviderQrPairingState
+import com.universestream.data.preferences.PreferencesRepository
+import com.universestream.data.security.CredentialCrypto
 import com.universestream.domain.model.ActiveLiveSource
 import com.universestream.domain.model.CombinedM3uProfile
 import com.universestream.domain.model.Provider
@@ -46,6 +48,8 @@ class ProviderSetupViewModelTest {
     private val importBackup: ImportBackup = mock()
     private val driveBackupSyncManager: DriveBackupSyncManager = mock()
     private val providerQrPairingManager: ProviderQrPairingManager = mock()
+    private val preferencesRepository: PreferencesRepository = mock()
+    private val credentialCrypto: CredentialCrypto = mock()
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
@@ -56,6 +60,7 @@ class ProviderSetupViewModelTest {
         whenever(combinedM3uRepository.getActiveLiveSource()).thenReturn(flowOf(null))
         whenever(driveBackupSyncManager.authState).thenReturn(flowOf(DriveAuthState.SignedOut))
         whenever(providerQrPairingManager.state).thenReturn(MutableStateFlow(ProviderQrPairingState()))
+        whenever(preferencesRepository.xtreamDraft).thenReturn(flowOf(null))
     }
 
     @After
@@ -89,6 +94,8 @@ class ProviderSetupViewModelTest {
             importBackup = importBackup,
             driveBackupSyncManager = driveBackupSyncManager,
             providerQrPairingManager = providerQrPairingManager,
+            preferencesRepository = preferencesRepository,
+            credentialCrypto = credentialCrypto,
         )
 
         viewModel.addM3u("https://example.com/list.m3u", "Playlist 7", "", "")
@@ -124,6 +131,8 @@ class ProviderSetupViewModelTest {
             importBackup = importBackup,
             driveBackupSyncManager = driveBackupSyncManager,
             providerQrPairingManager = providerQrPairingManager,
+            preferencesRepository = preferencesRepository,
+            credentialCrypto = credentialCrypto,
         )
 
         viewModel.loginXtream("https://example.com", "alice", "secret", "Premium", "", "")
@@ -157,6 +166,8 @@ class ProviderSetupViewModelTest {
             importBackup = importBackup,
             driveBackupSyncManager = driveBackupSyncManager,
             providerQrPairingManager = providerQrPairingManager,
+            preferencesRepository = preferencesRepository,
+            credentialCrypto = credentialCrypto,
         )
         val field = ProviderSetupViewModel::class.java.getDeclaredField("_uiState").apply { isAccessible = true }
         @Suppress("UNCHECKED_CAST")
@@ -184,6 +195,8 @@ class ProviderSetupViewModelTest {
             importBackup = importBackup,
             driveBackupSyncManager = driveBackupSyncManager,
             providerQrPairingManager = providerQrPairingManager,
+            preferencesRepository = preferencesRepository,
+            credentialCrypto = credentialCrypto,
         )
 
         val seededState = viewModel.uiState.value.copy(
@@ -236,6 +249,8 @@ class ProviderSetupViewModelTest {
             importBackup = importBackup,
             driveBackupSyncManager = driveBackupSyncManager,
             providerQrPairingManager = providerQrPairingManager,
+            preferencesRepository = preferencesRepository,
+            credentialCrypto = credentialCrypto,
         )
 
         viewModel.addM3u("https://example.com/list.m3u", "Playlist 7", "", "")
@@ -258,6 +273,8 @@ class ProviderSetupViewModelTest {
             importBackup = importBackup,
             driveBackupSyncManager = driveBackupSyncManager,
             providerQrPairingManager = providerQrPairingManager,
+            preferencesRepository = preferencesRepository,
+            credentialCrypto = credentialCrypto,
         )
 
         viewModel.applySourceDefaults(ProviderSetupViewModel.SetupSourceType.STALKER)
@@ -276,6 +293,8 @@ class ProviderSetupViewModelTest {
             importBackup = importBackup,
             driveBackupSyncManager = driveBackupSyncManager,
             providerQrPairingManager = providerQrPairingManager,
+            preferencesRepository = preferencesRepository,
+            credentialCrypto = credentialCrypto,
         )
 
         viewModel.applySourceDefaults(ProviderSetupViewModel.SetupSourceType.XTREAM)
@@ -294,6 +313,8 @@ class ProviderSetupViewModelTest {
             importBackup = importBackup,
             driveBackupSyncManager = driveBackupSyncManager,
             providerQrPairingManager = providerQrPairingManager,
+            preferencesRepository = preferencesRepository,
+            credentialCrypto = credentialCrypto,
         )
 
         viewModel.applySourceDefaults(ProviderSetupViewModel.SetupSourceType.M3U)
@@ -312,6 +333,8 @@ class ProviderSetupViewModelTest {
             importBackup = importBackup,
             driveBackupSyncManager = driveBackupSyncManager,
             providerQrPairingManager = providerQrPairingManager,
+            preferencesRepository = preferencesRepository,
+            credentialCrypto = credentialCrypto,
         )
 
         viewModel.updateEpgSyncMode(ProviderEpgSyncMode.SKIP)
@@ -345,6 +368,8 @@ class ProviderSetupViewModelTest {
             importBackup = importBackup,
             driveBackupSyncManager = driveBackupSyncManager,
             providerQrPairingManager = providerQrPairingManager,
+            preferencesRepository = preferencesRepository,
+            credentialCrypto = credentialCrypto,
         )
 
         // Simulate being in edit mode for provider 7.
@@ -378,6 +403,8 @@ class ProviderSetupViewModelTest {
             importBackup = importBackup,
             driveBackupSyncManager = driveBackupSyncManager,
             providerQrPairingManager = providerQrPairingManager,
+            preferencesRepository = preferencesRepository,
+            credentialCrypto = credentialCrypto,
         )
 
         viewModel.addM3u("https://example.com/list.m3u", "Playlist", "", "")
@@ -403,6 +430,8 @@ class ProviderSetupViewModelTest {
             importBackup = importBackup,
             driveBackupSyncManager = driveBackupSyncManager,
             providerQrPairingManager = providerQrPairingManager,
+            preferencesRepository = preferencesRepository,
+            credentialCrypto = credentialCrypto,
         )
 
         viewModel.loginStalker(
