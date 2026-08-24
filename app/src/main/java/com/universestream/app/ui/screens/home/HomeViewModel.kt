@@ -1,6 +1,7 @@
 package com.universestream.app.ui.screens.home
 
 import androidx.lifecycle.ViewModel
+import com.universestream.app.R
 import androidx.lifecycle.viewModelScope
 import com.universestream.app.di.AuxiliaryPlayerEngine
 import com.universestream.app.player.LivePreviewHandoffManager
@@ -65,6 +66,17 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.app.Application
 import javax.inject.Provider as InjectProvider
+
+internal fun hasMoreMobileChannelResults(
+    trimmedQueryLength: Int,
+    rawCategoryCount: Int,
+    fetchedChannelCount: Int,
+    currentLimit: Int
+): Boolean = when {
+    trimmedQueryLength == 0 -> rawCategoryCount > currentLimit
+    trimmedQueryLength >= 2 -> fetchedChannelCount >= currentLimit
+    else -> false
+}
 
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
@@ -976,19 +988,20 @@ class HomeViewModel @Inject constructor(
                             numbered, level
                         ) { isAdult || isUserProtected }
                     } else numbered
-                    displayed to rawCategoryCount
-                }.collect { (displayedChannels, rawCategoryCount) ->
+                    Triple(displayed, rawCategoryCount, numbered.size)
+                }.collect { (displayedChannels, rawCategoryCount, fetchedChannelCount) ->
                     val currentQuery = _uiState.value.channelSearchQuery.trim()
                     val currentLimit = if (currentQuery.length < MIN_CHANNEL_SEARCH_QUERY_LENGTH) {
                         _channelBrowseLimit.value
                     } else {
                         _channelSearchLimit.value
                     }
-                    val hasMore = when {
-                        currentQuery.isBlank() -> rawCategoryCount > currentLimit
-                        currentQuery.length >= MIN_CHANNEL_SEARCH_QUERY_LENGTH -> displayedChannels.size >= currentLimit
-                        else -> false
-                    }
+                    val hasMore = hasMoreMobileChannelResults(
+                        trimmedQueryLength = currentQuery.length,
+                        rawCategoryCount = rawCategoryCount,
+                        fetchedChannelCount = fetchedChannelCount,
+                        currentLimit = currentLimit
+                    )
                     android.util.Log.i(
                         "HomeDiag",
                         "category=${category.id} dbCount=$rawCategoryCount limit=$currentLimit " +
@@ -1207,15 +1220,42 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(isRefreshingPlaylist = true) }
         viewModelScope.launch {
             try {
-                syncManager.sync(
+                when (val result = syncManager.sync(
                     providerId,
                     force = true,
                     onProgress = null
-                )
+                )) {
+                    is com.universestream.domain.model.Result.Success -> {
+                        _uiState.update { it.copy(userMessage = null) }
+                    }
+                    is com.universestream.domain.model.Result.Error -> {
+                        android.util.Log.w(
+                            "HomeDiag",
+                            "Manual playlist refresh returned an error: ${result.message}"
+                        )
+                        _uiState.update {
+                            it.copy(
+                                userMessage = appContext.getString(
+                                    R.string.home_refresh_failed,
+                                    result.message
+                                )
+                            )
+                        }
+                    }
+                    com.universestream.domain.model.Result.Loading -> Unit
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 android.util.Log.w("HomeDiag", "Manual playlist refresh failed: ${e.message}")
+                _uiState.update {
+                    it.copy(
+                        userMessage = appContext.getString(
+                            R.string.home_refresh_failed,
+                            e.message ?: appContext.getString(R.string.unknown_error)
+                        )
+                    )
+                }
             } finally {
                 _uiState.update { it.copy(isRefreshingPlaylist = false) }
             }

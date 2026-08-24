@@ -37,6 +37,8 @@
     <string name="home_loading_local_catalog">Loading channels from the local catalog…</string>
     <string name="home_refresh_playlist">Refresh playlist</string>
     <string name="home_refresh_playlist_running">Refreshing your playlist — channels, movies and series will update automatically…</string>
+    <string name="home_refresh_failed">Playlist refresh failed: %1$s.</string>
+    <string name="unknown_error">Unknown error</string>
     <string name="home_live_loading">Loading live channels…</string>
     <string name="home_live_retry">Retry Live TV</string>
     <string name="home_live_taking_longer">Live TV is taking longer than expected</string>

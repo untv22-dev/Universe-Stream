@@ -651,6 +651,50 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `search paging uses fetched rows before parental filtering`() {
+        assertThat(
+            hasMoreMobileChannelResults(
+                trimmedQueryLength = 3,
+                rawCategoryCount = 8_000,
+                fetchedChannelCount = 300,
+                currentLimit = 300
+            )
+        ).isTrue()
+    }
+
+    @Test
+    fun `search paging stops when database returns fewer than the page size`() {
+        assertThat(
+            hasMoreMobileChannelResults(
+                trimmedQueryLength = 3,
+                rawCategoryCount = 8_000,
+                fetchedChannelCount = 299,
+                currentLimit = 300
+            )
+        ).isFalse()
+    }
+
+    @Test
+    fun `blank query paging uses category total`() {
+        assertThat(
+            hasMoreMobileChannelResults(
+                trimmedQueryLength = 0,
+                rawCategoryCount = 301,
+                fetchedChannelCount = 200,
+                currentLimit = 200
+            )
+        ).isTrue()
+        assertThat(
+            hasMoreMobileChannelResults(
+                trimmedQueryLength = 0,
+                rawCategoryCount = 200,
+                fetchedChannelCount = 200,
+                currentLimit = 200
+            )
+        ).isFalse()
+    }
+
+    @Test
     fun `hiddenChannelsLiveTv surfaces channels whose id is in the hidden set, in name order`() = runTest {
         val provider = Provider(id = 11L, name = "Acme", type = ProviderType.XTREAM_CODES, serverUrl = "url")
         val hiddenA = Channel(id = 2L, name = "Alpha", streamUrl = "http://a", providerId = provider.id)
