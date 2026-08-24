@@ -1500,7 +1500,7 @@ abstract class UniverseStreamDatabase : RoomDatabase() {
                                     id, provider_id, name, icon_emoji, position, created_at, content_type
                                 ) VALUES (?, ?, ?, ?, ?, ?, ?)
                                 """.trimIndent(),
-                                arrayOf(newGroupId, providerId, name, iconEmoji, position, createdAt, contentType)
+                                arrayOf<Any?>(newGroupId, providerId, name, iconEmoji, position, createdAt, contentType)
                             )
                         }
                     }
@@ -1573,7 +1573,7 @@ abstract class UniverseStreamDatabase : RoomDatabase() {
                                 id, provider_id, content_id, content_type, position, group_id, added_at
                             ) VALUES (?, ?, ?, ?, ?, ?, ?)
                             """.trimIndent(),
-                            arrayOf(favoriteId, providerId, contentId, contentType, position, newGroupId, addedAt)
+                            arrayOf<Any?>(favoriteId, providerId, contentId, contentType, position, newGroupId, addedAt)
                         )
                     }
                 }
