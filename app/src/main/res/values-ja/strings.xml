@@ -1449,5 +1449,14 @@
     <string name="settings_remote_selection_global_default">Use global default: %1$s</string>
     <string name="settings_remote_dialog_title">%1$s action</string>
     <string name="settings_remote_dialog_subtitle">Choose what this colored button should do in %1$s.</string>
+    <string name="home_loading_local_catalog">ローカルカタログからチャンネルを読み込んでいます…</string>
+    <string name="settings_epg_matched_channels_format">%1$d/%2$d チャンネルが一致</string>
+    <string name="settings_epg_match_exact">完全一致 %1$d</string>
+    <string name="settings_epg_match_name">名前一致 %1$d</string>
+    <string name="settings_epg_match_provider">プロバイダー一致 %1$d</string>
+    <string name="settings_epg_match_manual">手動一致 %1$d</string>
+    <string name="settings_epg_without_epg">EPGなし %1$d</string>
+    <string name="settings_epg_low_confidence">低信頼 %1$d</string>
+    <string name="settings_epg_need_review">要確認 %1$d</string>
 </resources>
 

@@ -1481,5 +1481,13 @@
     <string name="settings_provider_syncing">جارٍ المزامنة</string>
     <string name="settings_provider_manage">اضغط للإدارة</string>
     <string name="settings_provider_refresh">تحديث قائمة التشغيل</string>
+    <string name="settings_epg_matched_channels_format">تم مطابقة %1$d/%2$d من القنوات</string>
+    <string name="settings_epg_match_exact">%1$d مطابقة تامة</string>
+    <string name="settings_epg_match_name">%1$d بالاسم</string>
+    <string name="settings_epg_match_provider">%1$d من المزوّد</string>
+    <string name="settings_epg_match_manual">%1$d يدويًا</string>
+    <string name="settings_epg_without_epg">%1$d بدون EPG</string>
+    <string name="settings_epg_low_confidence">%1$d بثقة منخفضة</string>
+    <string name="settings_epg_need_review">%1$d بحاجة إلى مراجعة</string>
 </resources>
 

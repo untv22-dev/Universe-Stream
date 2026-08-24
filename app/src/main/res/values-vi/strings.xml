@@ -1449,5 +1449,14 @@
     <string name="settings_remote_selection_global_default">Use global default: %1$s</string>
     <string name="settings_remote_dialog_title">%1$s action</string>
     <string name="settings_remote_dialog_subtitle">Choose what this colored button should do in %1$s.</string>
+    <string name="home_loading_local_catalog">Đang tải các kênh từ danh mục cục bộ…</string>
+    <string name="settings_epg_matched_channels_format">Khớp %1$d/%2$d kênh</string>
+    <string name="settings_epg_match_exact">%1$d khớp chính xác</string>
+    <string name="settings_epg_match_name">%1$d theo tên</string>
+    <string name="settings_epg_match_provider">%1$d từ nhà cung cấp</string>
+    <string name="settings_epg_match_manual">%1$d thủ công</string>
+    <string name="settings_epg_without_epg">%1$d không có EPG</string>
+    <string name="settings_epg_low_confidence">%1$d độ tin cậy thấp</string>
+    <string name="settings_epg_need_review">%1$d cần xem lại</string>
 </resources>
 

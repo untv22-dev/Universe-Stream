@@ -1783,4 +1783,12 @@
     <string name="settings_provider_syncing">Syncing</string>
     <string name="settings_provider_manage">Tap to manage</string>
     <string name="settings_provider_refresh">Refresh playlist</string>
+    <string name="settings_epg_matched_channels_format">Matched %1$d/%2$d channels</string>
+    <string name="settings_epg_match_exact">%1$d exact</string>
+    <string name="settings_epg_match_name">%1$d by name</string>
+    <string name="settings_epg_match_provider">%1$d from provider</string>
+    <string name="settings_epg_match_manual">%1$d manual</string>
+    <string name="settings_epg_without_epg">%1$d without EPG</string>
+    <string name="settings_epg_low_confidence">%1$d low confidence</string>
+    <string name="settings_epg_need_review">%1$d need review</string>
 </resources>

@@ -15,11 +15,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.universestream.app.ui.interaction.TvClickableSurface
+import com.universestream.app.R
 import com.universestream.app.ui.theme.OnSurfaceDim
 import com.universestream.domain.model.EpgResolutionSummary
 import com.universestream.domain.model.EpgSource
@@ -47,14 +49,34 @@ internal fun ProviderEpgAssignmentsCard(
             if (resolutionSummary != null) {
                 val matchedChannels = (resolutionSummary.totalChannels - resolutionSummary.unresolvedChannels).coerceAtLeast(0)
                 val summaryParts = buildList {
-                    add("Matched $matchedChannels/${resolutionSummary.totalChannels} channels")
-                    if (resolutionSummary.exactIdMatches > 0) add("${resolutionSummary.exactIdMatches} exact")
-                    if (resolutionSummary.normalizedNameMatches > 0) add("${resolutionSummary.normalizedNameMatches} name")
-                    if (resolutionSummary.providerNativeMatches > 0) add("${resolutionSummary.providerNativeMatches} provider")
-                    if (resolutionSummary.manualMatches > 0) add("${resolutionSummary.manualMatches} manual")
-                    if (resolutionSummary.unresolvedChannels > 0) add("${resolutionSummary.unresolvedChannels} without EPG")
-                    if (resolutionSummary.lowConfidenceChannels > 0) add("${resolutionSummary.lowConfidenceChannels} weak")
-                    if (resolutionSummary.rematchCandidateChannels > 0) add("${resolutionSummary.rematchCandidateChannels} need review")
+                    add(
+                        stringResource(
+                            R.string.settings_epg_matched_channels_format,
+                            matchedChannels,
+                            resolutionSummary.totalChannels
+                        )
+                    )
+                    if (resolutionSummary.exactIdMatches > 0) {
+                        add(stringResource(R.string.settings_epg_match_exact, resolutionSummary.exactIdMatches))
+                    }
+                    if (resolutionSummary.normalizedNameMatches > 0) {
+                        add(stringResource(R.string.settings_epg_match_name, resolutionSummary.normalizedNameMatches))
+                    }
+                    if (resolutionSummary.providerNativeMatches > 0) {
+                        add(stringResource(R.string.settings_epg_match_provider, resolutionSummary.providerNativeMatches))
+                    }
+                    if (resolutionSummary.manualMatches > 0) {
+                        add(stringResource(R.string.settings_epg_match_manual, resolutionSummary.manualMatches))
+                    }
+                    if (resolutionSummary.unresolvedChannels > 0) {
+                        add(stringResource(R.string.settings_epg_without_epg, resolutionSummary.unresolvedChannels))
+                    }
+                    if (resolutionSummary.lowConfidenceChannels > 0) {
+                        add(stringResource(R.string.settings_epg_low_confidence, resolutionSummary.lowConfidenceChannels))
+                    }
+                    if (resolutionSummary.rematchCandidateChannels > 0) {
+                        add(stringResource(R.string.settings_epg_need_review, resolutionSummary.rematchCandidateChannels))
+                    }
                 }
                 Text(
                     text = summaryParts.joinToString(" • "),

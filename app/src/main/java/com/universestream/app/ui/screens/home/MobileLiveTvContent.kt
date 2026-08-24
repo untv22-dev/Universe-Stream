@@ -148,7 +148,7 @@ fun MobileLiveTvContent(
             SearchInput(
                 value = uiState.channelSearchQuery,
                 onValueChange = viewModel::updateChannelSearchQuery,
-                placeholder = "Search channels",
+                placeholder = stringResource(R.string.home_search_channels),
                 modifier = Modifier.weight(1f)
             )
             if (uiState.showLiveSourceSwitcher && uiState.liveSourceOptions.isNotEmpty()) {

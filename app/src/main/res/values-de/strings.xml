@@ -1449,5 +1449,14 @@
     <string name="settings_remote_selection_global_default">Use global default: %1$s</string>
     <string name="settings_remote_dialog_title">%1$s action</string>
     <string name="settings_remote_dialog_subtitle">Choose what this colored button should do in %1$s.</string>
+    <string name="home_loading_local_catalog">Kanäle werden aus dem lokalen Katalog geladen…</string>
+    <string name="settings_epg_matched_channels_format">%1$d/%2$d Kanäle zugeordnet</string>
+    <string name="settings_epg_match_exact">%1$d exakt</string>
+    <string name="settings_epg_match_name">%1$d nach Name</string>
+    <string name="settings_epg_match_provider">%1$d vom Anbieter</string>
+    <string name="settings_epg_match_manual">%1$d manuell</string>
+    <string name="settings_epg_without_epg">%1$d ohne EPG</string>
+    <string name="settings_epg_low_confidence">%1$d unsicher</string>
+    <string name="settings_epg_need_review">%1$d zu prüfen</string>
 </resources>
 

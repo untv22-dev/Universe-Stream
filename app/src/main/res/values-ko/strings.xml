@@ -1449,5 +1449,14 @@
     <string name="settings_remote_selection_global_default">Use global default: %1$s</string>
     <string name="settings_remote_dialog_title">%1$s action</string>
     <string name="settings_remote_dialog_subtitle">Choose what this colored button should do in %1$s.</string>
+    <string name="home_loading_local_catalog">로컬 카탈로그에서 채널을 불러오는 중…</string>
+    <string name="settings_epg_matched_channels_format">%1$d/%2$d개 채널 일치</string>
+    <string name="settings_epg_match_exact">정확히 일치 %1$d</string>
+    <string name="settings_epg_match_name">이름 일치 %1$d</string>
+    <string name="settings_epg_match_provider">공급자 일치 %1$d</string>
+    <string name="settings_epg_match_manual">수동 일치 %1$d</string>
+    <string name="settings_epg_without_epg">EPG 없음 %1$d</string>
+    <string name="settings_epg_low_confidence">낮은 신뢰도 %1$d</string>
+    <string name="settings_epg_need_review">검토 필요 %1$d</string>
 </resources>
 
