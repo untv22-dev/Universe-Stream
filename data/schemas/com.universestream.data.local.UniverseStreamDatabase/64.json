@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 64,
-    "identityHash": "d264bd271c35afee323d4f3a16f64b0e",
+    "identityHash": "9b73a269c6cb53159773ec68704415a3",
     "entities": [
       {
         "tableName": "providers",
@@ -465,6 +465,29 @@
             "createSql": "CREATE INDEX IF NOT EXISTS `index_channels_provider_id_category_id` ON `${TABLE_NAME}` (`provider_id`, `category_id`)"
           },
           {
+            "name": "index_channels_provider_id_number_id",
+            "unique": false,
+            "columnNames": [
+              "provider_id",
+              "number",
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_channels_provider_id_number_id` ON `${TABLE_NAME}` (`provider_id`, `number`, `id`)"
+          },
+          {
+            "name": "index_channels_provider_id_category_id_number_id",
+            "unique": false,
+            "columnNames": [
+              "provider_id",
+              "category_id",
+              "number",
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_channels_provider_id_category_id_number_id` ON `${TABLE_NAME}` (`provider_id`, `category_id`, `number`, `id`)"
+          },
+          {
             "name": "index_channels_provider_id_stream_id",
             "unique": true,
             "columnNames": [
@@ -493,29 +516,6 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_channels_provider_id_category_id_logical_group_id` ON `${TABLE_NAME}` (`provider_id`, `category_id`, `logical_group_id`)"
-          },
-          {
-            "name": "index_channels_provider_id_number_id",
-            "unique": false,
-            "columnNames": [
-              "provider_id",
-              "number",
-              "id"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_channels_provider_id_number_id` ON `${TABLE_NAME}` (`provider_id`, `number`, `id`)"
-          },
-          {
-            "name": "index_channels_provider_id_category_id_number_id",
-            "unique": false,
-            "columnNames": [
-              "provider_id",
-              "category_id",
-              "number",
-              "id"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_channels_provider_id_category_id_number_id` ON `${TABLE_NAME}` (`provider_id`, `category_id`, `number`, `id`)"
           }
         ],
         "foreignKeys": [
@@ -4881,7 +4881,7 @@
       },
       {
         "tableName": "xtream_index_jobs",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`provider_id` INTEGER NOT NULL, `section` TEXT NOT NULL, `state` TEXT NOT NULL, `total_categories` INTEGER NOT NULL, `completed_categories` INTEGER NOT NULL, `next_category_index` INTEGER NOT NULL, `failed_categories` INTEGER NOT NULL, `indexed_rows` INTEGER NOT NULL, `skipped_malformed_rows` INTEGER NOT NULL, `deleted_pruned_rows` INTEGER NOT NULL, `priority_category_id` INTEGER, `priority_requested_at` INTEGER NOT NULL, `last_error` TEXT, `completed_category_keys` TEXT NOT NULL DEFAULT '', `last_attempt_at` INTEGER NOT NULL, `last_success_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`provider_id`, `section`), FOREIGN KEY(`provider_id`) REFERENCES `providers`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`provider_id` INTEGER NOT NULL, `section` TEXT NOT NULL, `state` TEXT NOT NULL, `total_categories` INTEGER NOT NULL, `completed_categories` INTEGER NOT NULL, `next_category_index` INTEGER NOT NULL, `failed_categories` INTEGER NOT NULL, `indexed_rows` INTEGER NOT NULL, `skipped_malformed_rows` INTEGER NOT NULL, `deleted_pruned_rows` INTEGER NOT NULL, `priority_category_id` INTEGER, `priority_requested_at` INTEGER NOT NULL, `last_error` TEXT, `completed_category_keys` TEXT NOT NULL, `last_attempt_at` INTEGER NOT NULL, `last_success_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`provider_id`, `section`), FOREIGN KEY(`provider_id`) REFERENCES `providers`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "providerId",
@@ -4963,8 +4963,7 @@
             "fieldPath": "completedCategoryKeys",
             "columnName": "completed_category_keys",
             "affinity": "TEXT",
-            "notNull": true,
-            "defaultValue": "''"
+            "notNull": true
           },
           {
             "fieldPath": "lastAttemptAt",
@@ -5386,7 +5385,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'd264bd271c35afee323d4f3a16f64b0e')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9b73a269c6cb53159773ec68704415a3')"
     ]
   }
 }
