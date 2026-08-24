@@ -52,7 +52,6 @@ import com.universestream.domain.usecase.UnlockParentalCategoryCommand
 import com.universestream.player.PlaybackState
 import com.universestream.player.PlayerEngine
 import dagger.hilt.android.lifecycle.HiltViewModel
-import com.universestream.app.R
 import java.util.concurrent.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
