@@ -51,6 +51,7 @@ import com.universestream.app.ui.design.AppColors.TextPrimary as TextPrimary
 import com.universestream.app.ui.design.AppColors.TextTertiary as OnSurfaceDim
 import androidx.compose.foundation.BorderStroke
 import com.universestream.app.R
+import com.universestream.app.device.rememberIsTelevisionDevice
 import com.universestream.app.ui.components.SearchInput
 import com.universestream.app.ui.components.SelectionChip
 import com.universestream.app.ui.components.SelectionChipRow
