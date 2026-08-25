@@ -1,5 +1,6 @@
 package com.universestream.app.ui.components.shell
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -22,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -115,9 +117,20 @@ fun VodHeroStrip(
     // lines on phones (Compact width) so the strip reads as a compact resume
     // button rather than a banner.
     val isCompactPhone = rememberAppWindowSizeClass() == AppWindowSizeClass.Compact
-    val heroHeight = if (!isCompactPhone) 132.dp else 84.dp
-    val outerPadding = if (!isCompactPhone) 18.dp else 12.dp
-    val subtitleLines = if (!isCompactPhone) 2 else 1
+    val isTelevision = rememberIsTelevisionDevice()
+    val isLandscapePhone = !isTelevision &&
+        LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val heroHeight = when {
+        isLandscapePhone -> 92.dp
+        isCompactPhone -> 84.dp
+        else -> 132.dp
+    }
+    val outerPadding = when {
+        isLandscapePhone -> 10.dp
+        isCompactPhone -> 12.dp
+        else -> 18.dp
+    }
+    val subtitleLines = if (isLandscapePhone || isCompactPhone) 1 else 2
     TvClickableSurface(
         onClick = onClick,
         modifier = modifier
@@ -150,10 +163,10 @@ fun VodHeroStrip(
             ) {
                 Text(
                     text = title,
-                    style = if (!isCompactPhone) MaterialTheme.typography.headlineSmall
+                    style = if (!isLandscapePhone && !isCompactPhone) MaterialTheme.typography.headlineSmall
                         else MaterialTheme.typography.titleMedium,
                     color = TextPrimary,
-                    maxLines = if (!isCompactPhone) 2 else 1,
+                    maxLines = if (!isLandscapePhone && !isCompactPhone) 2 else 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(

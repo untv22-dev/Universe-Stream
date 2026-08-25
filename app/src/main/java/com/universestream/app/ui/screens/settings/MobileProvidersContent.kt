@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -188,17 +187,37 @@ private fun MobileProviderCard(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 // Manual playlist refresh: re-syncs every section of this provider.
-                IconButton(
+                TvClickableSurface(
                     onClick = onRefresh,
                     enabled = !isSyncing,
-                    modifier = Modifier.size(28.dp)
+                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(9.dp)),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = Primary.copy(alpha = 0.14f),
+                        focusedContainerColor = Primary.copy(alpha = 0.30f)
+                    ),
+                    scale = ClickableSurfaceDefaults.scale(focusedScale = 1f)
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Refresh,
-                        contentDescription = stringResource(R.string.settings_provider_refresh),
-                        tint = if (isSyncing) OnSurfaceDim else Primary,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Refresh,
+                            contentDescription = null,
+                            tint = if (isSyncing) OnSurfaceDim else Primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = stringResource(
+                                if (isSyncing) R.string.settings_provider_syncing
+                                else R.string.settings_provider_refresh
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isSyncing) OnSurfaceDim else Primary,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
 
