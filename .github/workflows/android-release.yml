@@ -69,11 +69,36 @@ jobs:
           keyPassword=$KEY_PASSWORD
           EOF
 
+      - name: Run unit tests
+        run: |
+          # Gate every build on the JVM test suite so regressions fail fast here
+          # instead of surfacing silently in a later release.
+          timeout --signal=TERM --kill-after=60s 15m \
+            ./gradlew --no-daemon --max-workers=2 --console=plain \
+              -Dorg.gradle.jvmargs="-Xmx3g -Dfile.encoding=UTF-8" \
+              -Dkotlin.daemon.jvm.options="-Xmx2g" \
+              -Dorg.gradle.workers.max=2 \
+              -Dorg.gradle.parallel=true \
+              :domain:test :player:testDebugUnitTest :data:testDebugUnitTest :app:testDebugUnitTest \
+              --stacktrace
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports-${{ github.run_number }}
+          path: |
+            domain/build/reports/tests/
+            player/build/reports/tests/
+            data/build/reports/tests/
+            app/build/reports/tests/
+          if-no-files-found: ignore
+
       - name: Build signed release APK
         run: |
           # Fast development/review APK path: keep memory bounded while allowing
-          # limited parallelism on GitHub-hosted runners. Final release CI remains
-          # responsible for the full unit-test and coverage suite.
+          # limited parallelism on GitHub-hosted runners. Coverage reporting stays
+          # with the final release CI (release.yml).
           timeout --signal=TERM --kill-after=60s 27m \
             ./gradlew --no-daemon --max-workers=2 --console=plain \
               -Dorg.gradle.jvmargs="-Xmx3g -Dfile.encoding=UTF-8" \
