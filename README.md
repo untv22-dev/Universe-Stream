@@ -1,12 +1,12 @@
 # UniverseStream
 
 <p align="center">
-	<a href="https://github.com/Davidona/UniverseStream-IPTV/releases/latest/download/UniverseStream.apk"><img src="https://img.shields.io/badge/Download-UniverseStream.apk-2ea44f?style=for-the-badge&logo=android" alt="Download UniverseStream APK" /></a>
-	<a href="https://github.com/Davidona/UniverseStream-IPTV/releases/latest"><img src="https://img.shields.io/github/v/release/Davidona/UniverseStream-IPTV?display_name=tag&style=for-the-badge&color=0f766e" alt="Latest UniverseStream release" /></a>
-	<a href="https://github.com/Davidona/UniverseStream-IPTV/releases"><img src="https://img.shields.io/github/downloads/Davidona/UniverseStream-IPTV/total?style=for-the-badge&color=8b5cf6" alt="Total Downloads" /></a>
+	<a href="https://github.com/untv22-dev/Universe-Stream/releases/latest/download/UniverseStream.apk"><img src="https://img.shields.io/badge/Download-UniverseStream.apk-2ea44f?style=for-the-badge&logo=android" alt="Download UniverseStream APK" /></a>
+	<a href="https://github.com/untv22-dev/Universe-Stream/releases/latest"><img src="https://img.shields.io/github/v/release/untv22-dev/Universe-Stream?display_name=tag&style=for-the-badge&color=0f766e" alt="Latest UniverseStream release" /></a>
+	<a href="https://github.com/untv22-dev/Universe-Stream/releases"><img src="https://img.shields.io/github/downloads/untv22-dev/Universe-Stream/total?style=for-the-badge&color=8b5cf6" alt="Total Downloads" /></a>
 	<a href="https://discord.gg/eGPBMygcb"><img src="https://img.shields.io/badge/Discord-Join%20Server-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join the UniverseStream Discord" /></a>
 	<a href="docs/CHANGELOG.md"><img src="https://img.shields.io/badge/Changelog-View-2563eb?style=for-the-badge" alt="View changelog" /></a>
-	<a href="https://github.com/Davidona/UniverseStream-IPTV/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/Davidona/UniverseStream-IPTV/release.yml?branch=master&style=for-the-badge&label=CI" alt="GitHub Actions status" /></a>
+	<a href="https://github.com/untv22-dev/Universe-Stream/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/untv22-dev/Universe-Stream/release.yml?branch=main&style=for-the-badge&label=CI" alt="GitHub Actions status" /></a>
 	<a href="https://ko-fi.com/davidona"><img src="https://img.shields.io/badge/Support-Ko--fi-ff5f5f?style=for-the-badge&logo=kofi" alt="Support on Ko-fi" /></a>
 	<a href="LICENSE"><img src="https://img.shields.io/badge/License-UniverseStream_OSL-0284c7?style=for-the-badge" alt="License" /></a>
 </p>
@@ -19,24 +19,24 @@ Built for Android TV first, UniverseStream focuses on the things generic IPTV ap
 
 ## Preview
 <p align="center">
-	<a href="https://github.com/Davidona/UniverseStream-IPTV/raw/master/docs/images/LiveTV.png"><img src="docs/images/LiveTV.png" alt="Live TV" width="88%" /></a>
+	<a href="https://github.com/untv22-dev/Universe-Stream/raw/main/docs/images/LiveTV.png"><img src="docs/images/LiveTV.png" alt="Live TV" width="88%" /></a>
 </p>
 
 <p align="center">
-	<a href="https://github.com/Davidona/UniverseStream-IPTV/raw/master/docs/images/Movies.png"><img src="docs/images/Movies.png" alt="Movies" width="44%" /></a>
-	<a href="https://github.com/Davidona/UniverseStream-IPTV/raw/master/docs/images/MovieInfo.png"><img src="docs/images/MovieInfo.png" alt="Movie Details" width="44%" /></a>
+	<a href="https://github.com/untv22-dev/Universe-Stream/raw/main/docs/images/Movies.png"><img src="docs/images/Movies.png" alt="Movies" width="44%" /></a>
+	<a href="https://github.com/untv22-dev/Universe-Stream/raw/main/docs/images/MovieInfo.png"><img src="docs/images/MovieInfo.png" alt="Movie Details" width="44%" /></a>
 </p>
 
 <p align="center">
-	<a href="https://github.com/Davidona/UniverseStream-IPTV/raw/master/docs/images/Home.png"><img src="docs/images/Home.png" alt="Home" width="19%" /></a>
-	<a href="https://github.com/Davidona/UniverseStream-IPTV/raw/master/docs/images/LiveTV.png"><img src="docs/images/LiveTV.png" alt="Live TV" width="19%" /></a>
-	<a href="https://github.com/Davidona/UniverseStream-IPTV/raw/master/docs/images/ChannelView.png"><img src="docs/images/ChannelView.png" alt="Channel Preview" width="19%" /></a>
-	<a href="https://github.com/Davidona/UniverseStream-IPTV/raw/master/docs/images/Guide.png"><img src="docs/images/Guide.png" alt="Guide" width="19%" /></a>
-	<a href="https://github.com/Davidona/UniverseStream-IPTV/raw/master/docs/images/Settings.png"><img src="docs/images/Settings.png" alt="Settings" width="19%" /></a>
+	<a href="https://github.com/untv22-dev/Universe-Stream/raw/main/docs/images/Home.png"><img src="docs/images/Home.png" alt="Home" width="19%" /></a>
+	<a href="https://github.com/untv22-dev/Universe-Stream/raw/main/docs/images/LiveTV.png"><img src="docs/images/LiveTV.png" alt="Live TV" width="19%" /></a>
+	<a href="https://github.com/untv22-dev/Universe-Stream/raw/main/docs/images/ChannelView.png"><img src="docs/images/ChannelView.png" alt="Channel Preview" width="19%" /></a>
+	<a href="https://github.com/untv22-dev/Universe-Stream/raw/main/docs/images/Guide.png"><img src="docs/images/Guide.png" alt="Guide" width="19%" /></a>
+	<a href="https://github.com/untv22-dev/Universe-Stream/raw/main/docs/images/Settings.png"><img src="docs/images/Settings.png" alt="Settings" width="19%" /></a>
 </p>
 
 <p align="center">
-	<a href="https://github.com/Davidona/UniverseStream-IPTV/raw/master/docs/images/SeriesEpisodes.png"><img src="docs/images/SeriesEpisodes.png" alt="Series Episodes" width="32%" /></a>
+	<a href="https://github.com/untv22-dev/Universe-Stream/raw/main/docs/images/SeriesEpisodes.png"><img src="docs/images/SeriesEpisodes.png" alt="Series Episodes" width="32%" /></a>
 </p>
 
 ## Highlights
@@ -162,7 +162,7 @@ Built for Android TV first, UniverseStream focuses on the things generic IPTV ap
 
 ## Download
 
-- [Download latest UniverseStream.apk](https://github.com/Davidona/UniverseStream-IPTV/releases/latest/download/UniverseStream.apk)
+- [Download latest UniverseStream.apk](https://github.com/untv22-dev/Universe-Stream/releases/latest/download/UniverseStream.apk)
 - The app can also detect and download newer releases in-app through GitHub Releases.
 - GitHub Actions still runs build and test validation on pushes and pull requests.
 - GitHub Releases are now published only when the workflow is started manually with `workflow_dispatch`, so versioned releases do not get created by mistake on every push.
