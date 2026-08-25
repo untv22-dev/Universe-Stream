@@ -172,7 +172,7 @@ fun SeriesScreen(
             )
         }
 
-        if (uiState.isLoading) {
+        if (uiState.isLoading && (isTelevisionDevice || (uiState.seriesByCategory.isEmpty() && uiState.libraryCount == 0))) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -185,7 +185,7 @@ fun SeriesScreen(
                     )
                 }
             }
-        } else if (uiState.errorMessage != null) {
+        } else if (uiState.errorMessage != null && (isTelevisionDevice || (uiState.seriesByCategory.isEmpty() && uiState.libraryCount == 0))) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 AppMessageState(
                     title = stringResource(R.string.home_error_load_failed),

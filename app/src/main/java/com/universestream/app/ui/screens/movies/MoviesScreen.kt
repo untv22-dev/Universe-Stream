@@ -172,7 +172,7 @@ fun MoviesScreen(
             )
         }
 
-        if (uiState.isLoading) {
+        if (uiState.isLoading && (isTelevisionDevice || (uiState.moviesByCategory.isEmpty() && uiState.libraryCount == 0))) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
