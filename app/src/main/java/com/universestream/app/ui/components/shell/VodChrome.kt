@@ -30,6 +30,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.tv.material3.Border
@@ -136,7 +137,8 @@ fun VodHeroStrip(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
-            .height(heroHeight),
+            .height(heroHeight)
+            .testTag("vod_hero_strip"),
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(22.dp)),
         colors = ClickableSurfaceDefaults.colors(
             containerColor = SurfaceHighlight,

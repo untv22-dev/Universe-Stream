@@ -82,6 +82,16 @@ jobs:
               :domain:test :player:testDebugUnitTest :data:testDebugUnitTest :app:testDebugUnitTest \
               --stacktrace
 
+      - name: Compile Android UI tests
+        run: |
+          timeout --signal=TERM --kill-after=60s 10m \
+            ./gradlew --no-daemon --max-workers=2 --console=plain \
+              -Dorg.gradle.jvmargs="-Xmx3g -Dfile.encoding=UTF-8" \
+              -Dkotlin.daemon.jvm.options="-Xmx2g" \
+              -Dorg.gradle.workers.max=2 \
+              -Dorg.gradle.parallel=true \
+              :app:compileDebugAndroidTestKotlin --stacktrace
+
       - name: Upload test reports on failure
         if: failure()
         uses: actions/upload-artifact@v4
