@@ -390,6 +390,10 @@ internal fun LazyListScope.settingsAboutSection(
     }
 
     item {
+        SettingsSectionHeader(
+            title = stringResource(R.string.settings_about_credits_title),
+            subtitle = stringResource(R.string.settings_about_credits_subtitle)
+        )
         SettingsRow(label = stringResource(R.string.settings_build), value = stringResource(R.string.settings_build_desc))
         SettingsRow(label = stringResource(R.string.settings_build_verification), value = buildVerificationLabel)
         SettingsRow(label = stringResource(R.string.settings_developed_by), value = stringResource(R.string.settings_developer_name))
