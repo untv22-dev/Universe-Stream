@@ -243,12 +243,12 @@ class ProviderSyncWorker(
         private const val INVALID_PROVIDER_ID = -1L
 
         /**
-         * The mobile app-open worker always performs the cheap Xtream category-delta
-         * check. Catalog TTLs and WorkManager uniqueness still prevent a full catalog
-         * refresh on every open, while newly discovered index work is queued in the
-         * background. The TV launch path is unchanged.
+         * App-open checks remain automatic, but repeated foreground transitions within
+         * this window do not wake the network again. This keeps the refresh responsive
+         * without turning rapid app switching into a battery drain. The TV path is
+         * unchanged because this value is only passed by the mobile lightweight worker.
          */
-        private const val MOBILE_FOREGROUND_STALENESS_MS = 0L
+        private const val MOBILE_FOREGROUND_STALENESS_MS = 15 * 60 * 1000L
 
         fun enqueuePeriodic(context: Context) {
             val request = PeriodicWorkRequestBuilder<ProviderSyncWorker>(6, TimeUnit.HOURS)
@@ -307,6 +307,7 @@ class ProviderSyncWorker(
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .setRequiresBatteryNotLow(true)
                         .build()
                 )
                 .setInitialDelay(5, TimeUnit.SECONDS)
@@ -319,7 +320,7 @@ class ProviderSyncWorker(
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 UNIQUE_MOBILE_LIGHTWEIGHT_WORK_NAME,
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 request
             )
         }
