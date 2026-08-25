@@ -36,6 +36,7 @@ import androidx.tv.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.TextButton
 import com.universestream.app.R
@@ -121,25 +122,32 @@ fun MobileLiveTvContent(
     // below is already bounded, so Compose never receives all thousands of rows
     // before the first mobile emission.
 
-    var loadingTimedOut by rememberSaveable(selectedId) { mutableStateOf(false) }
-    LaunchedEffect(uiState.isLoading, uiState.isCategoriesLoading, selectedId) {
-        loadingTimedOut = false
-        if (uiState.isLoading && !uiState.isCategoriesLoading) {
-            kotlinx.coroutines.delay(15_000)
-            if (uiState.filteredChannels.isEmpty()) loadingTimedOut = true
-        }
-    }
-
     // Never hide real cached channels behind a synchronization placeholder.
     val pagedItemCount = if (usePaging) pagedChannels.itemCount else 0
     val hasCachedChannels = if (usePaging) pagedItemCount > 0 else channels.isNotEmpty()
-    val pagingLoading = usePaging && pagedChannels.loadState.refresh is LoadState.Loading
-    val pagingError = (pagedChannels.loadState.refresh as? LoadState.Error)?.error
-    val showLoading = !hasCachedChannels && (
+    val refreshState = if (usePaging) pagedChannels.loadState.refresh else null
+    val pagingLoading = refreshState is LoadState.Loading
+    val pagingError = (refreshState as? LoadState.Error)?.error
+    val initialPagingLoading = usePaging && !hasCachedChannels && pagingLoading
+    val initialPagingError = usePaging && !hasCachedChannels && pagingError != null
+
+    var loadingTimedOut by rememberSaveable(selectedId) { mutableStateOf(false) }
+    LaunchedEffect(uiState.isLoading, uiState.isCategoriesLoading, selectedId, usePaging, pagedItemCount, refreshState) {
+        loadingTimedOut = false
+        val waitingForLocalData = usePaging && !hasCachedChannels && pagingLoading
+        val waitingForLegacyData = !usePaging && uiState.isLoading && !uiState.isCategoriesLoading
+        if (waitingForLocalData || waitingForLegacyData) {
+            kotlinx.coroutines.delay(15_000)
+            val stillEmpty = if (usePaging) pagedChannels.itemCount == 0 else uiState.filteredChannels.isEmpty()
+            if (stillEmpty) loadingTimedOut = true
+        }
+    }
+
+    val showLoading = !hasCachedChannels && !loadingTimedOut && !initialPagingError && (
         uiState.isCategoriesLoading ||
             uiState.isLocalChannelQueryLoading ||
-            pagingLoading ||
-            (uiState.isLoading && !loadingTimedOut)
+            initialPagingLoading ||
+            (uiState.isLoading && !usePaging)
         )
 
     Column(
@@ -246,6 +254,10 @@ fun MobileLiveTvContent(
             )
         }
 
+        if (pagingLoading && hasCachedChannels) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+
         if (uiState.isLocalChannelQueryLoading && hasCachedChannels) {
             Text(
                 text = stringResource(R.string.home_loading_local_catalog),
@@ -270,9 +282,17 @@ fun MobileLiveTvContent(
                 } else {
                     stringResource(R.string.home_error_load_failed)
                 },
-                subtitle = uiState.errorMessage ?: pagingError?.localizedMessage ?: stringResource(R.string.home_live_retry_subtitle),
+                subtitle = if (pagingError != null) {
+                    stringResource(R.string.home_error_load_failed)
+                } else {
+                    uiState.errorMessage ?: stringResource(R.string.home_live_retry_subtitle)
+                },
                 actionLabel = stringResource(R.string.home_live_retry),
-                onAction = viewModel::retryLiveTv
+                onAction = if (initialPagingError) {
+                    { pagedChannels.retry() }
+                } else {
+                    viewModel::retryLiveTv
+                }
             )
         } else if (!hasCachedChannels) {
             TvEmptyState(
@@ -333,6 +353,35 @@ fun MobileLiveTvContent(
                             logoTargetSizeDp = 96.dp,
                             modifier = Modifier.fillMaxWidth()
                         )
+                    }
+                }
+
+                if (usePaging) {
+                    when (pagedChannels.loadState.append) {
+                        is LoadState.Loading -> item(key = "append-loading") {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                        }
+                        is LoadState.Error -> item(key = "append-error") {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                TextButton(onClick = { pagedChannels.retry() }) {
+                                    Text(text = stringResource(R.string.home_live_retry))
+                                }
+                            }
+                        }
+                        else -> Unit
                     }
                 }
             }
