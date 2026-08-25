@@ -23,6 +23,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -111,6 +113,8 @@ fun MobileLiveTvContent(
     val selectedId = selectedCategory?.id
     val isAllSelected = selectedId == ChannelRepository.ALL_CHANNELS_ID
     val channels = uiState.filteredChannels
+    val pagedChannels = viewModel.mobilePagedChannels.collectAsLazyPagingItems()
+    val usePaging = !uiState.isCombinedLiveSource && selectedCategory != null && !selectedCategory.isVirtual
     val channelListState = rememberLazyListState()
 
     // The ViewModel owns paging and Room remains the source of truth. The list
@@ -127,10 +131,14 @@ fun MobileLiveTvContent(
     }
 
     // Never hide real cached channels behind a synchronization placeholder.
-    val hasCachedChannels = channels.isNotEmpty()
+    val pagedItemCount = if (usePaging) pagedChannels.itemCount else 0
+    val hasCachedChannels = if (usePaging) pagedItemCount > 0 else channels.isNotEmpty()
+    val pagingLoading = usePaging && pagedChannels.loadState.refresh is LoadState.Loading
+    val pagingError = (pagedChannels.loadState.refresh as? LoadState.Error)?.error
     val showLoading = !hasCachedChannels && (
         uiState.isCategoriesLoading ||
             uiState.isLocalChannelQueryLoading ||
+            pagingLoading ||
             (uiState.isLoading && !loadingTimedOut)
         )
 
@@ -200,7 +208,7 @@ fun MobileLiveTvContent(
             Text(
                 text = stringResource(
                     R.string.player_channel_count_format,
-                    uiState.channelTotalCount.coerceAtLeast(channels.size)
+                    uiState.channelTotalCount.coerceAtLeast(if (usePaging) pagedItemCount else channels.size)
                 ),
                 color = AppColors.TextSecondary,
                 style = MaterialTheme.typography.labelMedium
@@ -255,14 +263,14 @@ fun MobileLiveTvContent(
                     stringResource(R.string.home_live_retry_subtitle)
                 }
             )
-        } else if (!hasCachedChannels && (uiState.errorMessage != null || loadingTimedOut)) {
+        } else if (!hasCachedChannels && (uiState.errorMessage != null || pagingError != null || loadingTimedOut)) {
             TvEmptyState(
                 title = if (loadingTimedOut) {
                     stringResource(R.string.home_live_taking_longer)
                 } else {
                     stringResource(R.string.home_error_load_failed)
                 },
-                subtitle = uiState.errorMessage ?: stringResource(R.string.home_live_retry_subtitle),
+                subtitle = uiState.errorMessage ?: pagingError?.localizedMessage ?: stringResource(R.string.home_live_retry_subtitle),
                 actionLabel = stringResource(R.string.home_live_retry),
                 onAction = viewModel::retryLiveTv
             )
@@ -280,25 +288,52 @@ fun MobileLiveTvContent(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 contentPadding = PaddingValues(bottom = 20.dp)
             ) {
-                items(channels, key = { it.id }) { channel ->
-                    LiveChannelRowSurface(
-                        channel = channel,
-                        onClick = {
-                            if (!isChannelLocked(channel)) {
-                                onChannelClick(
-                                    channel,
-                                    selectedCategory,
-                                    resolveProviderForChannel(channel),
-                                    (uiState.activeLiveSource as? ActiveLiveSource.CombinedM3uSource)?.profileId,
-                                    uiState.selectedCombinedSourceProviderId
-                                )
-                            }
-                        },
-                        isLocked = isChannelLocked(channel),
-                        rowHeight = 68.dp,
-                        logoTargetSizeDp = 96.dp,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                if (usePaging) {
+                    items(
+                        count = pagedItemCount,
+                        key = { index -> pagedChannels[index]?.id ?: "paging-$index" }
+                    ) { index ->
+                        val channel = pagedChannels[index] ?: return@items
+                        LiveChannelRowSurface(
+                            channel = channel,
+                            onClick = {
+                                if (!isChannelLocked(channel)) {
+                                    onChannelClick(
+                                        channel,
+                                        selectedCategory,
+                                        resolveProviderForChannel(channel),
+                                        (uiState.activeLiveSource as? ActiveLiveSource.CombinedM3uSource)?.profileId,
+                                        uiState.selectedCombinedSourceProviderId
+                                    )
+                                }
+                            },
+                            isLocked = isChannelLocked(channel),
+                            rowHeight = 68.dp,
+                            logoTargetSizeDp = 96.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                } else {
+                    items(channels, key = { it.id }) { channel ->
+                        LiveChannelRowSurface(
+                            channel = channel,
+                            onClick = {
+                                if (!isChannelLocked(channel)) {
+                                    onChannelClick(
+                                        channel,
+                                        selectedCategory,
+                                        resolveProviderForChannel(channel),
+                                        (uiState.activeLiveSource as? ActiveLiveSource.CombinedM3uSource)?.profileId,
+                                        uiState.selectedCombinedSourceProviderId
+                                    )
+                                }
+                            },
+                            isLocked = isChannelLocked(channel),
+                            rowHeight = 68.dp,
+                            logoTargetSizeDp = 96.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }

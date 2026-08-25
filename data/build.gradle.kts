@@ -53,6 +53,7 @@ dependencies {
     // Room
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
+    implementation(libs.paging.runtime)
     ksp(libs.room.compiler)
 
     // WorkManager

@@ -4,6 +4,7 @@ import com.universestream.domain.model.Category
 import com.universestream.domain.model.Channel
 import com.universestream.domain.model.Result
 import com.universestream.domain.model.StreamInfo
+import androidx.paging.PagingData
 import kotlinx.coroutines.flow.Flow
 
 interface ChannelRepository {
@@ -16,6 +17,8 @@ interface ChannelRepository {
     // no provider number still appear in a stable, readable order. TV keeps
     // getChannelsByCategory.
     fun getChannelsByCategoryMobileOrdered(providerId: Long, categoryId: Long): Flow<List<Channel>>
+    /** Lazy mobile-only channel stream; TV continues to use the list-based APIs above. */
+    fun getMobileChannels(providerId: Long, categoryId: Long = ALL_CHANNELS_ID): Flow<PagingData<Channel>>
     fun getChannelsByCategoryPage(providerId: Long, categoryId: Long, limit: Int): Flow<List<Channel>>
     fun getChannelsByNumber(providerId: Long, categoryId: Long = ALL_CHANNELS_ID): Flow<List<Channel>>
     fun getChannelsWithoutErrors(providerId: Long, categoryId: Long = ALL_CHANNELS_ID): Flow<List<Channel>>

@@ -1,6 +1,7 @@
 package com.universestream.app.ui.screens.home
 
 import androidx.lifecycle.ViewModel
+import androidx.paging.PagingData
 import com.universestream.app.R
 import androidx.lifecycle.viewModelScope
 import com.universestream.app.di.AuxiliaryPlayerEngine
@@ -113,6 +114,30 @@ class HomeViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    /**
+     * Lazy Room-backed stream consumed only by MobileLiveTvContent. Returning an
+     * empty PagingData for combined/virtual sources keeps their existing logic
+     * intact and prevents Android TV from changing behavior.
+     */
+    val mobilePagedChannels: Flow<PagingData<Channel>> = uiState
+        .map { state ->
+            val category = state.selectedCategory
+            if (state.isCombinedLiveSource || category == null || category.isVirtual) {
+                null
+            } else {
+                state.provider?.id to category.id
+            }
+        }
+        .distinctUntilChanged()
+        .flatMapLatest { key ->
+            if (key == null) {
+                flowOf(PagingData.empty())
+            } else {
+                channelRepository.getMobileChannels(key.first, key.second)
+            }
+        }
+        .cachedIn(viewModelScope)
     val remoteShortcutPreferences = preferencesRepository.remoteShortcutPreferences
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), com.universestream.domain.model.RemoteShortcutPreferences())
 
