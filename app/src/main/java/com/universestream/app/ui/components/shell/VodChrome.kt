@@ -117,17 +117,20 @@ fun VodHeroStrip(
     val isCompactPhone = rememberAppWindowSizeClass() == AppWindowSizeClass.Compact
     val isLandscape =
         LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isTelevisionDevice = rememberIsTelevisionDevice()
     val heroHeight = when {
+        isLandscape && !isTelevisionDevice -> 60.dp
+        isCompactPhone && !isTelevisionDevice -> 64.dp
         isLandscape -> 88.dp
-        isCompactPhone -> 72.dp
         else -> 132.dp
     }
     val outerPadding = when {
+        isLandscape && !isTelevisionDevice -> 2.dp
+        isCompactPhone && !isTelevisionDevice -> 6.dp
         isLandscape -> 4.dp
-        isCompactPhone -> 8.dp
         else -> 18.dp
     }
-    val subtitleLines = if (isLandscape || isCompactPhone) 1 else 2
+    val subtitleLines = if ((isLandscape || isCompactPhone) && !isTelevisionDevice) 1 else if (isLandscape) 1 else 2
     TvClickableSurface(
         onClick = onClick,
         modifier = modifier

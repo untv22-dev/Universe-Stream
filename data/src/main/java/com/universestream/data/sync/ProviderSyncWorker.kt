@@ -243,11 +243,12 @@ class ProviderSyncWorker(
         private const val INVALID_PROVIDER_ID = -1L
 
         /**
-         * Mobile foreground gate: skip the app-open check when every provider synced
-         * more recently than this. Quick open/close/open cycles stay offline-cheap;
-         * anything older (or never synced) syncs immediately.
+         * The mobile app-open worker always performs the cheap Xtream category-delta
+         * check. Catalog TTLs and WorkManager uniqueness still prevent a full catalog
+         * refresh on every open, while newly discovered index work is queued in the
+         * background. The TV launch path is unchanged.
          */
-        private const val MOBILE_FOREGROUND_STALENESS_MS = 15 * 60 * 1000L
+        private const val MOBILE_FOREGROUND_STALENESS_MS = 0L
 
         fun enqueuePeriodic(context: Context) {
             val request = PeriodicWorkRequestBuilder<ProviderSyncWorker>(6, TimeUnit.HOURS)
