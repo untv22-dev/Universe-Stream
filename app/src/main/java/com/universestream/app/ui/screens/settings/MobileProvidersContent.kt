@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Surface
+import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
 import com.universestream.app.R
 import com.universestream.app.ui.components.TvEmptyState
@@ -130,14 +132,11 @@ private fun MobileProviderCard(
         expirationDate != Long.MAX_VALUE &&
         expirationDate < System.currentTimeMillis()
 
-    TvClickableSurface(
-        onClick = onClick,
-        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
-        colors = ClickableSurfaceDefaults.colors(
-            containerColor = if (isActive) SurfaceHighlight else SurfaceElevated,
-            focusedContainerColor = AppColors.SurfaceEmphasis
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        colors = SurfaceDefaults.colors(
+            containerColor = if (isActive) SurfaceHighlight else SurfaceElevated
         ),
-        scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
@@ -221,11 +220,23 @@ private fun MobileProviderCard(
                 }
             }
 
-            Text(
-                text = stringResource(R.string.settings_provider_manage),
-                style = MaterialTheme.typography.labelMedium,
-                color = Primary
-            )
+            TvClickableSurface(
+                onClick = onClick,
+                shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(9.dp)),
+                colors = ClickableSurfaceDefaults.colors(
+                    containerColor = SurfaceHighlight.copy(alpha = 0.45f),
+                    focusedContainerColor = AppColors.SurfaceEmphasis
+                ),
+                scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_provider_manage),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Primary,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp)
+                )
+            }
         }
     }
 }

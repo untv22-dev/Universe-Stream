@@ -390,7 +390,36 @@ internal fun LazyListScope.settingsAboutSection(
     }
 
     item {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.settings_about_credits_title),
+                style = MaterialTheme.typography.bodySmall,
+                color = OnSurfaceDim,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = stringResource(R.string.settings_about_credits_subtitle),
+                style = MaterialTheme.typography.labelSmall,
+                color = OnSurfaceDim
+            )
+        }
         SettingsRow(label = stringResource(R.string.settings_build), value = stringResource(R.string.settings_build_desc))
         SettingsRow(label = stringResource(R.string.settings_build_verification), value = buildVerificationLabel)
+        SettingsRow(label = stringResource(R.string.settings_developed_by), value = stringResource(R.string.settings_developer_name))
+        ClickableSettingsRow(
+            label = stringResource(R.string.settings_github),
+            value = stringResource(R.string.settings_github_url),
+            onClick = { onOpenUri(context.getString(R.string.settings_github_url)) }
+        )
+        ClickableSettingsRow(
+            label = stringResource(R.string.settings_donate),
+            value = stringResource(R.string.settings_donate_url),
+            onClick = { onOpenUri(context.getString(R.string.settings_donate_url)) }
+        )
     }
 }

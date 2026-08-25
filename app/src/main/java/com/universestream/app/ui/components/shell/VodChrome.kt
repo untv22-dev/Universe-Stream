@@ -32,7 +32,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
-import com.universestream.app.device.rememberIsTelevisionDevice
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.MaterialTheme
@@ -112,25 +111,22 @@ fun VodHeroStrip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // On a phone the tall hero eats a large part of the screen. Keep the full
-    // size for Television and tablets, but shrink height, padding and subtitle
-    // lines on phones (Compact width) so the strip reads as a compact resume
-    // button rather than a banner.
+    // Keep the resume strip compact in landscape so the content rows below
+    // remain visible; portrait tablet/TV layouts retain the original height.
     val isCompactPhone = rememberAppWindowSizeClass() == AppWindowSizeClass.Compact
-    val isTelevision = rememberIsTelevisionDevice()
-    val isLandscapePhone = !isTelevision &&
+    val isLandscape =
         LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val heroHeight = when {
-        isLandscapePhone -> 92.dp
-        isCompactPhone -> 84.dp
+        isLandscape -> 88.dp
+        isCompactPhone -> 72.dp
         else -> 132.dp
     }
     val outerPadding = when {
-        isLandscapePhone -> 10.dp
-        isCompactPhone -> 12.dp
+        isLandscape -> 4.dp
+        isCompactPhone -> 8.dp
         else -> 18.dp
     }
-    val subtitleLines = if (isLandscapePhone || isCompactPhone) 1 else 2
+    val subtitleLines = if (isLandscape || isCompactPhone) 1 else 2
     TvClickableSurface(
         onClick = onClick,
         modifier = modifier
@@ -153,20 +149,20 @@ fun VodHeroStrip(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = outerPadding),
+                .padding(horizontal = 14.dp, vertical = outerPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
                     text = title,
-                    style = if (!isLandscapePhone && !isCompactPhone) MaterialTheme.typography.headlineSmall
+                    style = if (!isLandscape && !isCompactPhone) MaterialTheme.typography.headlineSmall
                         else MaterialTheme.typography.titleMedium,
                     color = TextPrimary,
-                    maxLines = if (!isLandscapePhone && !isCompactPhone) 2 else 1,
+                    maxLines = if (!isLandscape && !isCompactPhone) 2 else 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
@@ -185,7 +181,7 @@ fun VodHeroStrip(
                     text = actionLabel,
                     style = MaterialTheme.typography.labelLarge,
                     color = Color.Black,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                 )
             }
         }
