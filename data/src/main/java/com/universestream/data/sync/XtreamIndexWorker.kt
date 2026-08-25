@@ -159,7 +159,7 @@ class XtreamIndexWorker(
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 uniqueWorkName(providerId, section),
-                if (force) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.APPEND_OR_REPLACE,
+                if (force) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP,
                 request
             )
         }
