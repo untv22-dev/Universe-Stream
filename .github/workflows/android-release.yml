@@ -116,7 +116,7 @@ jobs:
               -Dorg.gradle.workers.max=2 \
               -Dorg.gradle.parallel=true \
               -Dorg.gradle.vfs.watch=false \
-              :app:assembleRelease --stacktrace
+              clean :app:assembleRelease --stacktrace
 
       - name: Verify APK signature
         run: |
