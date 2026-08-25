@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.res.Configuration
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -36,12 +35,12 @@ class HomeBannerAndSyncUiTest {
     fun setUp() {
         context = InstrumentationRegistry.getInstrumentation().targetContext
         workManager = WorkManager.getInstance(context)
-        workManager.cancelUniqueWork(MOBILE_LIGHTWEIGHT_WORK_NAME).get()
+        workManager.cancelUniqueWork(MOBILE_LIGHTWEIGHT_WORK_NAME).result.get()
     }
 
     @After
     fun tearDown() {
-        workManager.cancelUniqueWork(MOBILE_LIGHTWEIGHT_WORK_NAME).get()
+        workManager.cancelUniqueWork(MOBILE_LIGHTWEIGHT_WORK_NAME).result.get()
     }
 
     @Test
@@ -68,7 +67,6 @@ class HomeBannerAndSyncUiTest {
         }
 
         composeRule.onNodeWithTag("vod_hero_strip")
-            .assertExists()
             .assertHeightIsEqualTo(60.dp)
     }
 

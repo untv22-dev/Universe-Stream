@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.universestream.app.navigation.Routes
+import com.universestream.domain.model.VirtualCategoryIds
 import com.universestream.app.ui.components.SearchInput
 import com.universestream.app.ui.components.shell.AppHeroHeader
 import com.universestream.app.ui.components.shell.AppMessageState
@@ -273,7 +274,7 @@ class PremiumRouteGoldenTest {
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             AppScreenScaffold(
-                                currentRoute = Routes.FAVORITES,
+                                currentRoute = VirtualCategoryIds.FAVORITES.toString(),
                                 onNavigate = {},
                                 title = "Saved",
                                 subtitle = "Manage favorite channels, movies, and series from one premium hub."
