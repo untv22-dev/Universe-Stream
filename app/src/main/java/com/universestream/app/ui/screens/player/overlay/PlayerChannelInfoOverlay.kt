@@ -209,7 +209,10 @@ fun ChannelInfoOverlay(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
+                        // Keep compact status pills separate from the channel title so
+                        // long names are never squeezed between badges.
                         Row(
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -236,24 +239,32 @@ fun ChannelInfoOverlay(
                                     containerColor = AppColors.BrandMuted
                                 )
                             }
-                            if (currentChannel != null) {
-                                Text(
-                                    text = currentChannel.name,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = AppColors.TextPrimary,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier
-                                        .weight(1f, fill = false)
-                                        .basicMarquee(
-                                            iterations = Int.MAX_VALUE,
-                                            initialDelayMillis = 900,
-                                            repeatDelayMillis = 1200,
-                                            velocity = 24.dp
-                                        )
-                                )
-                            }
+                        }
+
+                        currentChannel?.let { channel ->
+                            Text(
+                                text = channel.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = AppColors.TextPrimary,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .basicMarquee(
+                                        iterations = Int.MAX_VALUE,
+                                        initialDelayMillis = 500,
+                                        repeatDelayMillis = 1200,
+                                        velocity = 24.dp
+                                    )
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             resolutionLabel?.takeIf { it.isNotBlank() }?.let { label ->
                                 StatusPill(
                                     label = label,
@@ -271,12 +282,6 @@ fun ChannelInfoOverlay(
                                         containerColor = AppColors.SurfaceEmphasis
                                     )
                                 }
-                            if (archiveCapability?.canBuildReplayCandidate == true) {
-                                StatusPill(
-                                    label = stringResource(R.string.player_catchup_badge),
-                                    containerColor = AppColors.Live
-                                )
-                            }
                         }
 
                         if (currentProgram != null) {
