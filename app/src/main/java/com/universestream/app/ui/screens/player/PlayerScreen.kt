@@ -75,6 +75,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.Icons
 import com.universestream.app.ui.components.dialogs.ProgramHistoryDialog
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
@@ -578,6 +582,8 @@ fun PlayerScreen(
         handleBackPress()
     }
 
+    var mobileBackRequested by rememberSaveable { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -931,6 +937,31 @@ fun PlayerScreen(
                 Modifier.fillMaxSize()
             }
         )
+
+        // Mobile-only escape hatch. This deliberately reuses the same callback
+        // as the system BackHandler, so the existing back stack and list state are preserved.
+        if (!isTelevisionDevice && !isInPictureInPictureMode) {
+            IconButton(
+                onClick = {
+                    if (!mobileBackRequested) {
+                        mobileBackRequested = true
+                        onBack()
+                    }
+                },
+                enabled = !mobileBackRequested,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 12.dp, top = 12.dp)
+                    .size(48.dp)
+                    .background(Color.Black.copy(alpha = 0.58f), RoundedCornerShape(24.dp))
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.parental_group_back),
+                    tint = Color.White
+                )
+            }
+        }
 
         // Mobile Portrait only: keep the current category in memory and make the
         // unused area below the 16:9 surface an in-player channel browser. This
