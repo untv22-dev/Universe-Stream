@@ -94,11 +94,6 @@ fun ChannelListOverlay(
     val currentIndex = remember(channels, currentChannelId) {
         channels.indexOfFirst { it.id == currentChannelId }.coerceAtLeast(0)
     }
-    val channelNumbersById = remember(channels) {
-        channels.mapIndexed { index, channel ->
-            channel.id to (channel.number.takeIf { it > 0 } ?: (index + 1))
-        }.toMap()
-    }
     val canScrollUp by remember { derivedStateOf { listState.canScrollBackward } }
     val canScrollDown by remember { derivedStateOf { listState.canScrollForward } }
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
@@ -109,7 +104,7 @@ fun ChannelListOverlay(
         count
     }
 
-    LaunchedEffect(channels, currentIndex, headerItemCount) {
+    LaunchedEffect(currentIndex, headerItemCount) {
         if (channels.isNotEmpty()) {
             listState.scrollToItem(headerItemCount + currentIndex)
         }
@@ -150,7 +145,7 @@ fun ChannelListOverlay(
                         contentPadding = PaddingValues(top = 10.dp, bottom = 20.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        item {
+                        item(key = "channel_header") {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -189,7 +184,7 @@ fun ChannelListOverlay(
                             }
                         }
                         if (!lastVisitedCategoryName.isNullOrBlank()) {
-                            item {
+                            item(key = "last_group_hint") {
                                 Text(
                                     text = stringResource(R.string.player_last_group_hint),
                                     style = MaterialTheme.typography.bodySmall,
@@ -198,7 +193,7 @@ fun ChannelListOverlay(
                                 )
                             }
                         }
-                        item {
+                        item(key = "channel_list_hint") {
                             Text(
                                 text = stringResource(R.string.player_channel_list_hint),
                                 style = MaterialTheme.typography.bodySmall,
@@ -207,7 +202,7 @@ fun ChannelListOverlay(
                             )
                         }
                         if (recentChannels.isNotEmpty()) {
-                            item {
+                            item(key = "recent_channels") {
                                 Column(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -249,14 +244,11 @@ fun ChannelListOverlay(
                                                     verticalAlignment = Alignment.CenterVertically,
                                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                                 ) {
-                                                    val recentNumber = channelNumbersById[channel.id]
+                                                    val recentNumber = channel.number
+                                                        .takeIf { it > 0 }
                                                         ?.toString()
-                                                        ?.padStart(2, '0')
-                                                        ?: channel.number
-                                                            .takeIf { it > 0 }
-                                                            ?.toString()
-                                                            ?.padStart(2, '0')
-                                                        ?: "--"
+                                                        ?.padStart(3, '0')
+                                                        ?: "---"
                                                     Text(
                                                         text = recentNumber,
                                                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
@@ -276,12 +268,15 @@ fun ChannelListOverlay(
                                 }
                             }
                         }
-                        items(channels.size) { index ->
+                        items(
+                            count = channels.size,
+                            key = { index -> "channel:${channels[index].id}" }
+                        ) { index ->
                             val channel = channels[index]
                             val isSelected = channel.id == currentChannelId
                             val shouldRequestFocus = isSelected
                             val channelNumber = channel.number.takeIf { it > 0 } ?: (index + 1)
-                            var isFocused by remember { mutableStateOf(false) }
+                            var isFocused by remember(channel.id) { mutableStateOf(false) }
                             val bgColor = when {
                                 isFocused -> Primary
                                 isSelected -> Primary.copy(alpha = 0.20f)
@@ -1051,7 +1046,7 @@ fun CategoryListOverlay(
                     .padding(20.dp)
             } else if (!isTelevisionDevice && maxWidth < 1280.dp) {
                 Modifier
-                    .fillMaxWidth(0.64f)
+                    .fillMaxWidth(0.5f)
                     .fillMaxHeight()
                     .padding(20.dp)
             } else {
