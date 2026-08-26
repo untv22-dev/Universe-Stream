@@ -1,10 +1,6 @@
 package com.universestream.data.repository
 
 import android.database.sqlite.SQLiteException
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
-import androidx.paging.map
 import android.util.Log
 import com.universestream.data.local.dao.CategoryDao
 import com.universestream.data.local.dao.ChannelDao
@@ -64,9 +60,6 @@ class ChannelRepositoryImpl @Inject constructor(
         const val GLOBAL_SEARCH_LIMIT = 500
         const val CATEGORY_SEARCH_LIMIT = 300
         const val MIN_SEARCH_QUERY_LENGTH = 2
-        const val MOBILE_CHANNEL_PAGE_SIZE = 60
-        const val MOBILE_CHANNEL_INITIAL_LOAD_SIZE = 120
-        const val MOBILE_CHANNEL_PREFETCH_DISTANCE = 30
     }
 
     private data class ChannelPresentationSettings(
@@ -104,25 +97,6 @@ class ChannelRepositoryImpl @Inject constructor(
 
     override fun getChannelsByCategoryMobileOrdered(providerId: Long, categoryId: Long): Flow<List<Channel>> =
         observeChannels(channelFlowMobileOrdered(providerId, categoryId), providerId)
-
-    override fun getMobileChannels(providerId: Long, categoryId: Long): Flow<PagingData<Channel>> =
-        Pager(
-            config = PagingConfig(
-                pageSize = MOBILE_CHANNEL_PAGE_SIZE,
-                initialLoadSize = MOBILE_CHANNEL_INITIAL_LOAD_SIZE,
-                prefetchDistance = MOBILE_CHANNEL_PREFETCH_DISTANCE,
-                enablePlaceholders = false
-            ),
-            pagingSourceFactory = {
-                if (categoryId == ChannelRepository.ALL_CHANNELS_ID) {
-                    channelDao.getByProviderMobilePaging(providerId)
-                } else {
-                    channelDao.getByCategoryMobilePaging(providerId, categoryId)
-                }
-            }
-        ).flow.map { page ->
-            page.map { entity -> entity.toPresentedRawChannel(observedQuality = null) }
-        }.flowOn(Dispatchers.Default)
 
     override fun getChannelsByCategoryPage(providerId: Long, categoryId: Long, limit: Int): Flow<List<Channel>> =
         observeChannels(channelFlowPage(providerId, categoryId, limit), providerId)

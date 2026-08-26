@@ -23,7 +23,6 @@ kover {
 dependencies {
     implementation("javax.inject:javax.inject:1")
     implementation(libs.coroutines.core)
-    implementation(libs.paging.common)
 
     testImplementation(libs.junit)
     testImplementation(libs.truth)

@@ -210,8 +210,6 @@ dependencies {
     implementation(libs.profileinstaller)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
-    implementation(libs.paging.runtime)
-    implementation(libs.paging.compose)
 
     // Navigation
     implementation(libs.navigation.compose)
