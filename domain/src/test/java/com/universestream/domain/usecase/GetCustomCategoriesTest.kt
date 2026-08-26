@@ -1,6 +1,5 @@
 package com.universestream.domain.usecase
 
-import androidx.paging.PagingData
 import com.google.common.truth.Truth.assertThat
 import com.universestream.domain.model.Channel
 import com.universestream.domain.model.ContentType
@@ -178,7 +177,6 @@ class GetCustomCategoriesTest {
         override fun getChannelCountByCategory(providerId: Long, categoryId: Long): Flow<Int> = error("Not used in test")
         override fun getChannelsByCategory(providerId: Long, categoryId: Long): Flow<List<Channel>> = error("Not used in test")
         override fun getChannelsByCategoryMobileOrdered(providerId: Long, categoryId: Long): Flow<List<Channel>> = error("Not used in test")
-        override fun getMobileChannels(providerId: Long, categoryId: Long): Flow<PagingData<Channel>> = flowOf(PagingData.empty())
         override fun getChannelsByCategoryPage(providerId: Long, categoryId: Long, limit: Int): Flow<List<Channel>> = error("Not used in test")
         override fun getChannelsByNumber(providerId: Long, categoryId: Long): Flow<List<Channel>> = error("Not used in test")
         override fun getChannelsWithoutErrors(providerId: Long, categoryId: Long): Flow<List<Channel>> = error("Not used in test")
