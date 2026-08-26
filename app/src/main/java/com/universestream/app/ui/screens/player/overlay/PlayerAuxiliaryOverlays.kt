@@ -405,16 +405,13 @@ private fun ChannelListItem(
                         }
                     )
             )
+            // Keep the channel name unobstructed. The archive capability remains
+            // available through the channel actions, but its badge must not consume
+            // the name column width in a large live-channel catalog.
             if (isSelected) {
                 StatusPill(
                     label = stringResource(R.string.player_channel_selected),
                     containerColor = AppColors.BrandMuted
-                )
-            } else if (channel.archivePlaybackCapability().canBuildReplayCandidate) {
-                StatusPill(
-                    label = stringResource(R.string.player_archive_badge),
-                    containerColor = AppColors.Warning,
-                    contentColor = Color.Black
                 )
             }
         }

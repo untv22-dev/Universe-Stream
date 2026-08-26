@@ -340,6 +340,19 @@ fun PlayerScreen(
         }
     }
 
+    // Do not cover the video for transient buffering during a fast channel zap.
+    // The effect is cancelled automatically when playback leaves BUFFERING.
+    var showDelayedBuffering by remember { mutableStateOf(false) }
+    LaunchedEffect(playbackState) {
+        if (playbackState == PlaybackState.BUFFERING) {
+            showDelayedBuffering = false
+            delay(450)
+            showDelayedBuffering = playbackState == PlaybackState.BUFFERING
+        } else {
+            showDelayedBuffering = false
+        }
+    }
+
     // Consolidated focus management for all overlays
     val liveOverlayVisible = contentType == "LIVE" && (showChannelListOverlay || showCategoryListOverlay || showEpgOverlay || showChannelInfoOverlay)
     val nextEpisodeCountdownVisible = !isInPictureInPictureMode && autoPlayCountdown != null
@@ -949,7 +962,7 @@ fun PlayerScreen(
         }
 
         // Buffering indicator
-        if (playbackState == PlaybackState.BUFFERING) {
+        if (showDelayedBuffering) {
             Box(
                 modifier = if (isCompactPortrait && !isInPictureInPictureMode) {
                     Modifier
@@ -985,7 +998,7 @@ fun PlayerScreen(
         }
 
         AnimatedVisibility(
-            visible = playerNotice != null && !(playbackState == PlaybackState.BUFFERING && playerNotice?.isRetryNotice == false),
+            visible = playerNotice != null && !(showDelayedBuffering && playerNotice?.isRetryNotice == false),
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier
