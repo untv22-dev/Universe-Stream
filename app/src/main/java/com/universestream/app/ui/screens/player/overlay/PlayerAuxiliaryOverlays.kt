@@ -131,7 +131,7 @@ fun ChannelListOverlay(
                     .padding(20.dp)
             } else if (!isTelevisionDevice && maxWidth < 1280.dp) {
                 Modifier
-                    .fillMaxWidth(0.5f)
+                    .fillMaxWidth(0.64f)
                     .fillMaxHeight()
                     .padding(20.dp)
             } else {
@@ -321,15 +321,21 @@ fun ChannelListOverlay(
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
                                     Text(
-                                        text = channelNumber.toString().padStart(2, '0'),
-                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 13.sp),
-                                        color = Color.White.copy(alpha = 0.72f),
-                                        textAlign = TextAlign.Start,
-                                        modifier = Modifier.width(32.dp)
+                                        text = channelNumber.toString().padStart(3, '0'),
+                                        style = MaterialTheme.typography.titleSmall.copy(
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold
+                                        ),
+                                        color = if (isSelected || isFocused) Primary else Color.White.copy(alpha = 0.9f),
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.width(50.dp)
                                     )
                                     Text(
                                         text = channel.name,
-                                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp),
+                                        style = MaterialTheme.typography.bodyLarge.copy(
+                                            fontSize = 17.sp,
+                                            fontWeight = if (isSelected || isFocused) FontWeight.Bold else FontWeight.Normal
+                                        ),
                                         color = Color.White,
                                         maxLines = 1,
                                         overflow = if (isFocused) TextOverflow.Clip else TextOverflow.Ellipsis,
@@ -354,7 +360,7 @@ fun ChannelListOverlay(
                                             containerColor = AppColors.BrandMuted
                                         )
                                     }
-                                    if (channel.archivePlaybackCapability().canBuildReplayCandidate) {
+                                    if (!isSelected && channel.archivePlaybackCapability().canBuildReplayCandidate) {
                                         StatusPill(
                                             label = stringResource(R.string.player_archive_badge),
                                             containerColor = AppColors.Warning,
@@ -1045,7 +1051,7 @@ fun CategoryListOverlay(
                     .padding(20.dp)
             } else if (!isTelevisionDevice && maxWidth < 1280.dp) {
                 Modifier
-                    .fillMaxWidth(0.5f)
+                    .fillMaxWidth(0.64f)
                     .fillMaxHeight()
                     .padding(20.dp)
             } else {
