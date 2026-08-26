@@ -69,7 +69,6 @@ media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "medi
 # Room
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
-room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 paging-common = { group = "androidx.paging", name = "paging-common", version.ref = "paging" }
