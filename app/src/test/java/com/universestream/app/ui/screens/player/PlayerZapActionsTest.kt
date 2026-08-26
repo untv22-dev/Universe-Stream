@@ -43,6 +43,16 @@ class PlayerZapActionsTest {
     }
 
     @Test
+    fun `mobile live zap preserves adjacent preload`() {
+        assertThat(shouldClearPreloadForLiveZap(isTelevisionDevice = false)).isFalse()
+    }
+
+    @Test
+    fun `television live zap keeps preload invalidation`() {
+        assertThat(shouldClearPreloadForLiveZap(isTelevisionDevice = true)).isTrue()
+    }
+
+    @Test
     fun `shouldPreloadAdjacentChannel skips Stalker internal streams`() {
         val shouldPreload = shouldPreloadAdjacentChannel(
             streamUrl = "stalker://1/live/99?cmd=ffmpeg%20http%3A%2F%2Fportal.example.com%2Fch%2F99",

@@ -1,6 +1,7 @@
 package com.universestream.app.ui.screens.player
 
 import androidx.lifecycle.viewModelScope
+import com.universestream.app.device.isTelevisionDevice
 import com.universestream.domain.model.Channel
 import com.universestream.domain.model.ChannelNumberingMode
 import com.universestream.domain.model.ContentType
@@ -77,6 +78,8 @@ internal fun releaseOutgoingLiveZapPlayback(
     stopLiveTimeshift()
     clearPreload()
 }
+
+internal fun shouldClearPreloadForLiveZap(isTelevisionDevice: Boolean): Boolean = isTelevisionDevice
 
 internal fun shouldPreloadAdjacentChannel(
     streamUrl: String,
@@ -207,7 +210,13 @@ internal fun PlayerViewModel.changeChannel(index: Int, isAutoFallback: Boolean =
     releaseOutgoingLiveZapPlayback(
         stopPlayback = playerEngine::stop,
         stopLiveTimeshift = playerEngine::stopLiveTimeshift,
-        clearPreload = { playerEngine.preload(null) }
+        // Keep the adjacent mobile preload available for immediate reuse on the next zap.
+        // Android TV retains the previous invalidation behavior unchanged.
+        clearPreload = if (shouldClearPreloadForLiveZap(appContext.isTelevisionDevice())) {
+            { playerEngine.preload(null) }
+        } else {
+            {}
+        }
     )
     currentResolvedPlaybackUrl = ""
     currentResolvedStreamInfo = null
