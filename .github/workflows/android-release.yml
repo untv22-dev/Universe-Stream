@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: universe-stream-fast-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   ANDROID_API: '36'
   BUILD_TOOLS: '35.0.0'
@@ -116,7 +120,7 @@ jobs:
               -Dorg.gradle.workers.max=2 \
               -Dorg.gradle.parallel=true \
               -Dorg.gradle.vfs.watch=false \
-              clean :app:assembleRelease --stacktrace
+              :app:assembleRelease --stacktrace
 
       - name: Verify APK signature
         run: |
