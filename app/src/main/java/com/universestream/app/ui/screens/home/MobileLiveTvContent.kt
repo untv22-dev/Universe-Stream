@@ -155,8 +155,10 @@ fun MobileLiveTvContent(
         }
     }
 
-    // Never hide real cached channels behind a synchronization placeholder.
-    val hasCachedChannels = channels.isNotEmpty()
+    // `hasChannels` is updated from the local Room emission and can remain true
+    // for the current category while the filtered list is being recomposed.
+    // Treat it as a valid cached-channel signal so a refresh never covers real data.
+    val hasCachedChannels = channels.isNotEmpty() || uiState.hasChannels
     val showLoading = !hasCachedChannels && (
         uiState.isCategoriesLoading ||
             uiState.isLocalChannelQueryLoading ||
