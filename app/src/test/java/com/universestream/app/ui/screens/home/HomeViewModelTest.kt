@@ -677,6 +677,41 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `blank query paging handles small boundary and repeated pages`() {
+        assertThat(
+            hasMoreMobileChannelResults(
+                trimmedQueryLength = 0,
+                rawCategoryCount = 50,
+                fetchedChannelCount = 50,
+                currentLimit = 200
+            )
+        ).isFalse()
+        assertThat(
+            hasMoreMobileChannelResults(
+                trimmedQueryLength = 0,
+                rawCategoryCount = 201,
+                fetchedChannelCount = 200,
+                currentLimit = 200
+            )
+        ).isTrue()
+        assertThat(
+            hasMoreMobileChannelResults(
+                trimmedQueryLength = 0,
+                rawCategoryCount = 1_000,
+                fetchedChannelCount = 800,
+                currentLimit = 800
+            )
+        ).isTrue()
+        assertThat(
+            hasMoreMobileChannelResults(
+                trimmedQueryLength = 0,
+                rawCategoryCount = 1_000,
+                fetchedChannelCount = 1_000,
+                currentLimit = 1_000
+            )
+        ).isFalse()
+    }
+    @Test
     fun `blank query paging uses category total`() {
         assertThat(
             hasMoreMobileChannelResults(

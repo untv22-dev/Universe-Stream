@@ -66,6 +66,8 @@ import javax.inject.Inject
 import android.app.Application
 import javax.inject.Provider as InjectProvider
 
+internal const val MOBILE_CHANNEL_LOAD_MORE_THRESHOLD = 5
+
 internal fun hasMoreMobileChannelResults(
     trimmedQueryLength: Int,
     rawCategoryCount: Int,
@@ -105,7 +107,6 @@ class HomeViewModel @Inject constructor(
         const val CHANNEL_PAGE_SIZE = 200
         const val CHANNEL_SEARCH_PAGE_SIZE = 300
         const val MOBILE_CHANNEL_SNAPSHOT_LIMIT = 300
-        const val LOAD_MORE_THRESHOLD = 5
         const val ADAPTIVE_PREVIEW_REPRIME_DELAY_MS = 2_500L
     }
 

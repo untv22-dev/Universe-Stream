@@ -113,6 +113,35 @@ fun MobileLiveTvContent(
     val channels = uiState.filteredChannels
     val channelListState = rememberLazyListState()
 
+    // Keep category changes anchored at the beginning of the new category. This
+    // is mobile-only; the Television renderer never enters this composable.
+    LaunchedEffect(selectedId) {
+        channelListState.scrollToItem(0)
+    }
+
+    // Connect the lazy list to the ViewModel's existing bounded paging flow.
+    // Re-reading the layout info through snapshotFlow avoids polling and only
+    // requests a page when the user reaches the configured near-end threshold.
+    LaunchedEffect(
+        channelListState,
+        selectedId,
+        uiState.channelSearchQuery,
+        uiState.hasMoreChannels,
+        channels.size
+    ) {
+        snapshotFlow {
+            channelListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+        }
+            .distinctUntilChanged()
+            .collect { lastVisibleIndex ->
+                val nearEndIndex = (channels.lastIndex - MOBILE_CHANNEL_LOAD_MORE_THRESHOLD)
+                    .coerceAtLeast(0)
+                if (uiState.hasMoreChannels && lastVisibleIndex >= nearEndIndex) {
+                    viewModel.loadMoreChannels()
+                }
+            }
+    }
+
     // The ViewModel owns paging and Room remains the source of truth. The list
     // below is already bounded, so Compose never receives all thousands of rows
     // before the first mobile emission.
