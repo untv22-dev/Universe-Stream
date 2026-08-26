@@ -2,7 +2,6 @@ package com.universestream.app.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.paging.PagingData
-import androidx.paging.cachedIn
 import com.universestream.app.R
 import androidx.lifecycle.viewModelScope
 import com.universestream.app.di.AuxiliaryPlayerEngine
@@ -127,7 +126,7 @@ class HomeViewModel @Inject constructor(
             if (state.isCombinedLiveSource || category == null || category.isVirtual) {
                 null
             } else {
-                state.provider?.id?.let { providerId -> providerId to category.id }
+                state.provider?.id to category.id
             }
         }
         .distinctUntilChanged()
