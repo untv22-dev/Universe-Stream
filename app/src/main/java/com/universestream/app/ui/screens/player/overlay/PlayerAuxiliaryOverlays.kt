@@ -11,6 +11,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -94,8 +95,7 @@ fun ChannelListOverlay(
     val currentIndex = remember(channels, currentChannelId) {
         channels.indexOfFirst { it.id == currentChannelId }.coerceAtLeast(0)
     }
-    val canScrollUp by remember { derivedStateOf { listState.canScrollBackward } }
-    val canScrollDown by remember { derivedStateOf { listState.canScrollForward } }
+
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val headerItemCount = remember(lastVisitedCategoryName, recentChannels) {
         var count = 2
@@ -273,155 +273,21 @@ fun ChannelListOverlay(
                             key = { index -> "channel:${channels[index].id}" }
                         ) { index ->
                             val channel = channels[index]
-                            val isSelected = channel.id == currentChannelId
-                            val shouldRequestFocus = isSelected
-                            val channelNumber = channel.number.takeIf { it > 0 } ?: (index + 1)
-                            var isFocused by remember(channel.id) { mutableStateOf(false) }
-                            val bgColor = when {
-                                isFocused -> Primary
-                                isSelected -> Primary.copy(alpha = 0.20f)
-                                else -> AppColors.Surface.copy(alpha = 0.68f)
-                            }
-
-                            TvClickableSurface(
-                                onClick = {
-                                    onSelectChannel(channel.id)
-                                    onDismiss()
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 3.dp)
-                                    .onFocusChanged { focusState ->
-                                        isFocused = focusState.isFocused
-                                        if (focusState.isFocused) {
-                                            onOverlayInteracted()
-                                        }
-                                    }
-                                    .then(
-                                        if (shouldRequestFocus) Modifier.focusRequester(overlayFocusRequester)
-                                        else Modifier
-                                    ),
-                                scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
-                                shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(16.dp)),
-                                colors = ClickableSurfaceDefaults.colors(
-                                    containerColor = bgColor,
-                                    focusedContainerColor = bgColor
-                                )
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp, vertical = 10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Text(
-                                        text = channelNumber.toString().padStart(3, '0'),
-                                        style = MaterialTheme.typography.titleSmall.copy(
-                                            fontSize = 15.sp,
-                                            fontWeight = FontWeight.Bold
-                                        ),
-                                        color = if (isSelected || isFocused) Primary else Color.White.copy(alpha = 0.9f),
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.width(50.dp)
-                                    )
-                                    Text(
-                                        text = channel.name,
-                                        style = MaterialTheme.typography.bodyLarge.copy(
-                                            fontSize = 17.sp,
-                                            fontWeight = if (isSelected || isFocused) FontWeight.Bold else FontWeight.Normal
-                                        ),
-                                        color = Color.White,
-                                        maxLines = 1,
-                                        overflow = if (isFocused) TextOverflow.Clip else TextOverflow.Ellipsis,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .then(
-                                                if (isFocused) {
-                                                    Modifier.basicMarquee(
-                                                        iterations = Int.MAX_VALUE,
-                                                        initialDelayMillis = 600,
-                                                        repeatDelayMillis = 900,
-                                                        velocity = 20.dp
-                                                    )
-                                                } else {
-                                                    Modifier
-                                                }
-                                            )
-                                    )
-                                    if (isSelected) {
-                                        StatusPill(
-                                            label = stringResource(R.string.player_channel_selected),
-                                            containerColor = AppColors.BrandMuted
-                                        )
-                                    }
-                                    if (!isSelected && channel.archivePlaybackCapability().canBuildReplayCandidate) {
-                                        StatusPill(
-                                            label = stringResource(R.string.player_archive_badge),
-                                            containerColor = AppColors.Warning,
-                                            contentColor = Color.Black
-                                        )
-                                    }
-                                }
-                            }
+                            ChannelListItem(
+                                channel = channel,
+                                channelNumber = channel.number.takeIf { it > 0 } ?: (index + 1),
+                                isSelected = channel.id == currentChannelId,
+                                overlayFocusRequester = overlayFocusRequester,
+                                onSelectChannel = onSelectChannel,
+                                onDismiss = onDismiss,
+                                onOverlayInteracted = onOverlayInteracted
+                            )
                         }
                     }
                 }
             }
 
-            AnimatedVisibility(
-                visible = canScrollUp,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier.align(Alignment.TopCenter)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(AppColors.Canvas.copy(alpha = 0.9f), Color.Transparent)
-                            ),
-                            RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)
-                        ),
-                    contentAlignment = Alignment.TopCenter
-                ) {
-                    Text(
-                        text = "\u25b2",
-                        color = Color.White.copy(alpha = 0.55f),
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-            }
-
-            AnimatedVisibility(
-                visible = canScrollDown,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier.align(Alignment.BottomCenter)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, AppColors.Canvas.copy(alpha = 0.9f))
-                            ),
-                            RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp)
-                        ),
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    Text(
-                        text = "\u25bc",
-                        color = Color.White.copy(alpha = 0.55f),
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
-            }
+            ChannelListScrollIndicators(listState = listState)
 
             TvClickableSurface(
                 onClick = {
@@ -455,6 +321,166 @@ fun ChannelListOverlay(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ChannelListItem(
+    channel: Channel,
+    channelNumber: Int,
+    isSelected: Boolean,
+    overlayFocusRequester: FocusRequester,
+    onSelectChannel: (Long) -> Unit,
+    onDismiss: () -> Unit,
+    onOverlayInteracted: () -> Unit
+) {
+    var isFocused by remember(channel.id) { mutableStateOf(false) }
+    val bgColor = when {
+        isFocused -> Primary
+        isSelected -> Primary.copy(alpha = 0.20f)
+        else -> AppColors.Surface.copy(alpha = 0.68f)
+    }
+
+    TvClickableSurface(
+        onClick = {
+            onSelectChannel(channel.id)
+            onDismiss()
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp)
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused
+                if (focusState.isFocused) onOverlayInteracted()
+            }
+            .then(
+                if (isSelected) Modifier.focusRequester(overlayFocusRequester) else Modifier
+            ),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
+        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(16.dp)),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = bgColor,
+            focusedContainerColor = bgColor
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = channelNumber.toString().padStart(3, '0'),
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                color = if (isSelected || isFocused) Primary else Color.White.copy(alpha = 0.9f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.width(50.dp)
+            )
+            Text(
+                text = channel.name,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontSize = 17.sp,
+                    fontWeight = if (isSelected || isFocused) FontWeight.Bold else FontWeight.Normal
+                ),
+                color = Color.White,
+                maxLines = 1,
+                overflow = if (isFocused) TextOverflow.Clip else TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (isFocused) {
+                            Modifier.basicMarquee(
+                                iterations = Int.MAX_VALUE,
+                                initialDelayMillis = 600,
+                                repeatDelayMillis = 900,
+                                velocity = 20.dp
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
+            )
+            if (isSelected) {
+                StatusPill(
+                    label = stringResource(R.string.player_channel_selected),
+                    containerColor = AppColors.BrandMuted
+                )
+            } else if (channel.archivePlaybackCapability().canBuildReplayCandidate) {
+                StatusPill(
+                    label = stringResource(R.string.player_archive_badge),
+                    containerColor = AppColors.Warning,
+                    contentColor = Color.Black
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoxScope.ChannelListScrollIndicators(listState: androidx.compose.foundation.lazy.LazyListState) {
+    val canScrollUp by remember(listState) {
+        derivedStateOf { listState.canScrollBackward }
+    }
+    val canScrollDown by remember(listState) {
+        derivedStateOf { listState.canScrollForward }
+    }
+
+    AnimatedVisibility(
+        visible = canScrollUp,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = Modifier.align(Alignment.TopCenter)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(AppColors.Canvas.copy(alpha = 0.9f), Color.Transparent)
+                    ),
+                    RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)
+                ),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Text(
+                text = "\u25b2",
+                color = Color.White.copy(alpha = 0.55f),
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
+
+    AnimatedVisibility(
+        visible = canScrollDown,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = Modifier.align(Alignment.BottomCenter)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, AppColors.Canvas.copy(alpha = 0.9f))
+                    ),
+                    RoundedCornerShape(bottomStart = 26.dp, bottomEnd = 26.dp)
+                ),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Text(
+                text = "\u25bc",
+                color = Color.White.copy(alpha = 0.55f),
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
         }
     }
 }
