@@ -76,6 +76,7 @@ jobs:
       # Keep each test suite isolated so a slow module is visible and bounded.
       # A failing step stops the pipeline before Android-test compilation/APK build.
       - name: Run domain unit tests
+        timeout-minutes: 8
         run: |
           timeout --signal=TERM --kill-after=60s 8m \
             ./gradlew --no-daemon --max-workers=2 --console=plain \
@@ -86,6 +87,7 @@ jobs:
               :domain:test --stacktrace
 
       - name: Run player unit tests
+        timeout-minutes: 8
         run: |
           timeout --signal=TERM --kill-after=60s 8m \
             ./gradlew --no-daemon --max-workers=2 --console=plain \
@@ -96,6 +98,7 @@ jobs:
               :player:testDebugUnitTest --stacktrace
 
       - name: Run data unit tests
+        timeout-minutes: 12
         run: |
           timeout --signal=TERM --kill-after=60s 12m \
             ./gradlew --no-daemon --max-workers=2 --console=plain \
@@ -106,6 +109,7 @@ jobs:
               :data:testDebugUnitTest --stacktrace
 
       - name: Run app unit tests
+        timeout-minutes: 15
         run: |
           timeout --signal=TERM --kill-after=60s 15m \
             ./gradlew --no-daemon --max-workers=2 --console=plain \
@@ -116,6 +120,7 @@ jobs:
               :app:testDebugUnitTest --stacktrace
 
       - name: Compile Android UI tests
+        timeout-minutes: 10
         run: |
           timeout --signal=TERM --kill-after=60s 10m \
             ./gradlew --no-daemon --max-workers=2 --console=plain \
@@ -138,6 +143,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Build signed release APK
+        timeout-minutes: 27
         run: |
           # Fast development/review APK path: keep memory bounded while allowing
           # limited parallelism on GitHub-hosted runners. Coverage reporting stays
