@@ -247,6 +247,14 @@
     <string name="library_sort_release">الأحدث</string>
     <string name="library_sort_updated">تم التحديث مؤخراً</string>
     <string name="library_sort_rating">التقييم</string>
+    <string name="library_filter_all">الكل</string>
+    <string name="library_filter_favorites">المفضلة</string>
+    <string name="library_filter_resume">متابعة</string>
+    <string name="library_filter_unwatched">غير المشاهدة</string>
+    <string name="library_filter_recent">الأخيرة</string>
+    <string name="library_filter_updated">المحدّثة</string>
+    <string name="library_filter_top_rated">الأعلى تقييمًا</string>
+    <string name="library_sort_recent_activity">النشاط الأخير</string>
     <string name="settings_title">الإعدادات</string>
     <string name="settings_providers">المزوّدون</string>
     <string name="settings_no_providers">لا توجد مزوّدات مُهيأة</string>

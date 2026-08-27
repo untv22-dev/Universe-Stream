@@ -333,6 +333,14 @@
     <string name="library_sort_release">Newest</string>
     <string name="library_sort_updated">Recently Updated</string>
     <string name="library_sort_rating">Rating</string>
+    <string name="library_filter_all">All</string>
+    <string name="library_filter_favorites">Favorites</string>
+    <string name="library_filter_resume">Resume</string>
+    <string name="library_filter_unwatched">Unwatched</string>
+    <string name="library_filter_recent">Recent</string>
+    <string name="library_filter_updated">Updated</string>
+    <string name="library_filter_top_rated">Top Rated</string>
+    <string name="library_sort_recent_activity">Recent Activity</string>
 
     
     <string name="settings_title">Settings</string>

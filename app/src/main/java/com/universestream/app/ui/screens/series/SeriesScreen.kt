@@ -1273,28 +1273,30 @@ private fun seriesLibraryLensLabel(lens: SeriesLibraryLens): String =
         SeriesLibraryLens.FRESH -> stringResource(R.string.library_lens_fresh_series)
     }
 
+@Composable
 private fun seriesFilterChips(): List<SelectionChip> {
     return listOf(
-        SelectionChip(LibraryFilterType.ALL.name, "All"),
-        SelectionChip(LibraryFilterType.FAVORITES.name, "Favorites"),
-        SelectionChip(LibraryFilterType.IN_PROGRESS.name, "Resume"),
-        SelectionChip(LibraryFilterType.UNWATCHED.name, "Unwatched"),
-        SelectionChip(LibraryFilterType.RECENTLY_UPDATED.name, "Updated"),
-        SelectionChip(LibraryFilterType.TOP_RATED.name, "Top Rated")
+        SelectionChip(LibraryFilterType.ALL.name, stringResource(R.string.library_filter_all)),
+        SelectionChip(LibraryFilterType.FAVORITES.name, stringResource(R.string.library_filter_favorites)),
+        SelectionChip(LibraryFilterType.IN_PROGRESS.name, stringResource(R.string.library_filter_resume)),
+        SelectionChip(LibraryFilterType.UNWATCHED.name, stringResource(R.string.library_filter_unwatched)),
+        SelectionChip(LibraryFilterType.RECENTLY_UPDATED.name, stringResource(R.string.library_filter_recent)),
+        SelectionChip(LibraryFilterType.TOP_RATED.name, stringResource(R.string.library_filter_top_rated))
     )
 }
 
+@Composable
 private fun seriesSortChips(): List<SelectionChip> {
     return LibrarySortBy.entries.map { sort ->
         SelectionChip(
             key = sort.name,
             label = when (sort) {
-                LibrarySortBy.LIBRARY -> "Library Order"
-                LibrarySortBy.TITLE -> "A-Z"
-                LibrarySortBy.RELEASE -> "Newest"
-                LibrarySortBy.UPDATED -> "Recently Updated"
-                LibrarySortBy.RATING -> "Rating"
-                LibrarySortBy.WATCH_COUNT -> "Recent Activity"
+                LibrarySortBy.LIBRARY -> stringResource(R.string.library_sort_library)
+                LibrarySortBy.TITLE -> stringResource(R.string.library_sort_az)
+                LibrarySortBy.RELEASE -> stringResource(R.string.library_sort_release)
+                LibrarySortBy.UPDATED -> stringResource(R.string.library_sort_updated)
+                LibrarySortBy.RATING -> stringResource(R.string.library_sort_rating)
+                LibrarySortBy.WATCH_COUNT -> stringResource(R.string.library_sort_recent_activity)
             }
         )
     }
