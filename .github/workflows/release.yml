@@ -99,7 +99,12 @@ jobs:
             echo "No release APK produced."
             exit 1
           fi
-          "${ANDROID_HOME}/build-tools/${BUILD_TOOLS}/apksigner" verify --verbose "$APK_PATH"
+          APKSIGNER=$(find "${ANDROID_HOME}/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)
+          if [ -z "$APKSIGNER" ]; then
+            echo "apksigner was not found in Android SDK build-tools."
+            exit 1
+          fi
+          "$APKSIGNER" verify --verbose "$APK_PATH"
 
       - name: Prepare release artifact
         if: github.event_name == 'workflow_dispatch'
