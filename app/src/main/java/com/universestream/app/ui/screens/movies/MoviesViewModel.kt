@@ -209,8 +209,11 @@ class MoviesViewModel @Inject constructor(
                             query = query
                         )
                     }
-                    .distinctUntilChangedBy { params ->
-                        params.copy(
+                    .distinctUntilChanged { oldParams, newParams ->
+                        oldParams.copy(
+                            providerCategoryCounts = emptyMap(),
+                            libraryCount = 0
+                        ) == newParams.copy(
                             providerCategoryCounts = emptyMap(),
                             libraryCount = 0
                         )
