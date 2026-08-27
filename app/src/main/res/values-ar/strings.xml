@@ -218,6 +218,8 @@
     <string name="library_saved_title">المحفوظة</string>
     <string name="library_saved_subtitle">المفضلة والمجموعات المخصصة</string>
     <string name="library_saved_items_count">%1$d عناصر</string>
+    <string name="vod_category_count">%1$d مجموعة</string>
+    <string name="vod_picks_count">%1$d اختيارات</string>
     <string name="library_saved_active_title">المجموعة المحفوظة</string>
     <string name="library_saved_active_summary">%1$d عناصر في هذا العرض المحفوظ</string>
     <string name="library_saved_manage_action">إدارة</string>

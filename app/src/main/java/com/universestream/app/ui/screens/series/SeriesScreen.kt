@@ -560,7 +560,10 @@ private fun SeriesVodContent(
                             VodActionChip(
                                 key = "categories",
                                 label = stringResource(R.string.series_categories_title),
-                                detail = "${visibleCategoryNames.count { name -> categoryByName[name]?.id != VodBrowseDefaults.FAVORITES_SENTINEL_ID }} groups",
+                                detail = stringResource(
+                                    R.string.vod_category_count,
+                                    visibleCategoryNames.count { name -> categoryByName[name]?.id != VodBrowseDefaults.FAVORITES_SENTINEL_ID }
+                                ),
                                 onClick = { showCategoryPicker = true }
                             )
                         )
@@ -579,7 +582,7 @@ private fun SeriesVodContent(
                                 VodActionChip(
                                     key = "resume",
                                     label = stringResource(R.string.library_lens_continue),
-                                    detail = "${continueWatching.size} items",
+                                    detail = stringResource(R.string.library_saved_items_count, continueWatching.size),
                                     onClick = onOpenContinueWatching
                                 )
                             )
@@ -589,7 +592,7 @@ private fun SeriesVodContent(
                                 VodActionChip(
                                     key = SeriesLibraryLens.TOP_RATED.name,
                                     label = stringResource(R.string.library_lens_top_rated),
-                                    detail = "${topRatedSeries.size} picks",
+                                    detail = stringResource(R.string.vod_picks_count, topRatedSeries.size),
                                     onClick = onOpenTopRated
                                 )
                             )
@@ -599,7 +602,7 @@ private fun SeriesVodContent(
                                 VodActionChip(
                                     key = SeriesLibraryLens.FRESH.name,
                                     label = stringResource(R.string.library_lens_fresh_series),
-                                    detail = "${freshSeries.size} picks",
+                                    detail = stringResource(R.string.vod_picks_count, freshSeries.size),
                                     onClick = onOpenFresh
                                 )
                             )

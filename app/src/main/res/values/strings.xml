@@ -304,6 +304,8 @@
     <string name="library_saved_title">Saved</string>
     <string name="library_saved_subtitle">Favorites and custom groups</string>
     <string name="library_saved_items_count">%1$d items</string>
+    <string name="vod_category_count">%1$d groups</string>
+    <string name="vod_picks_count">%1$d picks</string>
     <string name="library_saved_active_title">Saved Group</string>
     <string name="library_saved_active_summary">%1$d items in this saved view</string>
     <string name="library_saved_manage_action">Manage</string>

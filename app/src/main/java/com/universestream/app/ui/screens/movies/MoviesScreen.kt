@@ -564,7 +564,10 @@ private fun MoviesVodContent(
                             VodActionChip(
                                 key = "categories",
                                 label = stringResource(R.string.movies_categories_title),
-                                detail = "${visibleCategoryNames.count { name -> categoryByName[name]?.id != VodBrowseDefaults.FAVORITES_SENTINEL_ID }} groups",
+                                detail = stringResource(
+                                    R.string.vod_category_count,
+                                    visibleCategoryNames.count { name -> categoryByName[name]?.id != VodBrowseDefaults.FAVORITES_SENTINEL_ID }
+                                ),
                                 onClick = { showCategoryPicker = true }
                             )
                         )
@@ -583,7 +586,7 @@ private fun MoviesVodContent(
                                 VodActionChip(
                                     key = "resume",
                                     label = stringResource(R.string.library_lens_continue),
-                                    detail = "${continueWatching.size} items",
+                                    detail = stringResource(R.string.library_saved_items_count, continueWatching.size),
                                     onClick = onOpenContinueWatching
                                 )
                             )
@@ -593,7 +596,7 @@ private fun MoviesVodContent(
                                 VodActionChip(
                                     key = MovieLibraryLens.TOP_RATED.name,
                                     label = stringResource(R.string.library_lens_top_rated),
-                                    detail = "${topRatedMovies.size} picks",
+                                    detail = stringResource(R.string.vod_picks_count, topRatedMovies.size),
                                     onClick = onOpenTopRated
                                 )
                             )
@@ -603,7 +606,7 @@ private fun MoviesVodContent(
                                 VodActionChip(
                                     key = MovieLibraryLens.FRESH.name,
                                     label = stringResource(R.string.library_lens_fresh_movies),
-                                    detail = "${freshMovies.size} picks",
+                                    detail = stringResource(R.string.vod_picks_count, freshMovies.size),
                                     onClick = onOpenFresh
                                 )
                             )
