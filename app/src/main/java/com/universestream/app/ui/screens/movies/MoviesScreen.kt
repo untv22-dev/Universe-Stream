@@ -192,8 +192,16 @@ fun MoviesScreen(
         } else if (uiState.errorMessage != null && (isTelevisionDevice || !hasCachedMovies)) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 AppMessageState(
-                    title = stringResource(R.string.home_error_load_failed),
-                    subtitle = uiState.errorMessage ?: ""
+                    title = if (isTelevisionDevice) {
+                        stringResource(R.string.home_error_load_failed)
+                    } else {
+                        stringResource(R.string.vod_content_load_failed_title)
+                    },
+                    subtitle = if (isTelevisionDevice) {
+                        uiState.errorMessage ?: ""
+                    } else {
+                        stringResource(R.string.vod_content_load_failed_subtitle)
+                    }
                 )
             }
         } else if (!uiState.hasProviders) {

@@ -1156,6 +1156,8 @@
     <string name="home_added_to_favorites">تمت إضافة %1$s إلى المفضلة</string>
     <string name="home_removed_from_favorites">تمت إزالة %1$s من المفضلة</string>
     <string name="home_error_load_failed">فشل تحميل القنوات. يُرجى التحقق من الاتصال والمحاولة مرة أخرى.</string>
+    <string name="vod_content_load_failed_title">تعذر تحميل المحتوى</string>
+    <string name="vod_content_load_failed_subtitle">تحقق من اتصالك وحاول مرة أخرى.</string>
     <string name="settings_history_cleared">تم مسح سجل المشاهدة والعناصر الأخيرة</string>
     <string name="settings_pin_changed">تم حفظ رمز PIN بنجاح</string>
     <string name="home_reorder_channels">إعادة ترتيب القنوات</string>
