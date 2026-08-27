@@ -604,7 +604,7 @@
     <string name="settings_capability_xtream_without_epg">مصدر Xtream مع بديل دليل عند الطلب. يعتمد Catch-up على دعم المزود للإعادة.</string>
     <string name="settings_capability_m3u_with_epg">مصدر M3U مع دليل XMLTV. يعتمد دعم الأرشيف على قوالب البث لدى المزود.</string>
     <string name="settings_capability_m3u_without_epg">مصدر M3U بدون رابط دليل. قد يكون تغطية الدليل والأرشيف محدودة.</string>
-    <string name="favorites_title">المحفوظة</string>
+    <string name="favorites_title">المفضلة</string>
     <string name="favorites_loading">جارٍ تحميل المكتبة المحفوظة...</string>
     <string name="favorites_no_favorites">المكتبة المحفوظة فارغة</string>
     <string name="favorites_empty_hint">اضغط مطولًا على أي قناة أو فيلم أو مسلسل لإنشاء مكتبتك المحفوظة</string>

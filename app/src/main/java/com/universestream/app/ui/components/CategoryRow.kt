@@ -99,7 +99,9 @@ fun <T : Any> CategoryRow(
         }
 
         LazyRow(
-            modifier = Modifier.focusRestorer(),
+            modifier = Modifier
+                .padding(horizontal = if (compactPhone) 4.dp else 0.dp)
+                .focusRestorer(),
             contentPadding = if (compactPhone) {
                 PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp)
             } else {

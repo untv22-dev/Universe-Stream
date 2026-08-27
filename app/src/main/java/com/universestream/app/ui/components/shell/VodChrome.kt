@@ -120,13 +120,13 @@ fun VodHeroStrip(
         LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val isTelevisionDevice = rememberIsTelevisionDevice()
     val heroHeight = when {
-        isLandscape && !isTelevisionDevice -> 60.dp
+        isLandscape && !isTelevisionDevice -> 52.dp
         isCompactPhone && !isTelevisionDevice -> 64.dp
         isLandscape -> 88.dp
         else -> 132.dp
     }
     val outerPadding = when {
-        isLandscape && !isTelevisionDevice -> 2.dp
+        isLandscape && !isTelevisionDevice -> 0.dp
         isCompactPhone && !isTelevisionDevice -> 6.dp
         isLandscape -> 4.dp
         else -> 18.dp
@@ -155,13 +155,13 @@ fun VodHeroStrip(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = outerPadding),
+                .padding(horizontal = if (isLandscape && !isTelevisionDevice) 10.dp else 14.dp, vertical = outerPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                verticalArrangement = Arrangement.spacedBy(if (isLandscape && !isTelevisionDevice) 0.dp else 2.dp)
             ) {
                 Text(
                     text = title,

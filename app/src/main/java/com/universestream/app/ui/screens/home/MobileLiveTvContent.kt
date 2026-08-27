@@ -200,9 +200,11 @@ fun MobileLiveTvContent(
         // Horizontal category strip. "All" is the leading chip; every real
         // category follows. The selected chip is filled with the brand accent.
         LazyRow(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp)
         ) {
             if (allChannelsCategory != null) {
                 item(key = "all-channels-chip") {

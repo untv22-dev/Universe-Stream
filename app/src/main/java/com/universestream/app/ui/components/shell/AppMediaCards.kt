@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.Box
@@ -476,10 +477,11 @@ private fun PosterCard(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = title.take(1).uppercase(),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = AppColors.TextSecondary
+                Icon(
+                    imageVector = Icons.Filled.Movie,
+                    contentDescription = null,
+                    tint = AppColors.TextSecondary,
+                    modifier = Modifier.size(34.dp)
                 )
             }
         }
