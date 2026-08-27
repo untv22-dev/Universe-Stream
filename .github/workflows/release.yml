@@ -69,7 +69,7 @@ jobs:
             keytool -genkeypair -v \
               -keystore keystore/release.jks \
               -storepass ci-release-store-password \
-              -keypass ci-release-key-password \
+              -keypass ci-release-store-password \
               -alias ci-release \
               -keyalg RSA \
               -keysize 2048 \
@@ -79,7 +79,7 @@ jobs:
               'storeFile=keystore/release.jks' \
               'storePassword=ci-release-store-password' \
               'keyAlias=ci-release' \
-              'keyPassword=ci-release-key-password' \
+              'keyPassword=ci-release-store-password' \
               > keystore.properties
           fi
 
