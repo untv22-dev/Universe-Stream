@@ -64,7 +64,23 @@ jobs:
               > keystore.properties
             echo "Release signing files prepared."
           else
-            echo "No signing secrets configured. Building unsigned release APK."
+            echo "No signing secrets configured. Generating an ephemeral CI signing key so the APK remains installable."
+            mkdir -p keystore
+            keytool -genkeypair -v \
+              -keystore keystore/release.jks \
+              -storepass ci-release-store-password \
+              -keypass ci-release-key-password \
+              -alias ci-release \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Universe Stream CI, OU=Android, O=Universe Stream, C=US"
+            printf '%s\n' \
+              'storeFile=keystore/release.jks' \
+              'storePassword=ci-release-store-password' \
+              'keyAlias=ci-release' \
+              'keyPassword=ci-release-key-password' \
+              > keystore.properties
           fi
 
       - name: Grant execute permission for gradlew
@@ -75,6 +91,15 @@ jobs:
 
       - name: Build release APK
         run: ./gradlew --console=plain :app:assembleRelease
+
+      - name: Verify release APK signature
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/release -maxdepth 1 -name '*.apk' | head -n 1)
+          if [ -z "$APK_PATH" ]; then
+            echo "No release APK produced."
+            exit 1
+          fi
+          "${ANDROID_HOME}/build-tools/${BUILD_TOOLS}/apksigner" verify --verbose "$APK_PATH"
 
       - name: Prepare release artifact
         if: github.event_name == 'workflow_dispatch'
