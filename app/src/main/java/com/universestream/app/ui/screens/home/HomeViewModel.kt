@@ -542,7 +542,7 @@ class HomeViewModel @Inject constructor(
                     val pinnedCategoryIds = values[6] as Set<Long>
                     val recentCategory = Category(
                         id = VirtualCategoryIds.RECENT,
-                        name = "Recent",
+                        name = appContext.getString(R.string.home_recent_channels),
                         type = ContentType.LIVE,
                         isVirtual = true,
                         count = _uiState.value.recentChannels.size
@@ -551,7 +551,7 @@ class HomeViewModel @Inject constructor(
                         ?.copy(count = providerCats.filter { it.id != ChannelRepository.ALL_CHANNELS_ID && it.id !in hiddenCategoryIds }.sumOf(Category::count))
                         ?: Category(
                             id = ChannelRepository.ALL_CHANNELS_ID,
-                            name = "All Channels",
+                            name = appContext.getString(R.string.home_all_channels),
                             type = ContentType.LIVE,
                             count = providerCats.filter { it.id != ChannelRepository.ALL_CHANNELS_ID && it.id !in hiddenCategoryIds }.sumOf(Category::count)
                         )
@@ -693,14 +693,14 @@ class HomeViewModel @Inject constructor(
                     combinedCategoriesById = combinedCategories.associateBy { it.category.id }
                     val recentCategory = Category(
                         id = VirtualCategoryIds.RECENT,
-                        name = "Recent",
+                        name = appContext.getString(R.string.home_recent_channels),
                         type = ContentType.LIVE,
                         isVirtual = true,
                         count = _uiState.value.recentChannels.size
                     )
                     val allChannelsCategory = Category(
                         id = ChannelRepository.ALL_CHANNELS_ID,
-                        name = "All Channels",
+                        name = appContext.getString(R.string.home_all_channels),
                         type = ContentType.LIVE,
                         count = combinedCategories.sumOf { it.category.count }
                     )

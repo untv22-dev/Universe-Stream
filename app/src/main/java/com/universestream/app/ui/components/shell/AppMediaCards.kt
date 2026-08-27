@@ -164,16 +164,7 @@ fun LiveChannelRowCard(
                     }
                 }
                 Text(
-                    text = buildString {
-                        val numberLabel = channel.number.takeIf { it > 0 }?.toString()?.padStart(2, '0')
-                        if (numberLabel != null) {
-                            append(numberLabel)
-                            append("  ")
-                        } else if (channel.number == 0) {
-                            append("--  ")
-                        }
-                        append(channel.name)
-                    },
+                    text = channel.name,
                     style = if (isDense) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.titleSmall,
                     color = AppColors.TextPrimary,
                     maxLines = 1,
@@ -234,11 +225,7 @@ fun LiveChannelRowSurface(
     val lockedLabel = stringResource(R.string.a11y_locked)
     val hasUsableArchive = channel.archivePlaybackCapability().canBuildReplayCandidate
     val channelDescription = buildString {
-        append(
-            channel.number.takeIf { it > 0 }?.let {
-                stringResource(R.string.a11y_channel_with_number, it, channel.name)
-            } ?: channel.name
-        )
+        append(channel.name)
         channel.currentProgram?.title?.takeIf { it.isNotBlank() }?.let {
             append(". ")
             append(stringResource(R.string.a11y_now_playing, it))
@@ -477,9 +464,13 @@ private fun PosterCard(
     Box(
         modifier = modifier
             .clip(posterShape)
-            .background(AppColors.SurfaceEmphasis)
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(AppColors.SurfaceEmphasis, AppColors.HeroBottom)
+                )
+            )
     ) {
-        // Fallback letter: only shown while no URL, still loading, or load failed
+        // Unified subtle fallback while no URL, still loading, or load failed.
         if (showFallback) {
             Box(
                 modifier = Modifier.fillMaxSize(),

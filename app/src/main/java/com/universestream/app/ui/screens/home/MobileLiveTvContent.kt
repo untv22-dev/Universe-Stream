@@ -202,7 +202,7 @@ fun MobileLiveTvContent(
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp)
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp)
         ) {
             if (allChannelsCategory != null) {
                 item(key = "all-channels-chip") {
@@ -218,7 +218,11 @@ fun MobileLiveTvContent(
             }
             items(stripCategories, key = { it.id }) { category ->
                 CategoryChip(
-                    label = category.name,
+                    label = if (category.id == com.universestream.domain.model.VirtualCategoryIds.FAVORITES) {
+                        stringResource(R.string.favorites_title)
+                    } else {
+                        category.name
+                    },
                     selected = category.id == selectedId,
                     onClick = {
                         viewModel.clearCategorySearchQuery()
