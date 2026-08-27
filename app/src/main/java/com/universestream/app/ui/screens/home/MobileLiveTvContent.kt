@@ -24,6 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
 import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
@@ -78,6 +80,9 @@ fun MobileLiveTvContent(
     // Television and the existing non-compact Home renderer never enable this.
     LaunchedEffect(Unit) {
         viewModel.enableMobileDatabaseFirst()
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        viewModel.refreshMobileChannelsOnEntry()
     }
 
     val allChannelsCategory = uiState.categories.firstOrNull { it.id == ChannelRepository.ALL_CHANNELS_ID }

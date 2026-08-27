@@ -1063,6 +1063,15 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /** Re-attach the selected mobile category to its existing Room flow after returning from player. */
+    fun refreshMobileChannelsOnEntry() {
+        if (!mobileDatabaseFirst) return
+        val state = _uiState.value
+        val category = state.selectedCategory ?: return
+        if (state.filteredChannels.isNotEmpty()) return
+        loadChannelsForCategory(category)
+    }
+
     fun retryLiveTv() {
         val providerId = _uiState.value.provider?.id ?: return
         viewModelScope.launch {
