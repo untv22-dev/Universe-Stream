@@ -209,6 +209,12 @@ class MoviesViewModel @Inject constructor(
                             query = query
                         )
                     }
+                    .distinctUntilChangedBy { params ->
+                        params.copy(
+                            providerCategoryCounts = emptyMap(),
+                            libraryCount = 0
+                        )
+                    }
                 }
                 .flatMapLatest { params ->
                     _previewBatchSize.flatMapLatest { batchSize ->

@@ -172,6 +172,10 @@ fun MoviesScreen(
             )
         }
 
+        val hasCachedMovies = uiState.libraryCount > 0 ||
+            uiState.moviesByCategory.values.any { it.isNotEmpty() } ||
+            uiState.selectedCategoryItems.isNotEmpty()
+
         if (uiState.isLoading && (isTelevisionDevice || (uiState.moviesByCategory.isEmpty() && uiState.libraryCount == 0))) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(
@@ -185,7 +189,7 @@ fun MoviesScreen(
                     )
                 }
             }
-        } else if (uiState.errorMessage != null) {
+        } else if (uiState.errorMessage != null && (isTelevisionDevice || !hasCachedMovies)) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 AppMessageState(
                     title = stringResource(R.string.home_error_load_failed),
