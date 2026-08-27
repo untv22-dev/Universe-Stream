@@ -341,6 +341,9 @@ class PlayerViewModel @Inject constructor(
     private var fastZapSkipProbe = false
     private var fastZapTraceStartedAtElapsedMs = 0L
     private var fastZapTraceRequestVersion = -1L
+    private var vodStartupTraceStartedAtElapsedMs = 0L
+    private var vodStartupTraceRequestVersion = -1L
+    private var vodStartupTraceLabel = ""
     private var lastObservedPlaybackState: PlaybackState = PlaybackState.IDLE
 
     internal var epgJob: Job? = null
@@ -497,6 +500,7 @@ class PlayerViewModel @Inject constructor(
                 _playerDiagnostics.update { it.copy(playbackStateLabel = state.name.replace('_', ' ')) }
                 if (state == PlaybackState.BUFFERING) {
                     recordFastZapStage("buffering", prepareRequestVersion)
+                    recordVodStartupStage("state_buffering", prepareRequestVersion)
                 }
                 if (state == PlaybackState.ENDED && lastObservedPlaybackState != PlaybackState.ENDED) {
                     handlePlaybackEnded()
@@ -504,6 +508,7 @@ class PlayerViewModel @Inject constructor(
                 lastObservedPlaybackState = state
                 if (state == PlaybackState.READY && readySideEffectsRequestVersion == prepareRequestVersion) {
                     recordFastZapStage("ready", prepareRequestVersion)
+                    recordVodStartupStage("state_ready", prepareRequestVersion)
                     zapBufferWatchdogJob?.cancel()
                     vodStartupWatchdogJob?.cancel()
                     dismissRecoveredNoticeIfPresent()
@@ -532,6 +537,7 @@ class PlayerViewModel @Inject constructor(
                 .collect { ttffMs ->
                     if (ttffMs > 0L) {
                         recordFastZapStage("first-frame", prepareRequestVersion, "ttffMs=$ttffMs")
+                        recordVodStartupStage("first_frame_rendered", prepareRequestVersion, "ttffMs=$ttffMs")
                     }
                 }
         }
@@ -1352,6 +1358,31 @@ class PlayerViewModel @Inject constructor(
 
     internal fun shouldSkipProbeForFastZap(): Boolean = fastZapSkipProbe
 
+    private fun beginVodStartupTrace(requestVersion: Long, contentType: ContentType) {
+        if (contentType == ContentType.LIVE) return
+        vodStartupTraceStartedAtElapsedMs = SystemClock.elapsedRealtime()
+        vodStartupTraceRequestVersion = requestVersion
+        vodStartupTraceLabel = when (contentType) {
+            ContentType.SERIES_EPISODE, ContentType.SERIES -> "Episode"
+            ContentType.MOVIE -> "Movie"
+            else -> contentType.name
+        }
+        android.util.Log.i("VODStartup", "stage=player_screen_entered type=$vodStartupTraceLabel request=$requestVersion elapsedMs=0")
+    }
+
+    private fun recordVodStartupStage(stage: String, requestVersion: Long, details: String = "") {
+        if (vodStartupTraceRequestVersion != requestVersion || vodStartupTraceStartedAtElapsedMs == 0L) return
+        val elapsedMs = (SystemClock.elapsedRealtime() - vodStartupTraceStartedAtElapsedMs).coerceAtLeast(0L)
+        android.util.Log.i(
+            "VODStartup",
+            "stage=$stage type=$vodStartupTraceLabel request=$requestVersion elapsedMs=$elapsedMs" +
+                details.takeIf { it.isNotBlank() }?.let { " $it" }.orEmpty()
+        )
+        if (stage == "first_frame_rendered") {
+            vodStartupTraceRequestVersion = -1L
+        }
+    }
+
     internal suspend fun preparePlayer(
         streamInfo: com.universestream.domain.model.StreamInfo,
         requestVersion: Long,
@@ -1421,6 +1452,7 @@ class PlayerViewModel @Inject constructor(
         currentResolvedPlaybackUrl = preparedStreamInfo.url
         currentResolvedStreamInfo = preparedStreamInfo
         readySideEffectsRequestVersion = requestVersion
+        recordVodStartupStage("player_prepare", requestVersion, "streamType=${preparedStreamInfo.streamType}")
         playerEngine.prepare(preparedStreamInfo)
         refreshLiveTranslationAvailability()
         startTokenRenewalMonitoring(preparedStreamInfo.expirationTime)
@@ -1536,6 +1568,7 @@ class PlayerViewModel @Inject constructor(
             preferredVideoDecoderMode = preferredVideoDecoderMode,
             preferredSurfaceMode = preferredSurfaceMode
         )
+        beginVodStartupTrace(requestVersion, currentContentType)
         // PlayerScreen passes false only for Compact live playback. Keep TV on the
         // existing probe path while allowing subsequent mobile zaps to skip the probe.
         fastZapSkipProbe = contentType.equals("LIVE", ignoreCase = true) && !effectiveProbeBeforePlayback
@@ -1580,6 +1613,7 @@ class PlayerViewModel @Inject constructor(
                         }
                     }
                 }
+                recordVodStartupStage("stream_resolution_started", requestVersion)
                 val streamInfo = resolvePlaybackStreamInfo(
                     playbackLogicalUrl,
                     playbackContentId,
@@ -1592,6 +1626,7 @@ class PlayerViewModel @Inject constructor(
                     showPlayerNotice(message = "No playable stream URL was available.", recoveryType = PlayerRecoveryType.SOURCE)
                     return@launch
                 }
+                recordVodStartupStage("stream_url_ready", requestVersion, "streamType=${streamInfo.streamType}")
                 currentStreamUrl = playbackLogicalUrl
                 currentContentId = playbackContentId
                 if (!isActivePlaybackSession(requestVersion, playbackLogicalUrl)) return@launch
