@@ -104,8 +104,27 @@ class MovieDetailViewModel @Inject constructor(
                 // in place. Basics are already on hand from the list the user came from.
                 if (movieRow != null) {
                     val isFavorite = favoriteRepository.isFavorite(effectiveProviderId, movieRow.id, ContentType.MOVIE)
+                    val cachedHistory = playbackHistoryRepository.getPlaybackHistory(
+                        contentId = movieRow.id,
+                        contentType = ContentType.MOVIE,
+                        providerId = effectiveProviderId
+                    )
+                    val cachedDurationMs = cachedHistory?.totalDurationMs?.takeIf { it > 0L }
+                        ?: movieRow.durationSeconds.takeIf { it > 0 }?.times(1000L)
+                        ?: 0L
+                    val cachedPositionMs = cachedHistory?.resumePositionMs ?: movieRow.watchProgress
+                    val cachedHasResume = cachedPositionMs > 5000L && !isPlaybackComplete(
+                        progressMs = cachedPositionMs,
+                        totalDurationMs = cachedDurationMs
+                    )
                     _uiState.update {
-                        it.copy(isLoading = false, movie = movieRow.copy(isFavorite = isFavorite), error = null)
+                        it.copy(
+                            isLoading = false,
+                            movie = movieRow.copy(isFavorite = isFavorite),
+                            error = null,
+                            hasResume = cachedHasResume,
+                            resumePositionMs = if (cachedHasResume) cachedPositionMs else 0L
+                        )
                     }
                 }
 

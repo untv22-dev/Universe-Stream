@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -88,7 +89,9 @@ class SeriesDetailViewModel @Inject constructor(
     init {
         observeCastPlaybackEvents()
         viewModelScope.launch {
-            providerRepository.getActiveProvider().collect { provider ->
+            providerRepository.getActiveProvider()
+                .distinctUntilChangedBy { it?.id }
+                .collect { provider ->
                 providerDetailJob?.cancel()
                 _uiState.value = SeriesDetailUiState(isLoading = true)
                 if (provider == null) {
