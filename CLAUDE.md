@@ -214,9 +214,9 @@ Release mechanics to respect:
 - `versionCode` / `versionName` in `app/build.gradle.kts` are the single source of
   truth; CI `sed`s them out and derives the tag `v<versionName>` and asset name.
 - Release notes are extracted from `docs/CHANGELOG.md` by matching a
-  `## [<versionName>] - <date>` heading. **Currently `versionName` is `1.0.18`
-  while the newest changelog heading is `[1.0.16]`** — a dispatched release today
-  would publish empty notes. Add the matching heading when cutting a release.
+  `## [<versionName>] - <date>` heading. **A version bump without a matching
+  changelog heading publishes an empty release body** — always add the heading in
+  the same change that bumps `versionName`.
 - Keep changelog entries in the existing Added / Fixed / Changed style.
 
 ## Working agreements

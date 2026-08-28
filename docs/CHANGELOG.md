@@ -2,6 +2,47 @@
 
 All notable product changes are recorded in this document.
 
+## [1.0.18] - 2026-08-27
+
+### Fixed
+
+- Fixed the phone Live TV list coming back empty after returning from the player; the selected category now re-attaches to its channel stream when the screen starts again.
+- Fixed phone movie and series browsing flipping back to a loading or error state while cached catalog content was already on screen, by ignoring catalog updates that only changed item counts without changing the browse query.
+- Fixed movie and series detail screens briefly losing the Resume action while reopening; the saved resume position is now restored from cached playback history before the full detail load finishes.
+- Fixed the series detail screen rebuilding its entire state whenever the active provider re-emitted unchanged.
+- Fixed Movies and Series surfacing a raw internal error string on phones; the compact layout now shows a localized content-load-failed message, while the TV layout keeps its existing diagnostic text.
+- Fixed hardcoded English in the phone VOD filter labels, sort labels, and action counts, which now use string resources.
+- Fixed the Live TV category strip showing untranslated `Recent`, `All Channels`, and `Favorites` labels instead of the localized names.
+- Fixed the Arabic translation of `Favorites`, which read `المحفوظة` instead of `المفضلة`.
+- Fixed live channel rows padding the channel name with a placeholder number prefix when no channel number was available.
+- Fixed poster placeholders rendering a bare initial letter; missing or failed artwork now uses a consistent gradient tile with a media icon.
+- Fixed compact-phone spacing for the category strip and the VOD hero header, including a shorter hero in phone landscape.
+
+### Changed
+
+- Changed release CI to sign the APK with a generated ephemeral key when signing secrets are unavailable, so published builds stay installable, and to locate `apksigner` from the installed Android SDK build-tools.
+
+## [1.0.17] - 2026-08-27
+
+### Added
+
+- Added an on-screen back control to the player on phones and tablets, using the same back handling as the system gesture so the back stack and list position are preserved. The TV player is unchanged.
+
+### Fixed
+
+- Fixed the phone Live TV list stopping at the first page; it now loads further pages as you approach the end of the list and returns to the top when you switch category.
+- Fixed a stale loading indicator remaining on the phone Live TV list after channels had already arrived.
+- Fixed Movies and Series replacing already-cached content with a loading state while a refresh was still in flight.
+- Fixed channel zapping discarding the adjacent-channel preload on every switch, so neighbouring channels stay preloaded while moving through the lineup.
+- Fixed channel number and name legibility in the player channel-info header and the in-player channel list overlay.
+
+### Changed
+
+- Changed the app-open provider refresh on phones to require that the battery is not low and to keep an in-flight check running instead of restarting it, so rapid app switching no longer repeatedly wakes the network. The TV launch path is unchanged.
+- Changed Xtream index scheduling to keep an already-pending job instead of queuing a duplicate for the same provider and section.
+- Changed the Settings → About credits heading to inline secondary text, keeping the build, developer, GitHub, and support rows.
+- Reduced recomposition in the player channel-list overlay by isolating per-row state.
+
 ## [1.0.16] - 2026-06-19
 
 ### Added
