@@ -79,5 +79,4 @@ tools/smoke_*.ps1
 
 # Build/test logs
 final_narrow_*.log
-gradle_*_test*.log
-gradle_*_rerun.log
+gradle_*.log
