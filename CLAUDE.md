@@ -258,8 +258,12 @@ or a single screenshot.
 
 ## Repo hygiene notes
 
-- Root-level `gradle_*.log`, `final_narrow_*.log` files are captured build/test
-  output and are gitignored by pattern — don't add new ones to commits.
+- Root-level `gradle_*.log` / `final_narrow_*.log` files are captured build/test
+  output. Eleven of them are **tracked** (committed by accident in `051ef3d`
+  alongside an unrelated UI change) even though nine match `.gitignore` patterns —
+  ignore rules do not apply to already-tracked paths. They are UTF-16LE
+  PowerShell captures and five embed a local developer path. Don't add new ones
+  to commits, and don't treat their presence as precedent.
 - `MOBILE_UI_FIX_REPORT.md` and `UNIVERSE_STREAM_REBRAND_REPORT.md` are historical
   Arabic-language work reports, not specifications.
 - `.claude/`, `graphify-out/`, `translations/`, and `docs/*-plan.md` /
