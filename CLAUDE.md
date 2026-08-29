@@ -134,13 +134,36 @@ There is no ktlint/detekt/spotless configuration. Match surrounding style
 
 ### Localization
 
-- 26 locale packs ship (`app/src/main/res/values-*/`). English source of truth is
-  `app/src/main/res/values/strings.xml` (~1800 lines).
+- 25 translated locale packs ship alongside English (`app/src/main/res/values-*/`).
+  The source of truth is `app/src/main/res/values/strings.xml` (1730 `<string>`
+  keys plus 5 `<plurals>`).
 - **No hardcoded user-facing strings.** Every visible label, filter, count, error,
   or dialog goes through a string resource; add the key to `values/strings.xml`
   and, where you can, to the translated locales. Several recent commits exist
   purely to fix leaked literals.
 - `app/localization/AppLocaleSupport.kt` handles in-app locale selection.
+
+**Every locale has TWO resource files — read both.** Each `values-<loc>/` contains
+`strings.xml` *and* `strings_missing.xml`, and Android merges every XML file in
+the directory into one resource table. Two consequences, both of which have
+already bitten:
+
+- Adding a key to `strings.xml` when it already exists in `strings_missing.xml`
+  is a **build failure**, not a warning: `MergeResources` aborts with
+  `Error: Duplicate resources`. Always check both files before adding a key.
+- Any coverage audit that reads only `strings.xml` is wrong. Real coverage is
+  the union of the two files: 1628 of 1730 keys in 24 locales (**102 genuinely
+  missing** each) and 1666 in `ar` (**64 missing**). A single-file comparison
+  reports a far larger, and false, gap.
+
+**`strings_missing.xml` is mostly untranslated English.** It appears to have been
+generated to satisfy the `MissingTranslation` lint check rather than to translate
+anything. In 24 of the 25 locales every entry is byte-identical to
+`values/strings.xml` (184 entries each; `es` 183, `fr` 148). Arabic is the sole
+exception — 186 of its 189 entries are real Arabic. So a locale can look complete
+to lint while ~184 keys render in English, and nothing flags it. When judging
+translation coverage, compare *values* against the English source, not just key
+presence.
 
 ### Never leak provider secrets or raw errors
 
