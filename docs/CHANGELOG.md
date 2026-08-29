@@ -2,6 +2,13 @@
 
 All notable product changes are recorded in this document.
 
+## [1.0.19] - 2026-08-29
+
+### Fixed
+
+- Fixed Arabic falling back to English across the Google Cast messages, the stream-URL actions, parts of the downloads and player diagnostics screens, and several Settings entries. Arabic now covers every string in the app.
+- Fixed French falling back to English across roughly 350 labels and messages, including the entire Google Cast surface, the downloads screen, phone pairing, Jellyfin setup, VOD duplicate and version handling, the colored remote-button settings, and much of Settings. French now covers every string in the app.
+
 ## [1.0.18] - 2026-08-27
 
 ### Fixed
