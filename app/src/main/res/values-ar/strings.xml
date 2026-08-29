@@ -1503,5 +1503,76 @@
     <string name="settings_epg_without_epg">%1$d بدون EPG</string>
     <string name="settings_epg_low_confidence">%1$d بثقة منخفضة</string>
     <string name="settings_epg_need_review">%1$d بحاجة إلى مراجعة</string>
-</resources>
 
+    <!-- Keys absent from both strings.xml and strings_missing.xml for this locale. -->
+    <!-- Cast -->
+    <string name="cast_button_label">البث</string>
+    <string name="cast_disconnected">انقطعت جلسة البث.</string>
+    <string name="cast_drm_unsupported">البثوث المحمية بـ DRM غير مدعومة في Google Cast داخل هذا التطبيق.</string>
+    <string name="cast_headers_unsupported">يحتاج هذا البث إلى رؤوس HTTP أو ملفات تعريف ارتباط لا يستطيع Chromecast استخدامها مباشرة.</string>
+    <string name="cast_invalid_ssl_unsupported">يستخدم هذا البث معالجة SSL لا يستطيع Chromecast استخدامها مباشرة.</string>
+    <string name="cast_item_unavailable">لا يمكن إرسال هذا العنصر إلى جهاز بث.</string>
+    <string name="cast_launching">جارٍ البث...</string>
+    <string name="cast_load_failed">تعذّر على جهاز البث تحميل هذا البث.</string>
+    <string name="cast_local_url_unsupported">يستخدم هذا البث رابطًا محليًا أو خاصًا بالجهاز لا يستطيع Chromecast الوصول إليه مباشرة.</string>
+    <string name="cast_protocol_unsupported">بثوث RTSP وRTMP غير مدعومة للبث الخارجي.</string>
+    <string name="cast_proxy_unsupported">يحتاج هذا البث إلى إعدادات وكيل التطبيق، لذا لا يستطيع Chromecast استخدامه مباشرة.</string>
+    <string name="cast_receiver_unavailable">جهاز البث المتصل غير جاهز للتشغيل.</string>
+    <string name="cast_selection_cancelled">تم إلغاء اختيار جهاز البث.</string>
+    <string name="cast_session_failed">تعذّر بدء جلسة البث.</string>
+    <string name="cast_started">جارٍ البث إلى الجهاز المتصل.</string>
+    <string name="cast_stream_unsupported">تنسيق هذا البث غير مدعوم في Google Cast.</string>
+    <string name="cast_unavailable">Google Cast غير متاح على هذا الجهاز.</string>
+    <string name="cast_user_agent_unsupported">يحتاج هذا البث إلى User-Agent مخصّص لا يستطيع Chromecast استخدامه مباشرة.</string>
+    <!-- Dashboard / Home -->
+    <string name="dashboard_update_allow_installs">السماح بالتثبيت</string>
+    <string name="dashboard_update_install_permission_required">تم تنزيل التحديث. اسمح بالتثبيت من UniverseStream ثم أعد المحاولة.</string>
+    <!-- EPG -->
+    <string name="epg_catchup_available_unknown">الإعادة متاحة</string>
+    <string name="epg_provider_troubleshooting_incomplete_metadata">قد تفشل الإعادة لأن المزوّد يعلن دعم الإعادة دون بيانات تشغيل كافية.</string>
+    <string name="epg_provider_troubleshooting_m3u_best_effort">إعادة M3U تعمل بأفضل جهد ممكن وتعتمد على قالب الإعادة في قائمة التشغيل.</string>
+    <string name="epg_provider_troubleshooting_stalker_ready">بيانات أرشيف البوابة متوفرة؛ سيطلب التشغيل رابط أرشيف للنافذة المحددة.</string>
+    <string name="epg_provider_troubleshooting_xtream_ready">بيانات إعادة Xtream متوفرة؛ سيستخدم التشغيل معرّف بث القناة ونافذة الأرشيف المحددة.</string>
+    <!-- Player -->
+    <string name="player_diagnostics_audio_decoder_mode">وضع فك ترميز الصوت</string>
+    <string name="player_diagnostics_video_decoder_mode">وضع فك ترميز الفيديو</string>
+    <string name="player_track_live_translation">ترجمة فورية</string>
+    <!-- Settings -->
+    <string name="settings_audio_decoder_mode">وضع فك ترميز الصوت</string>
+    <string name="settings_backup_choose_file_title">اختر ملف نسخة احتياطية</string>
+    <string name="settings_backup_folder_create_failed">تعذّر إنشاء ملف النسخة الاحتياطية في ذلك المجلد.</string>
+    <string name="settings_backup_folder_picker_unavailable">لا يتوفر منتقي مجلدات على هذا الجهاز.</string>
+    <string name="settings_backup_folder_read_failed">تعذّرت قراءة ذلك المجلد.</string>
+    <string name="settings_backup_no_files_in_folder">لا توجد ملفات نسخ احتياطي (.json) في ذلك المجلد.</string>
+    <string name="settings_backup_usb_data">تصدير إلى USB</string>
+    <string name="settings_backup_usb_failed">تعذّرت كتابة النسخة الاحتياطية على محرك USB.</string>
+    <string name="settings_backup_usb_subtitle">احفظ نسخة احتياطية على محرك USB المتصل.</string>
+    <string name="settings_hide_decorative_live_rows">إخفاء صفوف المزوّد الزخرفية</string>
+    <string name="settings_hide_decorative_live_rows_subtitle">إخفاء عناوين الأقسام غير القابلة للتشغيل مثل `#### GENERAL HD/4K ####` من قوائم البث المباشر وأعداده.</string>
+    <string name="settings_live_buffer_auto">تلقائي</string>
+    <string name="settings_live_buffer_large">كبير</string>
+    <string name="settings_live_buffer_medium">متوسط</string>
+    <string name="settings_live_buffer_size">حجم مؤقت البث المباشر</string>
+    <string name="settings_live_buffer_small">صغير</string>
+    <string name="settings_live_timeshift_backend_auto">تلقائي</string>
+    <string name="settings_live_timeshift_backend_memory">الذاكرة</string>
+    <string name="settings_live_timeshift_backend_storage">التخزين</string>
+    <string name="settings_recording_use_usb_storage">استخدام محرك USB</string>
+    <string name="settings_restore_usb_data">استيراد من USB</string>
+    <string name="settings_restore_usb_subtitle">استعد نسخة احتياطية من محرك USB المتصل.</string>
+    <string name="settings_select_audio_decoder_mode">اختر وضع فك ترميز الصوت</string>
+    <string name="settings_select_live_timeshift_backend">اختر خلفية الإرجاع المباشر</string>
+    <string name="settings_select_video_decoder_mode">اختر وضع فك ترميز الفيديو</string>
+    <string name="settings_show_favorites_category">إظهار فئة المفضلة</string>
+    <string name="settings_show_favorites_category_subtitle">عرض مجموعة المفضلة الافتراضية أثناء تصفح البث المباشر.</string>
+    <string name="settings_startup_first_favorite_live">تشغيل أول قناة مفضلة</string>
+    <string name="settings_startup_last_watched_live">تشغيل آخر قناة مباشرة شوهدت</string>
+    <string name="settings_sync_cancelled">تم إلغاء المزامنة.</string>
+    <string name="settings_sync_elapsed">الوقت المنقضي: %1$s</string>
+    <string name="settings_update_install_permission_action">اسمح بالتثبيت ثم أعد المحاولة</string>
+    <string name="settings_update_status_permission_required">يلزم إذن التثبيت</string>
+    <string name="settings_video_decoder_mode">وضع فك ترميز الفيديو</string>
+    <!-- Other -->
+    <string name="home_refresh_failed">فشل تحديث قائمة التشغيل: %1$s.</string>
+    <string name="unknown_error">خطأ غير معروف</string>
+</resources>
