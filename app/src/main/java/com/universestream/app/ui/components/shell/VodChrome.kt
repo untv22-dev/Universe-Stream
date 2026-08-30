@@ -62,17 +62,30 @@ import com.universestream.app.ui.interaction.TvClickableSurface
 import com.universestream.app.ui.interaction.TvButton
 import com.universestream.app.ui.interaction.TvIconButton
 
+/**
+ * Horizontal gutter for the VOD chrome.
+ *
+ * These surfaces used a hardcoded 20dp while the compact scaffold pads its content by
+ * 16dp, so on a phone the section headers, hero and chips sat 4dp inside everything
+ * else. Compact now matches the scaffold; every other size class keeps 20dp, which
+ * leaves the television layout exactly as it was.
+ */
+@Composable
+private fun vodGutter(): androidx.compose.ui.unit.Dp =
+    if (rememberAppWindowSizeClass() == AppWindowSizeClass.Compact) 16.dp else 20.dp
+
 @Composable
 fun VodSectionHeader(
     title: String,
     onSeeAll: (() -> Unit)? = null,
     seeAllLabel: String = stringResource(R.string.action_see_all)
 ) {
+    val gutter = vodGutter()
     AppSectionHeader(
         title = title,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 8.dp),
+            .padding(start = gutter, end = gutter, top = 14.dp, bottom = 8.dp),
         actionLabel = onSeeAll?.let { seeAllLabel },
         onActionClick = onSeeAll,
         actionContentColor = AppColors.TextSecondary
@@ -97,7 +110,7 @@ fun VodActionChipRow(
         },
         selectedKey = selectedKey,
         modifier = modifier.focusRestorer(),
-        contentPadding = PaddingValues(horizontal = 20.dp),
+        contentPadding = PaddingValues(horizontal = vodGutter()),
         chipHorizontalPadding = 14,
         supportingTextStyle = MaterialTheme.typography.labelSmall,
         supportingTextMaxLines = 1,
@@ -136,7 +149,7 @@ fun VodHeroStrip(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = vodGutter())
             .height(heroHeight)
             .testTag("vod_hero_strip"),
         shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(22.dp)),
