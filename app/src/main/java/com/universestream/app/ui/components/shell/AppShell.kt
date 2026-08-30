@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,8 +20,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -105,6 +113,19 @@ enum class AppNavigationChrome {
     TopBar
 }
 
+/**
+ * Status bar plus display cutout, excluding the bottom edge.
+ *
+ * Applied only on the phone and tablet branches of [AppScreenScaffold]; the television
+ * rail branch is left untouched because a TV reports no cutout and overscan is handled
+ * by the launcher. The bottom side is omitted on purpose so it does not stack with the
+ * `navigationBarsPadding()` the navigation bars already apply.
+ */
+private val MobileContentInsets: WindowInsets
+    @Composable get() = WindowInsets.systemBars
+        .union(WindowInsets.displayCutout)
+        .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+
 @Composable
 fun AppScreenScaffold(
     currentRoute: String,
@@ -188,7 +209,15 @@ fun AppScreenScaffold(
                 }
             }
         } else if (compactPhone) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    // Edge-to-edge is enabled in MainActivity and enforced by the platform at
+                    // this targetSdk, so the status bar and any display cutout overlap the
+                    // content unless it is inset here. The bottom is deliberately excluded:
+                    // the navigation bars already apply navigationBarsPadding() themselves.
+                    .windowInsetsPadding(MobileContentInsets)
+            ) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -236,6 +265,10 @@ fun AppScreenScaffold(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    // Medium/Expanded here is a phone in landscape or a tablet, never a
+                    // television: the Rail branch above claims every TV. In landscape the
+                    // cutout sits on a side edge, so horizontal insets matter as much as top.
+                    .windowInsetsPadding(MobileContentInsets)
                     .padding(
                         horizontal = spacing.screenGutter,
                         vertical = spacing.safeTop
@@ -285,6 +318,10 @@ fun AppScreenHeader(
     eyebrow: String? = null,
     compact: Boolean = false
 ) {
+    // `compact` is not a phone flag: the television rail passes compactHeader through it
+    // too, so the size bump below is gated on the window size class instead. Television,
+    // tablets and the rail keep the title style they already had.
+    val phoneCompact = compact && rememberAppWindowSizeClass() == AppWindowSizeClass.Compact
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -298,7 +335,14 @@ fun AppScreenHeader(
         }
         Text(
             text = title,
-            style = if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.displaySmall,
+            // On a phone, titleMedium is also what card titles use, which left a screen
+            // title and the cards under it reading at the same level. headlineSmall is one
+            // step up at 18sp/SemiBold and costs 2sp of height.
+            style = when {
+                phoneCompact -> MaterialTheme.typography.headlineSmall
+                compact -> MaterialTheme.typography.titleMedium
+                else -> MaterialTheme.typography.displaySmall
+            },
             color = AppColors.TextPrimary,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
@@ -462,54 +506,84 @@ private fun CompactBottomNavigationBar(
         shape = RoundedCornerShape(18.dp),
         colors = SurfaceDefaults.colors(containerColor = AppColors.Surface.copy(alpha = 0.98f))
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(navigationScrollState)
-                .padding(horizontal = 4.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            items.forEach { item ->
-                val selected = currentRoute.startsWith(item.route)
-                Column(
-                    modifier = Modifier
-                        .width(68.dp)
-                        .heightIn(min = 56.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .clickable {
-                            if (!selected) onNavigate(item.route)
-                        }
-                        .padding(horizontal = 2.dp, vertical = 5.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = stringResource(item.labelRes),
-                        tint = if (selected) AppColors.Brand else AppColors.TextSecondary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = stringResource(item.labelRes),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (selected) AppColors.TextPrimary else AppColors.TextSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+        BoxWithConstraints {
+            // A fixed item width made the bar scroll horizontally on every phone: nine
+            // destinations at 68dp need ~630dp against a ~360dp screen, so most tabs sat
+            // off-screen with no affordance pointing to them. Measure instead, and only
+            // fall back to scrolling when the destinations genuinely cannot fit.
+            val actionsWidth = if (actions != null) CompactNavActionsWidth else 0.dp
+            val available = maxWidth - CompactNavBarPadding * 2 - actionsWidth
+            val gap = CompactNavItemGap
+            val naturalWidth = CompactNavItemMinWidth * items.size + gap * (items.size - 1).coerceAtLeast(0)
+            val fits = items.isNotEmpty() && naturalWidth <= available
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (fits) Modifier else Modifier.horizontalScroll(navigationScrollState))
+                    .padding(horizontal = CompactNavBarPadding, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(gap),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items.forEach { item ->
+                    val selected = currentRoute.startsWith(item.route)
+                    Column(
+                        modifier = Modifier
+                            .then(
+                                // weight() only exists for the non-scrolling case; inside a
+                                // horizontal scroll the row is measured with infinite width.
+                                if (fits) Modifier.weight(1f) else Modifier.width(CompactNavItemMinWidth)
+                            )
+                            .heightIn(min = CompactNavItemMinHeight)
+                            .clip(RoundedCornerShape(14.dp))
+                            .clickable {
+                                if (!selected) onNavigate(item.route)
+                            }
+                            .padding(horizontal = 2.dp, vertical = 6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = item.icon,
+                            contentDescription = stringResource(item.labelRes),
+                            tint = if (selected) AppColors.Brand else AppColors.TextSecondary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = stringResource(item.labelRes),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (selected) AppColors.TextPrimary else AppColors.TextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+                if (actions != null) {
+                    Row(
+                        modifier = Modifier.widthIn(min = 56.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        content = actions
                     )
                 }
-            }
-            if (actions != null) {
-                Row(
-                    modifier = Modifier.widthIn(min = 56.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    content = actions
-                )
             }
         }
     }
 }
+
+/**
+ * Compact bottom-navigation metrics.
+ *
+ * The minimum height clears the 48dp touch target Material asks for, which the previous
+ * 56dp box met only because of its padding; the width floor is what a two-word label
+ * needs before it starts truncating.
+ */
+private val CompactNavItemMinWidth = 64.dp
+private val CompactNavItemMinHeight = 56.dp
+private val CompactNavItemGap = 2.dp
+private val CompactNavBarPadding = 4.dp
+private val CompactNavActionsWidth = 56.dp
 
 @Composable
 fun AppTopBarCloseAction(
