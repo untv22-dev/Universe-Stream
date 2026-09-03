@@ -35,6 +35,32 @@ jobs:
           echo "release_tag=v$VERSION_NAME" >> "$GITHUB_OUTPUT"
           echo "apk_name=UniverseStream-$VERSION_NAME.apk" >> "$GITHUB_OUTPUT"
 
+      - name: Refuse to republish an existing version tag onto a different commit
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.app_version.outputs.release_tag }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          # A published version must stay tied to one commit. v1.0.18 was first
+          # published from one commit and then re-run from the next one, which
+          # replaced the APK but left the tag behind, so the tag no longer pointed
+          # at the source that users had installed. Re-running on the same commit
+          # (for example after a failed upload) is still allowed.
+          EXISTING=$(git ls-remote --tags origin "refs/tags/$RELEASE_TAG^{}" | cut -f1)
+          if [ -z "$EXISTING" ]; then
+            EXISTING=$(git ls-remote --tags origin "refs/tags/$RELEASE_TAG" | cut -f1)
+          fi
+
+          if [ -z "$EXISTING" ]; then
+            echo "Tag $RELEASE_TAG does not exist yet; publishing from $HEAD_SHA."
+          elif [ "$EXISTING" = "$HEAD_SHA" ]; then
+            echo "Tag $RELEASE_TAG already points at $HEAD_SHA; republishing the same commit."
+          else
+            echo "::error::Tag $RELEASE_TAG already exists at $EXISTING but this run is on $HEAD_SHA."
+            echo "::error::Bump versionName/versionCode in app/build.gradle.kts and add a matching changelog heading instead of republishing $RELEASE_TAG."
+            exit 1
+          fi
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
