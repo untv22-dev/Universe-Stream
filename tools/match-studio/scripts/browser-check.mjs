@@ -115,6 +115,63 @@ try {
   await settle();
   check('paste import works', (await page.locator('#count').textContent()).startsWith('1 '));
 
+  // Image extraction, with the worker stubbed. This covers the whole client path — the upload, the
+  // request, the response contract, validation and the repaint — but NOT the model call, which
+  // needs a key and a deployed worker. That is what scripts/deploy-check.mjs is for.
+  const stubbed = await context.newPage();
+  stubbed.on('pageerror', e => problems.push('pageerror(vision): ' + e.message));
+  await stubbed.route('**/config.mjs', r =>
+    r.fulfill({
+      contentType: 'text/javascript',
+      body: `export const config = {extractEndpoint: 'https://stub.invalid/extract', extractToken: 't'};`,
+    }));
+  let sentToken = null;
+  await stubbed.route('https://stub.invalid/extract', async r => {
+    sentToken = r.request().headers()['x-studio-token'];
+    await r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: {'access-control-allow-origin': '*'},
+      body: JSON.stringify({
+        notes: '',
+        matches: [
+          {league: 'الدوري الإنجليزي', time: '١٦:٠٠', home: 'ليفربول', away: 'ارسنال', commentator: 'عصام الشوالي', channel: '2', featured: true, confidence: 'high'},
+          {league: 'الدوري الإنجليزي', time: '18:30:00', home: 'تشيلسي', away: 'إيفرتون', commentator: '', channel: '', featured: false, confidence: 'low'},
+          {league: 'الدوري الإسباني', time: '21:30', home: 'ريال مدريدد', away: 'برشلونة', commentator: 'رؤوف خليف', channel: '1', featured: false, confidence: 'high'},
+        ],
+      }),
+    });
+  });
+  await stubbed.goto(`${BASE}/index.html`, {waitUntil: 'networkidle'});
+  await stubbed.waitForFunction(() => !document.getElementById('download').disabled, {timeout: 30000});
+  check('image step appears once an endpoint is configured', !(await stubbed.locator('#vision-card').isHidden()));
+
+  await stubbed.setInputFiles('#image', LOGO);
+  await stubbed.waitForTimeout(600);
+  await stubbed.waitForFunction(() => !document.getElementById('download').disabled, {timeout: 30000});
+
+  const extracted = await stubbed.evaluate(() => ({
+    count: document.getElementById('count').textContent,
+    status: document.getElementById('vision-status').textContent,
+    errors: document.getElementById('errors').hidden ? null : document.getElementById('errors').textContent,
+    warnings: document.getElementById('warnings').hidden ? null : document.getElementById('warnings').textContent,
+    lowRows: document.querySelectorAll('.match.low').length,
+    // Every input in the editor, so we can prove the values landed unaltered.
+    firstRow: [...document.querySelectorAll('.match')][0]?.querySelectorAll('input').length,
+    mappingVisible: !document.getElementById('mapping').hidden,
+  }));
+  check('rows reach the editor with no mapping step', extracted.count.startsWith('3 ') && !extracted.mappingVisible, JSON.stringify(extracted.count));
+  check('extraction reports no error', extracted.errors === null, extracted.errors ?? '');
+  check('client token is sent', sentToken === 't', String(sentToken));
+  check('low-confidence row is flagged', extracted.lowRows === 1, `${extracted.lowRows} flagged`);
+  check('near-miss club name is corrected and reported', /ريال مدريدد/.test(extracted.warnings ?? ''), extracted.warnings ?? 'no warning shown');
+
+  const times = await stubbed.evaluate(() =>
+    [...document.querySelectorAll('.match')].map(m => [...m.querySelectorAll('input')].find(i => i.inputMode === 'numeric')?.value));
+  check('Arabic-Indic and seconds forms are normalised', times[0] === '16:00' && times[1] === '18:30', times.join(','));
+
+  await stubbed.close();
+
   check('no console or page errors', problems.length === 0, problems.slice(0, 3).join(' | '));
 } finally {
   await browser.close();

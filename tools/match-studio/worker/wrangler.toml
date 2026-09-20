@@ -1,0 +1,21 @@
+name = "universe-match-studio"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Origins allowed to call /extract. Comma-separated, no trailing slash.
+# Leave unset only for local `wrangler dev`.
+[vars]
+ALLOWED_ORIGINS = "http://127.0.0.1:8080,http://localhost:8080"
+DAILY_LIMIT = "60"
+
+# Per-client and per-IP request counters for rate limiting.
+#   wrangler kv namespace create RATE
+# then paste the id below.
+[[kv_namespaces]]
+binding = "RATE"
+id = "PUT_YOUR_KV_NAMESPACE_ID_HERE"
+
+# Secrets — set with `wrangler secret put <NAME>`, never in this file:
+#   ANTHROPIC_API_KEY   the API key the worker calls Claude with
+#   CLIENT_TOKEN        shared token the page sends as x-studio-token

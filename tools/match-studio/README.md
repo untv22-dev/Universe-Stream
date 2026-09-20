@@ -21,6 +21,43 @@ source plate. Two decorations are deliberately left in the photograph: the hand-
 "كرة القدم أسلوب حياة", and the small label on the pen. They are drawn in the same ink as the
 surrounding doodles and cannot be lifted cleanly, so they stay as part of the artwork.
 
+## Reading a table from an image
+
+Upload or paste a screenshot of a schedule from any app and the rows are extracted, matched to
+crests and rendered — no column mapping and nothing to type. The step stays hidden until you
+configure it, so the page still works as a purely static tool.
+
+This needs a backend, because reading an Arabic table out of an arbitrary screenshot needs a vision
+model and a vision model needs an API key, which cannot live in a static page. `worker/` is that
+backend: a Cloudflare Worker that holds the key, checks the origin and a shared token, caps usage
+per client per day, and returns rows in the studio's own field names.
+
+```bash
+cd worker
+npm install
+npx wrangler kv namespace create RATE     # paste the id into wrangler.toml
+npx wrangler secret put ANTHROPIC_API_KEY
+npx wrangler secret put CLIENT_TOKEN      # any long random string
+npx wrangler deploy
+```
+
+Then set `extractEndpoint` and `extractToken` in `dist/config.mjs`, and add your site's origin to
+`ALLOWED_ORIGINS` in `wrangler.toml`. `CLIENT_TOKEN` is visible to anyone who opens the page — it
+only stops other sites using the endpoint. The origin allowlist and `DAILY_LIMIT` are what bound
+the spend.
+
+**On accuracy.** The aim is no typing in the normal case, and that is what the flow does. It is not
+a guarantee of a perfect reading: compressed, skewed or low-contrast images will lose cells. So
+rows the model was unsure about are flagged in the editor rather than quietly trusted, club names
+that needed an approximate match are reported rather than silently corrected, and the editor stays
+there as a safety net. Measure your own accuracy before trusting it:
+
+```bash
+node scripts/deploy-check.mjs <endpoint> <token> shot.png [expected.json]
+```
+
+That is the only check in this repo that exercises the model; everything else stubs the endpoint.
+
 ## Checks
 
 ```bash
@@ -29,6 +66,7 @@ npm test                    # 12 unit + render tests, no browser needed
 npm run check-render        # writes sample posters to out/ for eyeballing
 npm run serve               # static server on dist/
 node scripts/browser-check.mjs http://127.0.0.1:8080   # needs `npm i -D playwright`
+(cd worker && npm test)    # the worker's origin / token / cap / size guards
 ```
 
 `npm test` covers the parser, pagination and — through `@napi-rs/canvas` — the renderer itself,

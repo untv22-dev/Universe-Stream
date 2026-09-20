@@ -9,10 +9,10 @@ function star(ctx,x,y){ctx.fillStyle='#e91d35';ctx.beginPath();for(let i=0;i<10;
 const channelLines=(ctx,channel)=>{ctx.font='700 16px UI';return lines(ctx,String(channel||'—'),44).length;};
 const channelBadgeHeight=n=>Math.max(34,n*19+10);
 function crest(ctx,img,x,y,size){if(img){const k=Math.min(size/img.width,size/img.height);ctx.drawImage(img,x-img.width*k/2,y-img.height*k/2,img.width*k,img.height*k);}else{ctx.strokeStyle='#8d799f';ctx.lineWidth=1.5;ctx.strokeRect(x-size*.3,y-size*.35,size*.6,size*.7);text(ctx,'?',x,y,18,'#8d799f',Infinity,'UI');}}
-export async function prepare(rows,catalog,brand={}){await Promise.all([document.fonts.load('700 24px Hand'),document.fonts.load('700 24px UI')]);const images=new Map();const unknown=[];const urls=new Set([PLATE,...leagueLogoFiles()]);for(const row of rows)for(const name of [row.home,row.away]){const c=catalog.find(name);if(c)urls.add(c.file);else unknown.push(name);}await Promise.all([...urls].map(async url=>images.set(url,await loadImage(url))));
+export async function prepare(rows,catalog,brand={}){await Promise.all([document.fonts.load('700 24px Hand'),document.fonts.load('700 24px UI')]);const images=new Map();const unknown=[];const corrected=[];const urls=new Set([PLATE,...leagueLogoFiles()]);for(const row of rows)for(const name of [row.home,row.away]){const hit=catalog.resolve?catalog.resolve(name):(catalog.find(name)?{item:catalog.find(name),edits:0}:null);if(!hit){unknown.push(name);continue;}urls.add(hit.item.file);if(hit.edits>0)corrected.push(`${name} ← ${hit.item.name}`);}await Promise.all([...urls].map(async url=>images.set(url,await loadImage(url))));
 // An uploaded logo arrives as a data: URL; it is keyed separately so it never collides with an asset path.
 if(brand.logo)images.set(LOGO_KEY,await loadImage(brand.logo));
-if(!images.get(PLATE))throw Error('تعذر تحميل خلفية البوستر. أعد المحاولة.');for(const row of rows)for(const name of [row.home,row.away]){const c=catalog.find(name);if(c&&!images.get(c.file))unknown.push(name);}const c=document.createElement('canvas').getContext('2d');const pages=paginate(rows,r=>{c.font='700 21px Hand';const names=[[r.home,110],[r.away,108],[r.commentator,137]].map(([s,w])=>lines(c,s,w).length*24+6);return Math.max(46,...names,channelBadgeHeight(channelLines(c,r.channel))+6);});return {pages,images,unknown:[...new Set(unknown)]};}
+if(!images.get(PLATE))throw Error('تعذر تحميل خلفية البوستر. أعد المحاولة.');for(const row of rows)for(const name of [row.home,row.away]){const c=catalog.find(name);if(c&&!images.get(c.file))unknown.push(name);}const c=document.createElement('canvas').getContext('2d');const pages=paginate(rows,r=>{c.font='700 21px Hand';const names=[[r.home,110],[r.away,108],[r.commentator,137]].map(([s,w])=>lines(c,s,w).length*24+6);return Math.max(46,...names,channelBadgeHeight(channelLines(c,r.channel))+6);});return {pages,images,unknown:[...new Set(unknown)],corrected:[...new Set(corrected)]};}
 export function render(canvas,page,date,catalog,images,index,total,config={}){canvas.width=2048;canvas.height=3072;const ctx=canvas.getContext('2d');ctx.scale(2,2);ctx.drawImage(images.get(PLATE),0,0,1024,1536);drawBrand(ctx,config,images);
 ctx.save();ctx.translate(525,220);ctx.rotate(-.035);const parsed=new Date(date+'T12:00:00');text(ctx,Number.isNaN(parsed.getTime())?'اختر التاريخ':new Intl.DateTimeFormat('ar-EG',{weekday:'long',day:'numeric',month:'long',numberingSystem:'latn'}).format(parsed),0,0,39,'#160829',390,'UI');ctx.restore();
 ctx.save();ctx.transform(1,-.032,.018,1,0,24);text(ctx,'أهم المباريات مع المواعيد والقنوات والمعلقين',563,270,25,ink,700);let y=307;
@@ -22,8 +22,9 @@ for(const {data:r,height:rh} of section.rows){const cy=ry+rh/2;if(r.featured){ct
 const bh=channelBadgeHeight(channelLines(ctx,r.channel));ctx.fillStyle='#491383';ctx.beginPath();ctx.roundRect(200,cy-bh/2,93,bh,3);ctx.fill();text(ctx,'Universe',221,cy-5,9,'white',Infinity,'UI');text(ctx,'IPTV',221,cy+8,9,'white',Infinity,'UI');text(ctx,r.channel||'—',269,cy,16,'white',44,'UI');ry+=rh;}
 y+=h+20;}
 ctx.restore();
-// beginPath() is required: fill() does not clear the current path and restore() does not restore it,
-// so without it the last channel badge's subpath is re-filled here, unskewed, over its own text.
+// drawCallToAction begins its own path. It must: fill() does not clear the current path and
+// restore() does not restore it, so without a beginPath() the last channel badge's subpath gets
+// re-filled here, unskewed and offset, straight over its own text.
 drawCallToAction(ctx,config);
 // Kept clear of the CTA box (y 1265-1309), which would otherwise swallow ink-coloured text.
 if(total>1)text(ctx,`${index+1} / ${total}`,830,1287,18,ink,Infinity,'UI');}

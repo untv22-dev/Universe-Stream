@@ -1,0 +1,19 @@
+{
+  "name": "universe-match-studio-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Extracts a match table from an uploaded image for Universe IPTV Match Studio.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.74.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.42.0"
+  }
+}
