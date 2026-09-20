@@ -2,6 +2,28 @@
 <header><a class="brand" href="./"><span class="brand-icon">U</span><span dir="ltr">Universe IPTV<small>استوديو المباريات</small></span></a><span class="edition">SPORTS / NOTEBOOK EDITION</span></header>
 <main><section class="editor"><div class="intro"><p class="eyebrow">من جدولك إلى الملعب</p><h1>جدول اليوم.<br><span>بطريقتك.</span></h1><p>أضف المباريات، راجع التفاصيل، ونزّل بوسترك.</p></div>
 <div class="step-title"><span>01</span><h2>أضف جدول المباريات</h2></div><div class="input-card"><div class="input-actions"><label class="upload">↑ رفع Excel / CSV<input id="file" type="file" accept=".xlsx,.xls,.csv" hidden></label><button id="example" class="subtle">تحميل مثال</button></div><p class="hint">أو الصق من Excel، أو افصل الأعمدة بعلامة |</p><label class="sr" for="paste">جدول المباريات</label><textarea id="paste" rows="6" placeholder="الدوري | الوقت | الفريق الأول | الفريق الثاني | المعلق | القناة | مميز"></textarea><div class="input-foot"><span>حتى 300 مباراة · 10 MB</span><button id="import" class="primary">قراءة الجدول ←</button></div><div id="sheets" hidden><label for="sheet">ورقة العمل</label><select id="sheet"></select></div><div id="mapping" hidden><h3>تأكيد الأعمدة</h3><label class="check"><input id="has-header" type="checkbox" checked> الصف الأول عناوين</label><div id="mapping-fields"></div><button id="apply" class="primary">استخدام هذا الجدول</button></div></div>
-<div class="step-title"><span>02</span><h2>راجع التفاصيل</h2><span id="count" class="count">0 مباراة</span></div><div class="date-row"><label for="date">تاريخ المباريات</label><input id="date" type="date" required></div><p class="hint">المواعيد كما أدخلتها؛ لا نحولها إلى منطقة زمنية أخرى.</p><div id="errors" role="alert" hidden></div><div id="matches"></div><button id="add" class="wide subtle">+ أضف مباراة</button><p class="privacy">تُقرأ ملفاتك على جهازك. البيانات لا تُحفظ بعد إغلاق الصفحة.</p></section>
+<div class="step-title"><span>02</span><h2>راجع التفاصيل</h2><span id="count" class="count">0 مباراة</span></div><div class="date-row"><label for="date">تاريخ المباريات</label><input id="date" type="date" required></div><p class="hint">المواعيد كما أدخلتها؛ لا نحولها إلى منطقة زمنية أخرى.</p><div id="errors" role="alert" hidden></div><div id="matches"></div><button id="add" class="wide subtle">+ أضف مباراة</button><p class="privacy">تُقرأ ملفاتك على جهازك. جدول المباريات لا يُحفظ بعد إغلاق الصفحة؛ إعدادات الهوية وحدها تُحفظ على هذا المتصفح.</p>
+
+<div class="step-title"><span>03</span><h2>هوية البوستر</h2><button id="brand-reset" type="button" class="subtle reset">إرجاع الافتراضي</button></div>
+<div class="brand-settings">
+<div class="logo-row"><div id="brand-logo-preview" class="logo-preview" aria-live="polite"></div><div><label class="upload" for="brand-logo">↑ ارفع شعارك<input id="brand-logo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden></label><button id="brand-logo-clear" type="button" class="subtle" hidden>إزالة الشعار</button><p class="hint">PNG أو SVG بخلفية شفافة، حتى 2 ميجابايت. يظهر في الورقة اللاصقة وفي الشارة السفلية.</p></div></div>
+<div class="settings-grid">
+<label>اسم البراند<input id="brand-name" value="Universe IPTV"></label>
+<label>الكلمة تحت الاسم<input id="brand-tag" value="SPORTS"></label>
+<label>الموقع<input id="brand-site" value="http://universe-player.com" dir="ltr"></label>
+<label>رقم واتساب<input id="brand-whatsapp" placeholder="+2010..." dir="ltr"></label>
+<label class="wide-field">نص الورقة اللاصقة (سطر لكل جملة)<textarea id="brand-sticky" rows="2">كرة القدم
+أجمل مع</textarea></label>
+<label class="wide-field">الملاحظات الجانبية (أعلى اليمين)<textarea id="brand-notes" rows="3">مباريات كثيرة ..
+معلقون مميزون ..
+متعة مستمرة ..</textarea></label>
+<label class="wide-field">الملاحظات السفلية (أسفل اليسار)<textarea id="brand-footnote" rows="3">مباريات اليوم
+حكايات جديدة ..
+من عالم الساحرة المستديرة ..</textarea></label>
+<label>سطر فوق رابط الموقع<input id="brand-watchOn" value="شاهد أيضًا على"></label>
+<label>عبارة الإعلان<input id="brand-cta" value="اشترك الآن"></label>
+</div>
+<label class="check"><input id="brand-showCta" type="checkbox" checked> أظهر شريط الإعلان في البوستر</label>
+</div></section>
 <section class="preview"><div class="preview-head"><div><p class="eyebrow">معاينة البوستر</p><h2>صفحة من يوم كروي.</h2></div><span class="size">PNG · 2048 × 3072</span></div><div class="preview-surface" id="preview-surface"><canvas id="poster" aria-label="معاينة بوستر مباريات اليوم"></canvas><p id="loading" role="status">جارٍ تجهيز القالب…</p></div><div class="preview-controls"><button id="prev" class="subtle" aria-label="الصفحة السابقة">→</button><span id="pages">1 / 1</span><button id="next" class="subtle" aria-label="الصفحة التالية">←</button><button id="zoom" class="subtle">تكبير</button></div><div id="warnings" hidden></div><button id="download" class="primary download" disabled>↓ تنزيل البوستر PNG</button><p id="status" role="status" class="hint">بيانات المثال للتصميم فقط وليست جدولًا مؤكدًا.</p><a id="image-link" hidden target="_blank" rel="noopener">افتح الصورة للحفظ بالضغط المطوّل</a></section></main>
 <footer><span dir="ltr">UNIVERSE IPTV / SPORTS STUDIO</span><a href="http://universe-player.com" target="_blank" rel="noopener">universe-player.com ↗</a></footer><dialog id="zoom-dialog"><button id="close-zoom" class="primary">إغلاق ×</button><img id="zoom-image" alt="البوستر بالحجم الكامل"></dialog></body></html>

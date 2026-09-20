@@ -26,7 +26,11 @@ export async function load(canvas) {
   globalThis.document = {fonts: {load: async () => {}}, createElement: () => createCanvas(1024, 1536)};
   globalThis.Image = class {
     set src(src) {
-      loadImage(path.resolve(DIST, src))
+      // Uploaded logos arrive as data: URLs, which the browser decodes natively.
+      const source = src.startsWith('data:')
+        ? Buffer.from(src.slice(src.indexOf(',') + 1), 'base64')
+        : path.resolve(DIST, src);
+      loadImage(source)
         .then(im => {
           Object.assign(this, {width: im.width, height: im.height, _img: im});
           this.onload?.();
@@ -50,7 +54,7 @@ export async function renderTable(env, text, {config = {}, page = 0, date = '202
   const {core, poster, catalog, createCanvas} = env;
   const matrix = core.parseDelimited(text);
   const rows = core.mapRows(matrix.slice(1), core.detectMapping(matrix[0]));
-  const prepared = await poster.prepare(rows, catalog);
+  const prepared = await poster.prepare(rows, catalog, config);
   // The harness Image wrapper carries the real image on _img; the renderer wants that.
   for (const [url, img] of prepared.images) if (img) prepared.images.set(url, img._img);
   const canvas = createCanvas(2048, 3072);
