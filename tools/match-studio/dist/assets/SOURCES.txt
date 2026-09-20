@@ -1,0 +1,5 @@
+Notebook background: edited from user-provided 579730.jpg using built-in image generation, 2026-09-20. Mutable match data removed. Not a generated match schedule.
+Club crests: https://github.com/luukhopman/football-logos ; exact per-image URLs recorded in clubs.json. Club trademarks belong to their respective owners; repository provides no general license grant for those trademarks.
+League crests: https://crests.football-data.org/PL.png , /PD.png , /FL1.png . League trademarks remain with owners. Turkish league rendered as text.
+Cairo and Aref Ruqaa: https://github.com/google/fonts/tree/main/ofl/cairo and /ofl/arefruqaa ; SIL Open Font License, included alongside assets.
+SheetJS CE 0.20.3: https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js ; Apache 2.0, license included alongside assets.
