@@ -1,0 +1,17 @@
+{
+  "name": "universe-match-studio",
+  "version": "2.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Static Arabic match-poster generator for Universe IPTV.",
+  "license": "SEE LICENSE IN ../../LICENSE",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:core": "node --test tests/core.test.mjs",
+    "check-render": "node scripts/check-render.mjs",
+    "serve": "node --run-if-present serve || python3 -m http.server --directory dist 8080"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "^0.1.65"
+  }
+}

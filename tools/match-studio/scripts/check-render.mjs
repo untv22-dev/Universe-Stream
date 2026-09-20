@@ -1,11 +1,49 @@
-import {createRequire} from 'node:module';import fs from 'node:fs/promises';import path from 'node:path';
-const require=createRequire(import.meta.url);const {createCanvas,loadImage,GlobalFonts}=require(require.resolve('@napi-rs/canvas',{paths:[process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES]}));
-GlobalFonts.registerFromPath('dist/assets/hand.ttf','Hand');GlobalFonts.registerFromPath('dist/assets/ui.ttf','UI');
-global.document={fonts:{load:async()=>{}},createElement:()=>createCanvas(1024,1536)};
-global.Image=class {set src(src){loadImage(path.resolve('dist',src)).then(im=>{Object.assign(this,{width:im.width,height:im.height,_img:im});this.onload?.();}).catch(()=>this.onerror?.());}};
-global.fetch=async src=>({ok:true,json:async()=>JSON.parse(await fs.readFile(path.resolve('dist',src),'utf8'))});
-const {sample,parseDelimited,detectMapping,mapRows}=await import('../dist/core.mjs');const {loadCatalog}=await import('../dist/catalog.mjs');const {prepare,render}=await import('../dist/poster.mjs');
-const raw=parseDelimited(sample),rows=mapRows(raw.slice(1),detectMapping(raw[0])),catalog=await loadCatalog(),prepared=await prepare(rows,catalog);
-for(const [url,img] of prepared.images)if(img)prepared.images.set(url,img._img);
-const canvas=createCanvas(2048,3072);render(canvas,prepared.pages[0],'2026-09-20',catalog,prepared.images,0,prepared.pages.length);await fs.writeFile('/workspace/scratch/7c182ae544fc/poster-check.png',canvas.toBuffer('image/png'));
-console.log(JSON.stringify({pages:prepared.pages.length,unknown:prepared.unknown,rows:prepared.pages.map(p=>p.reduce((n,s)=>n+s.rows.length,0)),size:[canvas.width,canvas.height]}));
+// Renders the sample poster to a PNG you can actually look at.
+//
+// This is a render check, not browser QA: it exercises the same layout and drawing code the page
+// uses, under @napi-rs/canvas rather than a real browser. Fonts, RTL shaping and image decoding
+// can still differ from Chrome or Safari.
+//
+//   node scripts/check-render.mjs [outputDir]
+//
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {loadCanvas, load, renderTable, bulkTable} from './harness.mjs';
+
+const outDir = path.resolve(process.argv[2] ?? 'out');
+
+const canvas = await loadCanvas();
+if (!canvas) {
+  console.error('@napi-rs/canvas is not installed. Run `npm install` first.');
+  process.exit(1);
+}
+
+const env = await load(canvas);
+const {sample} = env.core;
+const config = {showCta: true, cta: 'اشترك الآن', whatsapp: '+201000000000'};
+
+await fs.mkdir(outDir, {recursive: true});
+
+const shots = [
+  ['sample', sample, {config}],
+  ['sample-no-cta', sample, {config: {}}],
+  ['long-channel', 'الدوري | الوقت | الفريق الأول | الفريق الثاني | المعلق | القناة | مميز\nالدوري الإسباني | 21:30 | ريال مدريد | برشلونة | عصام الشوالي | 1 HD 4K UHD EXTRA | نعم', {config}],
+  ['paginated-last', bulkTable(40), {config, page: 2}],
+];
+
+const report = [];
+for (const [name, table, opts] of shots) {
+  const {canvas: c, prepared} = await renderTable(env, table, opts);
+  const file = path.join(outDir, `${name}.png`);
+  await fs.writeFile(file, c.toBuffer('image/png'));
+  report.push({
+    name,
+    file: path.relative(process.cwd(), file),
+    pages: prepared.pages.length,
+    rowsPerPage: prepared.pages.map(p => p.reduce((n, s) => n + s.rows.length, 0)),
+    unknownCrests: prepared.unknown,
+    size: [c.width, c.height],
+  });
+}
+
+console.log(JSON.stringify(report, null, 2));
