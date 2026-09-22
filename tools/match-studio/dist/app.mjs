@@ -3,6 +3,7 @@ const $=id=>document.getElementById(id);let rows=[],catalog,prepared,page=0,vers
 // Text fields map 1:1 onto brand keys; the logo is held separately because it is a data: URL, not typed.
 const BRAND_FIELDS=['name','tag','sticky','notes','footnote','watchOn','site','whatsapp','cta'];
 const STORE='universe-match-studio:brand';
+const TABLE_STORE='universe-match-studio:table';
 const config=()=>{const b=defaultBrand();for(const k of BRAND_FIELDS){const el=$('brand-'+k);if(el)b[k]=el.value;}b.logo=logo;b.showCta=$('brand-showCta')?.checked??true;return b;};
 const now=new Date();$('date').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 function error(msg){$('errors').textContent=msg;$('errors').hidden=!msg;}
@@ -11,7 +12,7 @@ function make(tag,attrs={},txt=''){const el=document.createElement(tag);Object.a
 function schedule(){version++;$('download').disabled=true;clearTimeout(timer);timer=setTimeout(update,220);}
 function editor(){const frag=document.createDocumentFragment();rows.forEach((row,i)=>{const card=make('article',{className:row.lowConfidence?'match low':'match'});const head=make('div',{className:'match-head'});head.append(make('b',{},String(i+1).padStart(2,'0')));const league=make('input',{value:row.league,placeholder:'الدوري'});league.setAttribute('aria-label',`الدوري للمباراة ${i+1}`);league.oninput=()=>{row.league=league.value;schedule();};const del=make('button',{type:'button'},'×');del.setAttribute('aria-label',`حذف المباراة ${i+1}`);del.onclick=()=>{rows.splice(i,1);editor();schedule();};head.append(league,del);card.append(head);const grid=make('div',{className:'match-grid'});for(const f of ['home','away','time','channel','commentator']){const label=make('label',{},labels[fields.indexOf(f)]);const input=make('input',{value:row[f],type:'text'});input.maxLength=160;if(f==='time')input.inputMode='numeric';input.oninput=()=>{row[f]=input.value;schedule();};label.append(input);grid.append(label);}card.append(grid);const bottom=make('div',{className:'match-bottom'}),label=make('label',{className:'check'}),check=make('input',{type:'checkbox',checked:row.featured});check.onchange=()=>{row.featured=check.checked;schedule();};label.append(check,document.createTextNode('★ مباراة مميزة'));const moves=make('div');for(const [dir,txt] of [[-1,'↑'],[1,'↓']]){const b=make('button',{className:'subtle',disabled:i+dir<0||i+dir>=rows.length},txt);b.setAttribute('aria-label',dir<0?'نقل لأعلى':'نقل لأسفل');b.onclick=()=>{[rows[i],rows[i+dir]]=[rows[i+dir],rows[i]];editor();schedule();};moves.append(b);}bottom.append(label,moves);card.append(bottom);frag.append(card);});$('matches').replaceChildren(frag);$('count').textContent=`${rows.length} مباراة`;}
 function draw(){if(!prepared)return;page=Math.max(0,Math.min(page,prepared.pages.length-1));render($('poster'),prepared.pages[page],$('date').value,catalog,prepared.images,page,prepared.pages.length,config());$('pages').textContent=`${page+1} / ${prepared.pages.length}`;$('prev').disabled=page===0;$('next').disabled=page===prepared.pages.length-1;}
-async function update(){const ticket=++version;const problems=validate(rows);if(!$('date').value)problems.push('اختر تاريخ المباريات');error(problems.slice(0,12).join('\n'));$('download').disabled=true;if(problems.length){status('المعاينة السابقة لا تتضمن التعديلات غير المكتملة. صحّح البيانات للتنزيل.');return;}$('loading').hidden=false;try{const next=await prepare(rows,catalog,config());if(ticket!==version)return;prepared=next;draw();const notes=[];if(next.unknown.length)notes.push('شعارات غير متاحة: '+next.unknown.join('، ')+' — ستظهر علامة محايدة.');if(next.corrected?.length)notes.push('طوبقت أسماء قريبة: '+next.corrected.join('، ')+' — راجعها لو لزم.');$('warnings').hidden=!notes.length;$('warnings').textContent=notes.join('\n');$('download').disabled=false;status(`جاهز للتنزيل · ${rows.length} مباراة · ${next.pages.length} بوستر`);}catch(e){if(ticket===version){error(e.message);status('تعذر تحديث المعاينة');}}finally{if(ticket===version)$('loading').hidden=true;}}
+async function update(){const ticket=++version;const problems=validate(rows);if(!$('date').value)problems.push('اختر تاريخ المباريات');error(problems.slice(0,12).join('\n'));$('download').disabled=true;if(problems.length){status('المعاينة السابقة لا تتضمن التعديلات غير المكتملة. صحّح البيانات للتنزيل.');return;}$('loading').hidden=false;try{const next=await prepare(rows,catalog,config());if(ticket!==version)return;prepared=next;draw();const notes=[];if(next.unknown.length)notes.push('شعارات غير متاحة: '+next.unknown.join('، ')+' — ستظهر علامة محايدة.');if(next.corrected?.length)notes.push('طوبقت أسماء قريبة: '+next.corrected.join('، ')+' — راجعها لو لزم.');$('warnings').hidden=!notes.length;$('warnings').textContent=notes.join('\n');$('download').disabled=false;$('download-all').hidden=next.pages.length<2;saveTable();status(`جاهز للتنزيل · ${rows.length} مباراة · ${next.pages.length} بوستر`);}catch(e){if(ticket===version){error(e.message);status('تعذر تحديث المعاينة');}}finally{if(ticket===version)$('loading').hidden=true;}}
 // autoDetect only on a fresh import: rebuilding after a manual toggle must respect the user's choice.
 function mapUI(autoDetect){const mapping=detectMapping(raw[0]||[]);if(autoDetect)$('has-header').checked=mapping.filter(x=>x>=0).length>=3;const host=$('mapping-fields');host.replaceChildren();fields.forEach((f,i)=>{const l=make('label',{},labels[i]),s=make('select',{id:'map-'+f});s.append(make('option',{value:'-1'},'غير موجود'));const n=Math.max(...raw.slice(0,10).map(r=>r.length));for(let j=0;j<n;j++)s.append(make('option',{value:String(j)},`${j+1}: ${String(raw[0]?.[j]??'').slice(0,35)}`));s.value=String(mapping[i]>=0?mapping[i]:$('has-header').checked?-1:i<n?i:-1);l.append(s);host.append(l);});$('mapping').hidden=false;}
 function stage(data){if(!data.length)throw Error('الجدول فارغ');if(data.length>301)throw Error('الحد الأقصى 300 مباراة');raw=data;mapUI(true);error('');const ragged=raggedRows(data);status(ragged.length?`تنبيه: الصفوف ${ragged.slice(0,8).join('، ')} عدد أعمدتها مختلف عن الصف الأول — راجع ربط الأعمدة.`:'راجع ربط الأعمدة ثم اضغط «استخدام هذا الجدول».');}
@@ -43,9 +44,47 @@ paintLogo();brandChanged();}catch(err){error(err.message);}};
 $('brand-logo-clear').onclick=()=>{logo='';paintLogo();brandChanged();};
 $('brand-reset').onclick=()=>{applyBrand(defaultBrand());brandChanged();};
 async function png(){return new Promise((resolve,reject)=>$('poster').toBlob(b=>b?resolve(b):reject(Error('تعذر إنشاء الصورة')),'image/png'));}
-$('download').onclick=async()=>{try{if($('download').disabled)return;const blob=await png();if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=URL.createObjectURL(blob);const a=make('a',{href:objectUrl,download:`Universe-${$('date').value}-${page+1}.png`});document.body.append(a);a.click();a.remove();$('image-link').href=objectUrl;$('image-link').hidden=false;status('تم تجهيز الصورة. لو التنزيل لم يبدأ، افتح الصورة من الرابط أدناه واحفظها.');}catch(e){error(e.message);}};
+$('download').onclick=async()=>{try{if($('download').disabled)return;save(await png(),fileName(page+1));status('تم تجهيز الصورة. لو التنزيل لم يبدأ، افتح الصورة من الرابط أدناه واحفظها.');}catch(e){error(e.message);}};
+const fileName=n=>`Universe-${$('date').value}-${n}.png`;
+function save(blob,name){if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=URL.createObjectURL(blob);const a=make('a',{href:objectUrl,download:name});document.body.append(a);a.click();a.remove();$('image-link').href=objectUrl;$('image-link').hidden=false;}
+
+// Flipping to each page and pressing download once per page is the whole job for a 3-page day,
+// so render every page off-screen and hand them over in one go.
+$('download-all').onclick=async()=>{
+if(!prepared||prepared.pages.length<2)return;
+const total=prepared.pages.length,keep=page;
+$('download-all').disabled=true;
+try{for(let i=0;i<total;i++){status(`جارٍ تجهيز الصفحة ${i+1} من ${total}…`);page=i;draw();
+const blob=await png();save(blob,fileName(i+1));
+// Browsers throttle rapid successive downloads; a short gap keeps all of them arriving.
+if(i<total-1)await new Promise(r=>setTimeout(r,600));}
+status(`تم تجهيز ${total} صفحات. لو المتصفح طلب إذنًا للتنزيلات المتعددة فاقبله.`);}
+catch(e){error(e.message);}
+finally{page=keep;draw();$('download-all').disabled=false;}};
+
+// On iOS a 6 MB download is awkward; sharing the file directly is what people actually want.
+const canShareFiles=()=>typeof navigator.canShare==='function'&&navigator.canShare({files:[new File([new Blob()],'a.png',{type:'image/png'})]});
+if(canShareFiles())$('share').hidden=false;
+$('share').onclick=async()=>{try{
+const file=new File([await png()],fileName(page+1),{type:'image/png'});
+await navigator.share({files:[file],title:'مباريات اليوم'});
+}catch(e){if(e?.name!=='AbortError')error('تعذرت المشاركة. استخدم زر التنزيل.');}};
+
 $('zoom').onclick=async()=>{try{const blob=await png();if($('zoom-image').src.startsWith('blob:'))URL.revokeObjectURL($('zoom-image').src);$('zoom-image').src=URL.createObjectURL(blob);$('zoom-dialog').showModal();}catch(e){error(e.message);}};$('close-zoom').onclick=()=>$('zoom-dialog').close();
 async function importText(text){if(typeof text!=='string'||text.length>1000000)throw Error('جدول نصي غير صالح');const matrix=parseDelimited(text);const mapping=detectMapping(matrix[0]||[]);if(mapping.slice(0,4).some(x=>x<0))throw Error('عناوين الأعمدة المطلوبة غير موجودة');const next=mapRows(matrix.slice(1),mapping);const issues=validate(next);if(issues.length)throw Error(issues.join('; '));rows=next;page=0;editor();await update();return {matches:rows.length,pages:prepared.pages.length};}
+// A day's schedule is real work to enter, and losing it to an accidental refresh was the single
+// most annoying thing about the tool. Stays on the device: localStorage, never sent anywhere.
+function saveTable(){try{localStorage.setItem(TABLE_STORE,JSON.stringify({date:$('date').value,rows}));}catch{/* private mode or quota */}}
+function restoreTable(){try{const saved=JSON.parse(localStorage.getItem(TABLE_STORE));
+if(!saved?.rows?.length)return false;
+// Anything stored could be from an older version, so it goes through the same validation as an import.
+const next=saved.rows.filter(r=>r&&typeof r==='object').slice(0,300);
+if(!next.length||validate(next).length)return false;
+rows=next;if(saved.date)$('date').value=saved.date;return true;}catch{return false;}}
+$('clear-table').onclick=()=>{
+try{localStorage.removeItem(TABLE_STORE);}catch{}
+rows=[];page=0;editor();schedule();status('تم مسح الجدول من هذا المتصفح.');};
+
 // Image -> rows -> preview, with no column mapping and nothing to type. The editor below stays
 // available, and rows the reader was unsure about are flagged rather than silently trusted.
 let visionAbort=null;
@@ -78,4 +117,4 @@ if(!item)return;
 e.preventDefault();const f=item.getAsFile();if(f)runVision(f);});
 }
 
-try{applyBrand({...defaultBrand(),...readStore()});catalog=await loadCatalog();const matrix=parseDelimited(sample);rows=mapRows(matrix.slice(1),detectMapping(matrix[0]));editor();await update();status('مثال توضيحي فقط — استبدله بجدول مبارياتك.');const mc=document.modelContext;if(mc?.registerTool)await mc.registerTool({name:'import_match_table',description:'Replace the visible match table with a validated delimited table and update the poster preview.',inputSchema:{type:'object',properties:{text:{type:'string'}},required:['text'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:true},execute:input=>importText(input?.text)});}catch(e){error(e.message);$('loading').hidden=true;}
+try{applyBrand({...defaultBrand(),...readStore()});catalog=await loadCatalog();const restored=restoreTable();if(!restored){const matrix=parseDelimited(sample);rows=mapRows(matrix.slice(1),detectMapping(matrix[0]));}editor();await update();status(restored?'تم استرجاع جدولك المحفوظ على هذا المتصفح.':'مثال توضيحي فقط — استبدله بجدول مبارياتك.');const mc=document.modelContext;if(mc?.registerTool)await mc.registerTool({name:'import_match_table',description:'Replace the visible match table with a validated delimited table and update the poster preview.',inputSchema:{type:'object',properties:{text:{type:'string'}},required:['text'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:true},execute:input=>importText(input?.text)});}catch(e){error(e.message);$('loading').hidden=true;}

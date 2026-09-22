@@ -95,6 +95,33 @@ runner('pagination keeps every row and repeats the league header', async () => {
   for (const page of prepared.pages) assert.ok(page.every(s => s.league === 'الدوري الإنجليزي'));
 });
 
+runner('the added leagues resolve their clubs and get their own styling', async () => {
+  // Serie A, Bundesliga, Liga Portugal and Eredivisie were added after the original four; the
+  // point of the test is that Arabic names for their clubs reach a crest, not just a neutral mark.
+  const table = [
+    'الدوري | الوقت | الفريق الأول | الفريق الثاني | المعلق | القناة | مميز',
+    'الدوري الإيطالي | 21:45 | ميلان | يوفنتوس | معلق | 1 | نعم',
+    'الدوري الألماني | 18:30 | بايرن ميونخ | دورتموند | معلق | 2 | لا',
+    'الدوري البرتغالي | 22:00 | بورتو | بنفيكا | معلق | 3 | لا',
+    'الدوري الهولندي | 20:00 | أياكس | آيندهوفن | معلق | 4 | لا',
+  ].join('\n');
+  const {prepared} = await renderTable(env, table, {config: {}});
+  assert.deepEqual(prepared.unknown, [], 'every club in the added leagues should resolve');
+  assert.deepEqual(prepared.corrected, [], 'and resolve exactly, not approximately');
+  assert.equal(prepared.pages[0].length, 4, 'each league should get its own section');
+});
+
+runner('a near-miss club name is corrected and reported, an unknown one is not', async () => {
+  const table = [
+    'الدوري | الوقت | الفريق الأول | الفريق الثاني | المعلق | القناة | مميز',
+    'الدوري الإسباني | 21:30 | ريال مدريدد | برشلونة | معلق | 1 | لا',
+    'الدوري الإسباني | 19:00 | فريق لا وجود له نهائيا | ريال سوسيداد | معلق | 2 | لا',
+  ].join('\n');
+  const {prepared} = await renderTable(env, table, {config: {}});
+  assert.ok(prepared.corrected.some(c => c.includes('ريال مدريدد')), `expected a reported correction, got ${JSON.stringify(prepared.corrected)}`);
+  assert.deepEqual(prepared.unknown, ['فريق لا وجود له نهائيا'], 'a genuinely unknown name must stay unknown');
+});
+
 runner('unknown clubs warn instead of borrowing another club crest', async () => {
   const table =
     'الدوري | الوقت | الفريق الأول | الفريق الثاني | المعلق | القناة | مميز\n' +

@@ -4,9 +4,22 @@ Static Arabic match-poster generator. Serve `dist/` with any static host. Import
 entirely client-side and the runtime downloads no external assets.
 
 Supports paste, CSV, XLSX/XLS, explicit column mapping, worksheet selection, editing, ordering,
-date, featured rows, deterministic PNG export and pagination. Club lookup covers 76 clubs from the
-four reference leagues with Arabic/English aliases. Unknown names are shown with neutral marks and
-warnings.
+date, featured rows, deterministic PNG export and pagination. Multi-page posters download in one
+action, and the table is kept on the device between visits.
+
+Club lookup covers 150 clubs across eight leagues — the Premier League, LaLiga, Ligue 1, the Süper
+Lig, Serie A, the Bundesliga, Liga Portugal and the Eredivisie — with Arabic and English aliases.
+A name that is a character or two out is repaired and the correction is reported; a name that is
+genuinely unknown gets a neutral mark and a warning, never another club's crest.
+
+**No Arab leagues yet.** The crest source (`scripts/fetch-assets.mjs`) carries 25 European leagues
+and no Saudi, Egyptian or other Arab competition, so those are not covered. To add one, drop the
+PNGs into `dist/assets/clubs/`, add entries to `dist/assets/clubs.json`, and add the competition
+to `leagueDefs` in `dist/catalog.mjs` — the drawing code needs no changes. Club badges are
+trademarks of their clubs; see `dist/assets/SOURCES.txt`.
+
+A kick-off that has not been announced can be entered as `TBD`, `لم يحدد` or `—` and renders as a
+placeholder instead of failing validation.
 
 ## Poster identity
 

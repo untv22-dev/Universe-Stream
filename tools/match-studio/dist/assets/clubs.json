@@ -1,382 +1,902 @@
 [
   {
+    "name": "1.FC Köln",
+    "file": "assets/clubs/1_FC_K_ln.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/1.FC%20K%C3%B6ln.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "1.FC Union Berlin",
+    "file": "assets/clubs/1_FC_Union_Berlin.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/1.FC%20Union%20Berlin.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "1.FSV Mainz 05",
+    "file": "assets/clubs/1_FSV_Mainz_05.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/1.FSV%20Mainz%2005.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "AC Milan",
+    "file": "assets/clubs/AC_Milan.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/AC%20Milan.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "AC Monza",
+    "file": "assets/clubs/AC_Monza.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/AC%20Monza.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "Académico Viseu FC",
+    "file": "assets/clubs/Acad_mico_Viseu_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/Acad%C3%A9mico%20Viseu%20FC.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "ACF Fiorentina",
+    "file": "assets/clubs/ACF_Fiorentina.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/ACF%20Fiorentina.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "ADO Den Haag",
+    "file": "assets/clubs/ADO_Den_Haag.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/ADO%20Den%20Haag.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
     "name": "AFC Bournemouth",
     "file": "assets/clubs/AFC_Bournemouth.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/AFC%20Bournemouth.png"
-  },
-  {
-    "name": "Arsenal FC",
-    "file": "assets/clubs/Arsenal_FC.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Arsenal%20FC.png"
-  },
-  {
-    "name": "Aston Villa",
-    "file": "assets/clubs/Aston_Villa.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Aston%20Villa.png"
-  },
-  {
-    "name": "Chelsea FC",
-    "file": "assets/clubs/Chelsea_FC.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Chelsea%20FC.png"
-  },
-  {
-    "name": "Coventry City",
-    "file": "assets/clubs/Coventry_City.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Coventry%20City.png"
-  },
-  {
-    "name": "Crystal Palace",
-    "file": "assets/clubs/Crystal_Palace.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Crystal%20Palace.png"
-  },
-  {
-    "name": "Brighton & Hove Albion",
-    "file": "assets/clubs/Brighton___Hove_Albion.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Brighton%20%26%20Hove%20Albion.png"
-  },
-  {
-    "name": "Brentford FC",
-    "file": "assets/clubs/Brentford_FC.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Brentford%20FC.png"
-  },
-  {
-    "name": "Fulham FC",
-    "file": "assets/clubs/Fulham_FC.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Fulham%20FC.png"
-  },
-  {
-    "name": "Everton FC",
-    "file": "assets/clubs/Everton_FC.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Everton%20FC.png"
-  },
-  {
-    "name": "Hull City",
-    "file": "assets/clubs/Hull_City.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Hull%20City.png"
-  },
-  {
-    "name": "Ipswich Town",
-    "file": "assets/clubs/Ipswich_Town.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Ipswich%20Town.png"
-  },
-  {
-    "name": "Manchester City",
-    "file": "assets/clubs/Manchester_City.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Manchester%20City.png"
-  },
-  {
-    "name": "Leeds United",
-    "file": "assets/clubs/Leeds_United.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Leeds%20United.png"
-  },
-  {
-    "name": "Liverpool FC",
-    "file": "assets/clubs/Liverpool_FC.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Liverpool%20FC.png"
-  },
-  {
-    "name": "Sunderland AFC",
-    "file": "assets/clubs/Sunderland_AFC.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Sunderland%20AFC.png"
-  },
-  {
-    "name": "Nottingham Forest",
-    "file": "assets/clubs/Nottingham_Forest.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Nottingham%20Forest.png"
-  },
-  {
-    "name": "Manchester United",
-    "file": "assets/clubs/Manchester_United.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Manchester%20United.png"
-  },
-  {
-    "name": "Newcastle United",
-    "file": "assets/clubs/Newcastle_United.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Newcastle%20United.png"
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/AFC%20Bournemouth.png",
+    "league": "England - Premier League"
   },
   {
     "name": "AJ Auxerre",
     "file": "assets/clubs/AJ_Auxerre.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/AJ%20Auxerre.png"
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/AJ%20Auxerre.png",
+    "league": "France - Ligue 1"
   },
   {
-    "name": "Tottenham Hotspur",
-    "file": "assets/clubs/Tottenham_Hotspur.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Tottenham%20Hotspur.png"
-  },
-  {
-    "name": "AS Monaco",
-    "file": "assets/clubs/AS_Monaco.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/AS%20Monaco.png"
-  },
-  {
-    "name": "Angers SCO",
-    "file": "assets/clubs/Angers_SCO.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Angers%20SCO.png"
-  },
-  {
-    "name": "ESTAC Troyes",
-    "file": "assets/clubs/ESTAC_Troyes.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/ESTAC%20Troyes.png"
-  },
-  {
-    "name": "FC Lorient",
-    "file": "assets/clubs/FC_Lorient.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/FC%20Lorient.png"
-  },
-  {
-    "name": "LOSC Lille",
-    "file": "assets/clubs/LOSC_Lille.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/LOSC%20Lille.png"
-  },
-  {
-    "name": "Le Havre AC",
-    "file": "assets/clubs/Le_Havre_AC.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Le%20Havre%20AC.png"
-  },
-  {
-    "name": "FC Toulouse",
-    "file": "assets/clubs/FC_Toulouse.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/FC%20Toulouse.png"
-  },
-  {
-    "name": "Olympique Lyon",
-    "file": "assets/clubs/Olympique_Lyon.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Olympique%20Lyon.png"
-  },
-  {
-    "name": "Olympique Marseille",
-    "file": "assets/clubs/Olympique_Marseille.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Olympique%20Marseille.png"
-  },
-  {
-    "name": "Le Mans FC",
-    "file": "assets/clubs/Le_Mans_FC.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Le%20Mans%20FC.png"
-  },
-  {
-    "name": "Paris FC",
-    "file": "assets/clubs/Paris_FC.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Paris%20FC.png"
-  },
-  {
-    "name": "OGC Nice",
-    "file": "assets/clubs/OGC_Nice.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/OGC%20Nice.png"
-  },
-  {
-    "name": "RC Strasbourg Alsace",
-    "file": "assets/clubs/RC_Strasbourg_Alsace.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/RC%20Strasbourg%20Alsace.png"
-  },
-  {
-    "name": "Paris Saint-Germain",
-    "file": "assets/clubs/Paris_Saint_Germain.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Paris%20Saint-Germain.png"
-  },
-  {
-    "name": "Stade Rennais FC",
-    "file": "assets/clubs/Stade_Rennais_FC.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Stade%20Rennais%20FC.png"
-  },
-  {
-    "name": "RC Lens",
-    "file": "assets/clubs/RC_Lens.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/RC%20Lens.png"
-  },
-  {
-    "name": "Stade Brestois 29",
-    "file": "assets/clubs/Stade_Brestois_29.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Stade%20Brestois%2029.png"
-  },
-  {
-    "name": "Celta de Vigo",
-    "file": "assets/clubs/Celta_de_Vigo.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Celta%20de%20Vigo.png"
-  },
-  {
-    "name": "Athletic Bilbao",
-    "file": "assets/clubs/Athletic_Bilbao.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Athletic%20Bilbao.png"
-  },
-  {
-    "name": "Atlético de Madrid",
-    "file": "assets/clubs/Atl_tico_de_Madrid.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Atl%C3%A9tico%20de%20Madrid.png"
-  },
-  {
-    "name": "CA Osasuna",
-    "file": "assets/clubs/CA_Osasuna.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/CA%20Osasuna.png"
-  },
-  {
-    "name": "Deportivo Alavés",
-    "file": "assets/clubs/Deportivo_Alav_s.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Deportivo%20Alav%C3%A9s.png"
-  },
-  {
-    "name": "Deportivo A Coruña",
-    "file": "assets/clubs/Deportivo_A_Coru_a.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Deportivo%20A%20Coru%C3%B1a.png"
-  },
-  {
-    "name": "FC Barcelona",
-    "file": "assets/clubs/FC_Barcelona.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/FC%20Barcelona.png"
-  },
-  {
-    "name": "Málaga CF",
-    "file": "assets/clubs/M_laga_CF.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/M%C3%A1laga%20CF.png"
-  },
-  {
-    "name": "Getafe CF",
-    "file": "assets/clubs/Getafe_CF.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Getafe%20CF.png"
-  },
-  {
-    "name": "Levante UD",
-    "file": "assets/clubs/Levante_UD.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Levante%20UD.png"
-  },
-  {
-    "name": "Elche CF",
-    "file": "assets/clubs/Elche_CF.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Elche%20CF.png"
-  },
-  {
-    "name": "Rayo Vallecano",
-    "file": "assets/clubs/Rayo_Vallecano.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Rayo%20Vallecano.png"
-  },
-  {
-    "name": "RCD Espanyol Barcelona",
-    "file": "assets/clubs/RCD_Espanyol_Barcelona.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/RCD%20Espanyol%20Barcelona.png"
-  },
-  {
-    "name": "Racing Santander",
-    "file": "assets/clubs/Racing_Santander.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Racing%20Santander.png"
-  },
-  {
-    "name": "Real Sociedad",
-    "file": "assets/clubs/Real_Sociedad.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Real%20Sociedad.png"
-  },
-  {
-    "name": "Real Betis Balompié",
-    "file": "assets/clubs/Real_Betis_Balompi_.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Real%20Betis%20Balompi%C3%A9.png"
-  },
-  {
-    "name": "Sevilla FC",
-    "file": "assets/clubs/Sevilla_FC.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Sevilla%20FC.png"
-  },
-  {
-    "name": "Valencia CF",
-    "file": "assets/clubs/Valencia_CF.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Valencia%20CF.png"
-  },
-  {
-    "name": "Villarreal CF",
-    "file": "assets/clubs/Villarreal_CF.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Villarreal%20CF.png"
-  },
-  {
-    "name": "Real Madrid",
-    "file": "assets/clubs/Real_Madrid.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Real%20Madrid.png"
+    "name": "Ajax Amsterdam",
+    "file": "assets/clubs/Ajax_Amsterdam.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/Ajax%20Amsterdam.png",
+    "league": "Netherlands - Eredivisie"
   },
   {
     "name": "Alanyaspor",
     "file": "assets/clubs/Alanyaspor.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Alanyaspor.png"
-  },
-  {
-    "name": "Besiktas JK",
-    "file": "assets/clubs/Besiktas_JK.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Besiktas%20JK.png"
-  },
-  {
-    "name": "Caykur Rizespor",
-    "file": "assets/clubs/Caykur_Rizespor.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Caykur%20Rizespor.png"
-  },
-  {
-    "name": "Corum FK",
-    "file": "assets/clubs/Corum_FK.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Corum%20FK.png"
-  },
-  {
-    "name": "Erzurumspor FK",
-    "file": "assets/clubs/Erzurumspor_FK.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Erzurumspor%20FK.png"
-  },
-  {
-    "name": "Basaksehir FK",
-    "file": "assets/clubs/Basaksehir_FK.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Basaksehir%20FK.png"
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Alanyaspor.png",
+    "league": "Türkiye - Süper Lig"
   },
   {
     "name": "Amed SK",
     "file": "assets/clubs/Amed_SK.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Amed%20SK.png"
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Amed%20SK.png",
+    "league": "Türkiye - Süper Lig"
   },
   {
-    "name": "Göztepe",
-    "file": "assets/clubs/G_ztepe.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/G%C3%B6ztepe.png"
+    "name": "Angers SCO",
+    "file": "assets/clubs/Angers_SCO.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Angers%20SCO.png",
+    "league": "France - Ligue 1"
   },
   {
-    "name": "Genclerbirligi Ankara",
-    "file": "assets/clubs/Genclerbirligi_Ankara.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Genclerbirligi%20Ankara.png"
+    "name": "Arsenal FC",
+    "file": "assets/clubs/Arsenal_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Arsenal%20FC.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "AS Monaco",
+    "file": "assets/clubs/AS_Monaco.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/AS%20Monaco.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "AS Roma",
+    "file": "assets/clubs/AS_Roma.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/AS%20Roma.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "Aston Villa",
+    "file": "assets/clubs/Aston_Villa.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Aston%20Villa.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "Atalanta BC",
+    "file": "assets/clubs/Atalanta_BC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Atalanta%20BC.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "Athletic Bilbao",
+    "file": "assets/clubs/Athletic_Bilbao.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Athletic%20Bilbao.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Atlético de Madrid",
+    "file": "assets/clubs/Atl_tico_de_Madrid.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Atl%C3%A9tico%20de%20Madrid.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "AZ Alkmaar",
+    "file": "assets/clubs/AZ_Alkmaar.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/AZ%20Alkmaar.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
+    "name": "Basaksehir FK",
+    "file": "assets/clubs/Basaksehir_FK.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Basaksehir%20FK.png",
+    "league": "Türkiye - Süper Lig"
+  },
+  {
+    "name": "Bayer 04 Leverkusen",
+    "file": "assets/clubs/Bayer_04_Leverkusen.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/Bayer%2004%20Leverkusen.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "Bayern Munich",
+    "file": "assets/clubs/Bayern_Munich.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/Bayern%20Munich.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "Besiktas JK",
+    "file": "assets/clubs/Besiktas_JK.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Besiktas%20JK.png",
+    "league": "Türkiye - Süper Lig"
+  },
+  {
+    "name": "Bologna FC 1909",
+    "file": "assets/clubs/Bologna_FC_1909.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Bologna%20FC%201909.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "Borussia Dortmund",
+    "file": "assets/clubs/Borussia_Dortmund.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/Borussia%20Dortmund.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "Borussia Mönchengladbach",
+    "file": "assets/clubs/Borussia_M_nchengladbach.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/Borussia%20M%C3%B6nchengladbach.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "Brentford FC",
+    "file": "assets/clubs/Brentford_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Brentford%20FC.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "Brighton & Hove Albion",
+    "file": "assets/clubs/Brighton___Hove_Albion.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Brighton%20%26%20Hove%20Albion.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "CA Osasuna",
+    "file": "assets/clubs/CA_Osasuna.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/CA%20Osasuna.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Cagliari Calcio",
+    "file": "assets/clubs/Cagliari_Calcio.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Cagliari%20Calcio.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "Casa Pia AC",
+    "file": "assets/clubs/Casa_Pia_AC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/Casa%20Pia%20AC.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "Caykur Rizespor",
+    "file": "assets/clubs/Caykur_Rizespor.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Caykur%20Rizespor.png",
+    "league": "Türkiye - Süper Lig"
+  },
+  {
+    "name": "CD Nacional",
+    "file": "assets/clubs/CD_Nacional.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/CD%20Nacional.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "CD Santa Clara",
+    "file": "assets/clubs/CD_Santa_Clara.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/CD%20Santa%20Clara.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "Celta de Vigo",
+    "file": "assets/clubs/Celta_de_Vigo.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Celta%20de%20Vigo.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "CF Estrela Amadora",
+    "file": "assets/clubs/CF_Estrela_Amadora.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/CF%20Estrela%20Amadora.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "Chelsea FC",
+    "file": "assets/clubs/Chelsea_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Chelsea%20FC.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "Como 1907",
+    "file": "assets/clubs/Como_1907.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Como%201907.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "Corum FK",
+    "file": "assets/clubs/Corum_FK.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Corum%20FK.png",
+    "league": "Türkiye - Süper Lig"
+  },
+  {
+    "name": "Coventry City",
+    "file": "assets/clubs/Coventry_City.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Coventry%20City.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "Crystal Palace",
+    "file": "assets/clubs/Crystal_Palace.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Crystal%20Palace.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "CS Marítimo",
+    "file": "assets/clubs/CS_Mar_timo.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/CS%20Mar%C3%ADtimo.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "Deportivo A Coruña",
+    "file": "assets/clubs/Deportivo_A_Coru_a.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Deportivo%20A%20Coru%C3%B1a.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Deportivo Alavés",
+    "file": "assets/clubs/Deportivo_Alav_s.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Deportivo%20Alav%C3%A9s.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Eintracht Frankfurt",
+    "file": "assets/clubs/Eintracht_Frankfurt.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/Eintracht%20Frankfurt.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "Elche CF",
+    "file": "assets/clubs/Elche_CF.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Elche%20CF.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Erzurumspor FK",
+    "file": "assets/clubs/Erzurumspor_FK.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Erzurumspor%20FK.png",
+    "league": "Türkiye - Süper Lig"
+  },
+  {
+    "name": "ESTAC Troyes",
+    "file": "assets/clubs/ESTAC_Troyes.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/ESTAC%20Troyes.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "Everton FC",
+    "file": "assets/clubs/Everton_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Everton%20FC.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "Excelsior Rotterdam",
+    "file": "assets/clubs/Excelsior_Rotterdam.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/Excelsior%20Rotterdam.png",
+    "league": "Netherlands - Eredivisie"
   },
   {
     "name": "Eyüpspor",
     "file": "assets/clubs/Ey_pspor.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Ey%C3%BCpspor.png"
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Ey%C3%BCpspor.png",
+    "league": "Türkiye - Süper Lig"
   },
   {
-    "name": "Galatasaray",
-    "file": "assets/clubs/Galatasaray.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Galatasaray.png"
+    "name": "FC Alverca",
+    "file": "assets/clubs/FC_Alverca.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/FC%20Alverca.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "FC Arouca",
+    "file": "assets/clubs/FC_Arouca.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/FC%20Arouca.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "FC Augsburg",
+    "file": "assets/clubs/FC_Augsburg.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/FC%20Augsburg.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "FC Barcelona",
+    "file": "assets/clubs/FC_Barcelona.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/FC%20Barcelona.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "FC Famalicão",
+    "file": "assets/clubs/FC_Famalic_o.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/FC%20Famalic%C3%A3o.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "FC Groningen",
+    "file": "assets/clubs/FC_Groningen.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/FC%20Groningen.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
+    "name": "FC Lorient",
+    "file": "assets/clubs/FC_Lorient.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/FC%20Lorient.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "FC Porto",
+    "file": "assets/clubs/FC_Porto.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/FC%20Porto.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "FC Schalke 04",
+    "file": "assets/clubs/FC_Schalke_04.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/FC%20Schalke%2004.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "FC Toulouse",
+    "file": "assets/clubs/FC_Toulouse.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/FC%20Toulouse.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "FC Twente Enschede",
+    "file": "assets/clubs/FC_Twente_Enschede.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/FC%20Twente%20Enschede.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
+    "name": "FC Utrecht",
+    "file": "assets/clubs/FC_Utrecht.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/FC%20Utrecht.png",
+    "league": "Netherlands - Eredivisie"
   },
   {
     "name": "Fenerbahce",
     "file": "assets/clubs/Fenerbahce.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Fenerbahce.png"
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Fenerbahce.png",
+    "league": "Türkiye - Süper Lig"
+  },
+  {
+    "name": "Feyenoord Rotterdam",
+    "file": "assets/clubs/Feyenoord_Rotterdam.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/Feyenoord%20Rotterdam.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
+    "name": "Fortuna Sittard",
+    "file": "assets/clubs/Fortuna_Sittard.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/Fortuna%20Sittard.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
+    "name": "Frosinone Calcio",
+    "file": "assets/clubs/Frosinone_Calcio.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Frosinone%20Calcio.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "Fulham FC",
+    "file": "assets/clubs/Fulham_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Fulham%20FC.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "Galatasaray",
+    "file": "assets/clubs/Galatasaray.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Galatasaray.png",
+    "league": "Türkiye - Süper Lig"
   },
   {
     "name": "Gaziantep FK",
     "file": "assets/clubs/Gaziantep_FK.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Gaziantep%20FK.png"
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Gaziantep%20FK.png",
+    "league": "Türkiye - Süper Lig"
   },
   {
-    "name": "Kocaelispor",
-    "file": "assets/clubs/Kocaelispor.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Kocaelispor.png"
+    "name": "GD Estoril Praia",
+    "file": "assets/clubs/GD_Estoril_Praia.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/GD%20Estoril%20Praia.png",
+    "league": "Portugal - Liga Portugal"
   },
   {
-    "name": "Konyaspor",
-    "file": "assets/clubs/Konyaspor.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Konyaspor.png"
+    "name": "Genclerbirligi Ankara",
+    "file": "assets/clubs/Genclerbirligi_Ankara.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Genclerbirligi%20Ankara.png",
+    "league": "Türkiye - Süper Lig"
+  },
+  {
+    "name": "Genoa CFC",
+    "file": "assets/clubs/Genoa_CFC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Genoa%20CFC.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "Getafe CF",
+    "file": "assets/clubs/Getafe_CF.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Getafe%20CF.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Gil Vicente FC",
+    "file": "assets/clubs/Gil_Vicente_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/Gil%20Vicente%20FC.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "Go Ahead Eagles",
+    "file": "assets/clubs/Go_Ahead_Eagles.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/Go%20Ahead%20Eagles.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
+    "name": "Göztepe",
+    "file": "assets/clubs/G_ztepe.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/G%C3%B6ztepe.png",
+    "league": "Türkiye - Süper Lig"
+  },
+  {
+    "name": "Hamburger SV",
+    "file": "assets/clubs/Hamburger_SV.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/Hamburger%20SV.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "Hull City",
+    "file": "assets/clubs/Hull_City.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Hull%20City.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "Inter Milan",
+    "file": "assets/clubs/Inter_Milan.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Inter%20Milan.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "Ipswich Town",
+    "file": "assets/clubs/Ipswich_Town.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Ipswich%20Town.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "Juventus FC",
+    "file": "assets/clubs/Juventus_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Juventus%20FC.png",
+    "league": "Italy - Serie A"
   },
   {
     "name": "Kasimpasa",
     "file": "assets/clubs/Kasimpasa.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Kasimpasa.png"
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Kasimpasa.png",
+    "league": "Türkiye - Süper Lig"
+  },
+  {
+    "name": "Kocaelispor",
+    "file": "assets/clubs/Kocaelispor.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Kocaelispor.png",
+    "league": "Türkiye - Süper Lig"
+  },
+  {
+    "name": "Konyaspor",
+    "file": "assets/clubs/Konyaspor.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Konyaspor.png",
+    "league": "Türkiye - Süper Lig"
+  },
+  {
+    "name": "Le Havre AC",
+    "file": "assets/clubs/Le_Havre_AC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Le%20Havre%20AC.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "Le Mans FC",
+    "file": "assets/clubs/Le_Mans_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Le%20Mans%20FC.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "Leeds United",
+    "file": "assets/clubs/Leeds_United.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Leeds%20United.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "Levante UD",
+    "file": "assets/clubs/Levante_UD.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Levante%20UD.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Liverpool FC",
+    "file": "assets/clubs/Liverpool_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Liverpool%20FC.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "LOSC Lille",
+    "file": "assets/clubs/LOSC_Lille.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/LOSC%20Lille.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "Málaga CF",
+    "file": "assets/clubs/M_laga_CF.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/M%C3%A1laga%20CF.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Manchester City",
+    "file": "assets/clubs/Manchester_City.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Manchester%20City.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "Manchester United",
+    "file": "assets/clubs/Manchester_United.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Manchester%20United.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "Moreirense FC",
+    "file": "assets/clubs/Moreirense_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/Moreirense%20FC.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "NEC Nijmegen",
+    "file": "assets/clubs/NEC_Nijmegen.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/NEC%20Nijmegen.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
+    "name": "Newcastle United",
+    "file": "assets/clubs/Newcastle_United.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Newcastle%20United.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "Nottingham Forest",
+    "file": "assets/clubs/Nottingham_Forest.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Nottingham%20Forest.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "OGC Nice",
+    "file": "assets/clubs/OGC_Nice.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/OGC%20Nice.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "Olympique Lyon",
+    "file": "assets/clubs/Olympique_Lyon.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Olympique%20Lyon.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "Olympique Marseille",
+    "file": "assets/clubs/Olympique_Marseille.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Olympique%20Marseille.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "Paris FC",
+    "file": "assets/clubs/Paris_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Paris%20FC.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "Paris Saint-Germain",
+    "file": "assets/clubs/Paris_Saint_Germain.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Paris%20Saint-Germain.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "Parma Calcio 1913",
+    "file": "assets/clubs/Parma_Calcio_1913.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Parma%20Calcio%201913.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "PEC Zwolle",
+    "file": "assets/clubs/PEC_Zwolle.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/PEC%20Zwolle.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
+    "name": "PSV Eindhoven",
+    "file": "assets/clubs/PSV_Eindhoven.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/PSV%20Eindhoven.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
+    "name": "Racing Santander",
+    "file": "assets/clubs/Racing_Santander.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Racing%20Santander.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Rayo Vallecano",
+    "file": "assets/clubs/Rayo_Vallecano.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Rayo%20Vallecano.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "RB Leipzig",
+    "file": "assets/clubs/RB_Leipzig.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/RB%20Leipzig.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "RC Lens",
+    "file": "assets/clubs/RC_Lens.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/RC%20Lens.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "RC Strasbourg Alsace",
+    "file": "assets/clubs/RC_Strasbourg_Alsace.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/RC%20Strasbourg%20Alsace.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "RCD Espanyol Barcelona",
+    "file": "assets/clubs/RCD_Espanyol_Barcelona.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/RCD%20Espanyol%20Barcelona.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Real Betis Balompié",
+    "file": "assets/clubs/Real_Betis_Balompi_.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Real%20Betis%20Balompi%C3%A9.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Real Madrid",
+    "file": "assets/clubs/Real_Madrid.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Real%20Madrid.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Real Sociedad",
+    "file": "assets/clubs/Real_Sociedad.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Real%20Sociedad.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Rio Ave FC",
+    "file": "assets/clubs/Rio_Ave_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/Rio%20Ave%20FC.png",
+    "league": "Portugal - Liga Portugal"
   },
   {
     "name": "Samsunspor",
     "file": "assets/clubs/Samsunspor.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Samsunspor.png"
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Samsunspor.png",
+    "league": "Türkiye - Süper Lig"
+  },
+  {
+    "name": "SC Braga",
+    "file": "assets/clubs/SC_Braga.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/SC%20Braga.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "SC Cambuur Leeuwarden",
+    "file": "assets/clubs/SC_Cambuur_Leeuwarden.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/SC%20Cambuur%20Leeuwarden.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
+    "name": "SC Freiburg",
+    "file": "assets/clubs/SC_Freiburg.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/SC%20Freiburg.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "SC Heerenveen",
+    "file": "assets/clubs/SC_Heerenveen.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/SC%20Heerenveen.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
+    "name": "SC Paderborn 07",
+    "file": "assets/clubs/SC_Paderborn_07.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/SC%20Paderborn%2007.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "SC Telstar",
+    "file": "assets/clubs/SC_Telstar.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/SC%20Telstar.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
+    "name": "Sevilla FC",
+    "file": "assets/clubs/Sevilla_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Sevilla%20FC.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "SL Benfica",
+    "file": "assets/clubs/SL_Benfica.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/SL%20Benfica.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "Sparta Rotterdam",
+    "file": "assets/clubs/Sparta_Rotterdam.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/Sparta%20Rotterdam.png",
+    "league": "Netherlands - Eredivisie"
+  },
+  {
+    "name": "Sporting CP",
+    "file": "assets/clubs/Sporting_CP.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/Sporting%20CP.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "SS Lazio",
+    "file": "assets/clubs/SS_Lazio.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/SS%20Lazio.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "SSC Napoli",
+    "file": "assets/clubs/SSC_Napoli.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/SSC%20Napoli.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "Stade Brestois 29",
+    "file": "assets/clubs/Stade_Brestois_29.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Stade%20Brestois%2029.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "Stade Rennais FC",
+    "file": "assets/clubs/Stade_Rennais_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/France%20-%20Ligue%201/Stade%20Rennais%20FC.png",
+    "league": "France - Ligue 1"
+  },
+  {
+    "name": "Sunderland AFC",
+    "file": "assets/clubs/Sunderland_AFC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Sunderland%20AFC.png",
+    "league": "England - Premier League"
+  },
+  {
+    "name": "SV 07 Elversberg",
+    "file": "assets/clubs/SV_07_Elversberg.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/SV%2007%20Elversberg.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "SV Werder Bremen",
+    "file": "assets/clubs/SV_Werder_Bremen.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/SV%20Werder%20Bremen.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "Torino FC",
+    "file": "assets/clubs/Torino_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Torino%20FC.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "Tottenham Hotspur",
+    "file": "assets/clubs/Tottenham_Hotspur.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/England%20-%20Premier%20League/Tottenham%20Hotspur.png",
+    "league": "England - Premier League"
   },
   {
     "name": "Trabzonspor",
     "file": "assets/clubs/Trabzonspor.png",
-    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Trabzonspor.png"
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/T%C3%BCrkiye%20-%20S%C3%BCper%20Lig/Trabzonspor.png",
+    "league": "Türkiye - Süper Lig"
+  },
+  {
+    "name": "TSG 1899 Hoffenheim",
+    "file": "assets/clubs/TSG_1899_Hoffenheim.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/TSG%201899%20Hoffenheim.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "Udinese Calcio",
+    "file": "assets/clubs/Udinese_Calcio.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Udinese%20Calcio.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "US Lecce",
+    "file": "assets/clubs/US_Lecce.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/US%20Lecce.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "US Sassuolo",
+    "file": "assets/clubs/US_Sassuolo.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/US%20Sassuolo.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "Valencia CF",
+    "file": "assets/clubs/Valencia_CF.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Valencia%20CF.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Venezia FC",
+    "file": "assets/clubs/Venezia_FC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Italy%20-%20Serie%20A/Venezia%20FC.png",
+    "league": "Italy - Serie A"
+  },
+  {
+    "name": "VfB Stuttgart",
+    "file": "assets/clubs/VfB_Stuttgart.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Germany%20-%20Bundesliga/VfB%20Stuttgart.png",
+    "league": "Germany - Bundesliga"
+  },
+  {
+    "name": "Villarreal CF",
+    "file": "assets/clubs/Villarreal_CF.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Spain%20-%20LaLiga/Villarreal%20CF.png",
+    "league": "Spain - LaLiga"
+  },
+  {
+    "name": "Vitória Guimarães SC",
+    "file": "assets/clubs/Vit_ria_Guimar_es_SC.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Portugal%20-%20Liga%20Portugal/Vit%C3%B3ria%20Guimar%C3%A3es%20SC.png",
+    "league": "Portugal - Liga Portugal"
+  },
+  {
+    "name": "Willem II Tilburg",
+    "file": "assets/clubs/Willem_II_Tilburg.png",
+    "source": "https://raw.githubusercontent.com/luukhopman/football-logos/master/logos/Netherlands%20-%20Eredivisie/Willem%20II%20Tilburg.png",
+    "league": "Netherlands - Eredivisie"
   }
 ]

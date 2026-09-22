@@ -115,6 +115,40 @@ try {
   await settle();
   check('paste import works', (await page.locator('#count').textContent()).startsWith('1 '));
 
+  // Multi-page download, table persistence and unannounced kick-offs.
+  const BULK = ['الدوري | الوقت | الفريق الأول | الفريق الثاني | المعلق | القناة | مميز']
+    .concat(Array.from({length: 40}, (_, i) => `الدوري الإنجليزي | ${String(10 + (i % 12)).padStart(2, '0')}:00 | ليفربول | ارسنال | معلق ${i + 1} | ${(i % 9) + 1} | لا`))
+    .join('\n');
+
+  await page.fill('#paste', 'الدوري | الوقت | الفريق الأول | الفريق الثاني | المعلق | القناة | مميز\nالدوري الإسباني | TBD | ريال مدريد | برشلونة | معلق | 1 | نعم');
+  await page.click('#import');
+  await page.click('#apply');
+  await settle();
+  check('an unannounced kick-off does not block the download', await page.locator('#errors').isHidden());
+  check('download-all is hidden for a single page', await page.locator('#download-all').isHidden());
+
+  await page.fill('#paste', BULK);
+  await page.click('#import');
+  await page.click('#apply');
+  await settle();
+  check('download-all appears once the poster paginates', await page.locator('#download-all').isVisible(), await page.locator('#pages').textContent());
+
+  const got = [];
+  page.on('download', d => got.push(d.suggestedFilename()));
+  await page.click('#download-all');
+  await page.waitForFunction(() => !document.getElementById('download-all').disabled, {timeout: 60000});
+  await page.waitForTimeout(900);
+  check('every page is downloaded', got.length === 3, got.join(', '));
+  check('the viewed page is restored afterwards', (await page.locator('#pages').textContent()).startsWith('1 '));
+
+  await page.reload({waitUntil: 'networkidle'});
+  await ready();
+  check('the match table survives a reload', (await page.locator('#count').textContent()).startsWith('40 '), await page.locator('#count').textContent());
+
+  await page.click('#clear-table');
+  await page.waitForTimeout(700);
+  check('clearing the table empties it', (await page.locator('#count').textContent()).startsWith('0 '));
+
   // Image extraction, with the worker stubbed. This covers the whole client path — the upload, the
   // request, the response contract, validation and the repaint — but NOT the model call, which
   // needs a key and a deployed worker. That is what scripts/deploy-check.mjs is for.
