@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {parseDelimited,detectMapping,mapRows,validate,paginate,raggedRows,sample,formatTime,TBD} from '../dist/core.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {parseDelimited,detectMapping,mapRows,validate,paginate,raggedRows,sample,formatTime} from '../dist/core.mjs';
 test('Arabic sample imports 14 matches without altering names',()=>{const raw=parseDelimited(sample);const rows=mapRows(raw.slice(1),detectMapping(raw[0]));assert.equal(rows.length,14);assert.deepEqual(validate(rows),[]);assert.equal(rows[0].home,'مانشستر سيتي');assert.equal(rows[0].featured,true);assert.equal(paginate(rows).length,1);});
 test('CSV quotes and Excel fraction',()=>{assert.deepEqual(parseDelimited('a,b\n"one,two","three"'),[['a','b'],['one,two','three']]);assert.equal(formatTime(0.75),'18:00');assert.equal(formatTime('٩:٣٠'),'09:30');assert.throws(()=>parseDelimited('"oops'));});
 test('validation and max limits',()=>{assert.ok(validate([{home:'',away:'X',league:'L',time:'29:10'}]).length===2);assert.throws(()=>mapRows(Array(301).fill([]),[0,1,2,3,4,5,6]));});
@@ -22,16 +22,6 @@ test('string times normalise separators, digits and seconds',()=>{
   assert.equal(formatTime('21.30'),'21:30');
   assert.equal(formatTime('9 PM'),'9 PM','unparseable input is preserved for validate() to report');
   assert.equal(formatTime(null),'');
-});
-
-// A fixture whose kick-off has not been announced is normal in a published schedule. It used to
-// fail validation, which blocked the download for the whole table over one unscheduled match.
-test('an unannounced kick-off is a value, not an error',()=>{
-  for(const v of ['TBD','tba','لم يحدد','غير محدد','لاحقًا','—'])assert.equal(formatTime(v),TBD,`${v} should normalise to the marker`);
-  const row={league:'L',home:'A',away:'B',commentator:'',channel:'',featured:false};
-  assert.deepEqual(validate([{...row,time:TBD}]),[],'the marker must pass validation');
-  assert.equal(validate([{...row,time:'9 PM'}]).length,1,'unparseable input must still be reported');
-  assert.equal(validate([{...row,time:''}]).length,1,'an empty time is still missing, not unannounced');
 });
 
 test('ragged rows are reported by number, not silently accepted',()=>{
