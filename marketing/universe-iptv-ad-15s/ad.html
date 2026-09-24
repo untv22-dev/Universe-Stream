@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Universe IPTV Ad</title>
+<style>
+@font-face{font-family:Cairo;font-weight:500;src:url(fonts/Cairo-500.ttf)}
+@font-face{font-family:Cairo;font-weight:700;src:url(fonts/Cairo-700.ttf)}
+@font-face{font-family:Cairo;font-weight:900;src:url(fonts/Cairo-900.ttf)}
+:root{
+  --bg:#06040d; --ink:#f5f3ff; --muted:#b9b3d6;
+  --violet:#7c3aed; --violet2:#a78bfa; --cyan:#22d3ee;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden;background:var(--bg);font-family:Cairo,sans-serif;color:var(--ink)}
+#stage{position:relative;width:1080px;height:1920px;overflow:hidden;background:var(--bg)}
+.glow{position:absolute;border-radius:50%;filter:blur(120px);opacity:.55}
+#g1{width:900px;height:900px;background:radial-gradient(circle,#5b21b6 0%,transparent 70%)}
+#g2{width:800px;height:800px;background:radial-gradient(circle,#0e7490 0%,transparent 70%)}
+.scene{position:absolute;inset:0;opacity:0}
+/* Safe area for Reels/TikTok/Shorts: top 260, bottom 1480, left 90, right 150 */
+.safe{position:absolute;left:90px;right:150px;top:260px;bottom:440px}
+.tag{position:absolute;top:0;right:0;font-size:30px;font-weight:700;color:#e9e5ff;
+  background:rgba(124,58,237,.35);border:2px solid rgba(167,139,250,.7);border-radius:999px;padding:4px 26px}
+.ltr{direction:ltr;unicode-bidi:isolate;display:inline-block}
+.center{text-align:center}
+.anim{will-change:transform,opacity}
+
+/* Scene 1 — illustrative living room */
+#room{position:absolute;left:0;right:0;top:0;bottom:0;transform-origin:50% 52%}
+#wall{position:absolute;inset:0;background:linear-gradient(#0b0718 0%,#0a0614 60%,#07040f 100%)}
+#tv1{position:absolute;left:170px;top:760px;width:740px;height:430px;border-radius:22px;background:#0d0a1c;
+  border:10px solid #1b1630;box-shadow:0 0 120px rgba(124,58,237,.45)}
+#tv1 .scr{position:absolute;inset:0;border-radius:12px;
+  background:radial-gradient(ellipse at 50% 55%,#3b82f6 0%,#6d28d9 45%,#1e1038 80%)}
+#tv1 .play{position:absolute;left:50%;top:50%;width:0;height:0;margin:-50px 0 0 -30px;
+  border-left:90px solid rgba(255,255,255,.9);border-top:52px solid transparent;border-bottom:52px solid transparent}
+#stand{position:absolute;left:470px;top:1200px;width:140px;height:18px;border-radius:9px;background:#1b1630}
+#cabinet{position:absolute;left:150px;top:1220px;width:780px;height:60px;border-radius:14px;background:#140f26}
+#spill{position:absolute;left:90px;top:1280px;width:900px;height:420px;
+  background:radial-gradient(ellipse at 50% 0%,rgba(124,58,237,.35) 0%,transparent 70%)}
+#sofa{position:absolute;left:60px;top:1560px;width:960px;height:520px}
+#sofa .back{position:absolute;left:40px;right:40px;top:0;height:260px;border-radius:70px 70px 30px 30px;background:#120c22}
+#sofa .arm{position:absolute;top:90px;width:150px;height:330px;border-radius:60px;background:#171030}
+#sofa .arm.l{left:0} #sofa .arm.r{right:0}
+#sofa .seat{position:absolute;left:110px;right:110px;top:190px;height:240px;border-radius:40px;background:#1a1234}
+#s1text{position:absolute;left:0;right:0;top:90px;text-align:center}
+.h1{font-size:80px;font-weight:900;line-height:1.3}
+.h2{font-size:64px;font-weight:700;line-height:1.3}
+
+/* Scene 2 — brand */
+#logo2{position:absolute;left:50%;top:170px;width:620px;height:620px;margin-left:-310px}
+#name2{position:absolute;left:0;right:0;top:820px;font-size:124px;font-weight:900;letter-spacing:1px}
+#sub2{position:absolute;left:0;right:0;top:1000px;font-size:56px;font-weight:700;line-height:1.45;color:var(--muted)}
+.accent{padding-bottom:.3em;margin-bottom:-.3em;background:linear-gradient(90deg,var(--cyan),var(--violet2));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* Scene 3 — illustrative UI */
+#s3head{position:absolute;left:0;right:0;top:70px}
+#s3head .h1{font-size:72px}
+#tv3{position:absolute;left:10px;right:10px;top:420px;height:500px;border-radius:26px;background:#0e0a1e;
+  border:8px solid #221b3d;box-shadow:0 0 90px rgba(34,211,238,.25);padding:40px 34px}
+#tv3 .bar{height:18px;width:280px;border-radius:9px;background:#2a2248;margin-right:6px}
+#cards{display:flex;gap:28px;margin-top:40px}
+.card{flex:1;height:330px;border-radius:22px;position:relative;overflow:hidden;border:3px solid rgba(255,255,255,.08)}
+.card .lbl{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:44px;font-weight:900}
+.card svg{position:absolute;left:50%;top:50px;width:130px;height:130px;margin-left:-65px}
+.c1{background:linear-gradient(160deg,#0f766e,#0b1f3a)}
+.c2{background:linear-gradient(160deg,#6d28d9,#1a1038)}
+.c3{background:linear-gradient(160deg,#1d4ed8,#12163a)}
+#devices{position:absolute;left:0;right:0;top:990px;display:flex;justify-content:center;align-items:center;gap:22px;font-size:52px;font-weight:700}
+#devices svg{width:62px;height:62px}
+
+/* Scene 4 — CTA */
+#logo4{position:absolute;left:50%;top:0;width:270px;height:270px;margin-left:-135px}
+#name4{position:absolute;left:0;right:0;top:255px;font-size:74px;font-weight:900}
+#cta4{position:absolute;left:0;right:0;top:400px;font-size:62px;font-weight:900}
+#numbox{position:absolute;left:0;right:0;top:530px;height:180px;border-radius:32px;
+  background:linear-gradient(135deg,rgba(124,58,237,.35),rgba(34,211,238,.18));border:3px solid rgba(167,139,250,.75);
+  display:flex;align-items:center;justify-content:center}
+#num{font-size:100px;font-weight:900;letter-spacing:2px;color:#fff}
+#weblbl{position:absolute;left:0;right:0;top:770px;font-size:44px;font-weight:700;color:var(--muted)}
+#web{position:absolute;left:0;right:0;top:835px;font-size:64px;font-weight:900;color:#fff}
+#wa{display:inline-flex;align-items:center;gap:16px}
+#wa svg{width:70px;height:70px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="glow" id="g1"></div>
+  <div class="glow" id="g2"></div>
+
+  <!-- Scene 1: illustrative -->
+  <div class="scene" id="s1">
+    <div id="room">
+      <div id="wall"></div>
+      <div id="spill"></div>
+      <div id="tv1"><div class="scr"></div><div class="play"></div></div>
+      <div id="stand"></div><div id="cabinet"></div>
+      <div id="sofa"><div class="back"></div><div class="arm l"></div><div class="arm r"></div><div class="seat"></div></div>
+    </div>
+    <div class="safe">
+      <div class="tag">مشهد توضيحي</div>
+      <div id="s1text">
+        <div class="h1 anim" id="s1a">سهرة الليلة<br>في البيت…</div>
+        <div class="h2 anim" id="s1b" style="color:var(--cyan);margin-top:18px">ماذا ستشاهد؟</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 2: brand -->
+  <div class="scene" id="s2">
+    <div class="safe">
+      <img id="logo2" class="anim" src="logo_key.png" alt="">
+      <div id="name2" class="center anim"><span class="ltr">Universe IPTV</span></div>
+      <div id="sub2" class="center anim">خدمة ترفيه وبث تلفزيوني<br>عبر الإنترنت</div>
+    </div>
+  </div>
+
+  <!-- Scene 3: illustrative UI -->
+  <div class="scene" id="s3">
+    <div class="safe">
+      <div class="tag">واجهة توضيحية</div>
+      <div id="s3head" class="center">
+        <div class="h1 anim" id="s3a">رياضة وأفلام ومسلسلات</div>
+        <div class="h1 anim accent" id="s3b">في مكان واحد</div>
+      </div>
+      <div id="tv3">
+        <div class="bar"></div>
+        <div id="cards">
+          <div class="card c1 anim" id="k1">
+            <svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="5"><circle cx="50" cy="50" r="40"/><path d="M50 10v80M10 50h80"/><circle cx="50" cy="50" r="14"/></svg>
+            <div class="lbl">رياضة</div>
+          </div>
+          <div class="card c2 anim" id="k2">
+            <svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"><rect x="12" y="38" width="76" height="50" rx="6"/><path d="M12 38l70-20 4 14-70 20z"/><path d="M34 32l10 13M58 25l10 13"/></svg>
+            <div class="lbl">أفلام</div>
+          </div>
+          <div class="card c3 anim" id="k3">
+            <svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"><rect x="10" y="30" width="62" height="50" rx="6"/><path d="M22 20h62v48"/><path d="M34 44v22l18-11z" fill="#fff"/></svg>
+            <div class="lbl">مسلسلات</div>
+          </div>
+        </div>
+      </div>
+      <div id="devices" class="anim">
+        <span>على التلفزيون والهاتف</span>
+        <svg viewBox="0 0 64 64" fill="none" stroke="#22d3ee" stroke-width="4" stroke-linejoin="round"><rect x="4" y="10" width="56" height="36" rx="4"/><path d="M22 56h20M32 46v10"/></svg>
+        <svg viewBox="0 0 64 64" fill="none" stroke="#a78bfa" stroke-width="4" stroke-linejoin="round"><rect x="18" y="4" width="28" height="56" rx="5"/><path d="M28 52h8"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scene 4: CTA -->
+  <div class="scene" id="s4">
+    <div class="safe">
+      <img id="logo4" class="anim" src="logo_key.png" alt="">
+      <div id="name4" class="center anim"><span class="ltr">Universe IPTV</span></div>
+      <div id="cta4" class="center anim">
+        <span id="wa">
+          <span>تواصل معنا عبر <span class="ltr">WhatsApp</span></span>
+          <svg viewBox="0 0 64 64" fill="none" stroke="#22d3ee" stroke-width="5" stroke-linejoin="round"><path d="M8 12h48v32H26L14 54V44H8z"/></svg>
+        </span>
+      </div>
+      <div id="numbox" class="anim"><span id="num" class="ltr">+201017411422</span></div>
+      <div id="weblbl" class="center anim">أو زوروا موقعنا</div>
+      <div id="web" class="center anim"><span class="ltr">www.universeiptv-ar.com</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Everything is a pure function of the frame number (30 fps). No timers.
+const FPS = 30, TOTAL = 450;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const easeInOut = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+const $ = id => document.getElementById(id);
+
+// Scene windows [start, end). The next scene fades in ON TOP of the previous one,
+// which stays fully opaque until covered -> no dip to black between scenes.
+const scenes = [ ['s1', 0, 90], ['s2', 90, 180], ['s3', 180, 300], ['s4', 300, 450] ];
+
+function enter(el, f, start, dur = 14, dy = 36) {
+  const t = easeOut(clamp((f - start) / dur));
+  el.style.opacity = t;
+  el.style.transform = `translateY(${(1 - t) * dy}px)`;
+}
+
+function render(f) {
+  // Ambient background drift (slow, subtle)
+  const p = f / TOTAL;
+  $('g1').style.transform = `translate(${-200 + 120 * Math.sin(p * Math.PI)}px, ${200 + 160 * p}px)`;
+  $('g2').style.transform = `translate(${420 - 100 * p}px, ${1100 - 200 * Math.sin(p * Math.PI)}px)`;
+
+  // Transitions: outgoing scene fades out over the last 8 frames of its window, the
+  // incoming one fades in from 2 frames before its start (short overlap, no black dip —
+  // the shared ambient background stays visible; content of two scenes never piles up).
+  scenes.forEach(([id, s, e], i) => {
+    const el = $(id);
+    const vin = i === 0 ? 1 : easeInOut(clamp((f - (s - 2)) / 10));
+    const vout = i === scenes.length - 1 ? 1 : 1 - easeInOut(clamp((f - (e - 8)) / 8));
+    const o = vin * vout;
+    el.style.opacity = o;
+    el.style.zIndex = 10 + i;
+    el.style.display = o <= 0 ? 'none' : 'block';
+  });
+
+  // Scene 1: slow push-in toward the TV (focus on "what to watch")
+  $('room').style.transform = `scale(${1 + 0.06 * easeInOut(clamp(f / 96))})`;
+  enter($('s1a'), f, 6);
+  enter($('s1b'), f, 26);
+
+  // Scene 2: logo reveal (uniform scale only — aspect ratio preserved)
+  const lt = easeOut(clamp((f - 92) / 20));
+  $('logo2').style.opacity = lt;
+  $('logo2').style.transform = `scale(${0.9 + 0.1 * lt})`;
+  enter($('name2'), f, 104);
+  enter($('sub2'), f, 118);
+
+  // Scene 3
+  enter($('s3a'), f, 186);
+  enter($('s3b'), f, 200);
+  enter($('k1'), f, 196, 14, 50);
+  enter($('k2'), f, 202, 14, 50);
+  enter($('k3'), f, 208, 14, 50);
+  enter($('devices'), f, 228);
+
+  // Scene 4 — CTA fully settled by frame ~332, then static until the end (>3.9 s)
+  const l4 = easeOut(clamp((f - 302) / 16));
+  $('logo4').style.opacity = l4;
+  $('logo4').style.transform = `scale(${0.9 + 0.1 * l4})`;
+  enter($('name4'), f, 304);
+  enter($('cta4'), f, 308);
+  enter($('numbox'), f, 314);
+  enter($('weblbl'), f, 318);
+  enter($('web'), f, 318);
+}
+window.render = render;
+render(0);
+</script>
+</body>
+</html>
