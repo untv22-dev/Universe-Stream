@@ -1,0 +1,15 @@
+{
+  "name": "universe-iptv-promo",
+  "private": true,
+  "description": "15-second Universe IPTV motion-graphics promo, rendered frame-by-frame from a three.js scene.",
+  "type": "module",
+  "scripts": {
+    "build": "./build.sh"
+  },
+  "dependencies": {
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  }
+}
