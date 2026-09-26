@@ -34,3 +34,23 @@ FFMPEG=$(python3 -c "import imageio_ffmpeg as i; print(i.get_ffmpeg_exe())") ./b
 ```
 
 Rendering uses software WebGL (SwiftShader) and takes roughly 10–15 minutes on 4 cores.
+
+---
+
+# Arabic promo (`ar/`)
+
+`ar/universe-iptv-ar-promo.mp4` is a second, stylistically different 15-second spot in Arabic:
+flat, playful 2D motion design (Canvas 2D) with sub-frame motion blur, RTL-first motion (everything
+enters and wipes right-to-left), and a bouncy 120 BPM synthesized track with sound effects on every beat.
+
+| Time | Shot |
+|---|---|
+| 0.0 – 2.0 s | A ball bounces in with squash-and-stretch and morphs into a screen: «جاهز؟» |
+| 2.0 – 4.1 s | Kinetic word slams on color wipes: «عالم / كامل / من الترفيه / بين إيديك», then a stripe transition |
+| 4.1 – 7.0 s | «كل اللي بتحبه في مكان واحد»: four category cards spring in and a TV-remote focus ring hops across them |
+| 7.0 – 9.5 s | «اتفرج في أي مكان»: phone → tablet → laptop → smart TV morph with feature chips, channel-zap static, dive into the screen |
+| 9.5 – 11.5 s | Logo: planet, orbit ring, UNIVERSE IPTV wordmark, «بث بلا حدود» |
+| 11.5 – 15.0 s | «اشترك الآن» with the WhatsApp number (+20 10 1741 1422, digits roll in) and www.universeiptv-ar.com (typed); a cursor taps WhatsApp |
+
+Rebuild with `cd promo/ar && FFMPEG=... ./build.sh` (needs Playwright's Chromium, numpy, ffmpeg).
+Fonts: Cairo, Lalezar, Orbitron (SIL Open Font License, from Google Fonts).
