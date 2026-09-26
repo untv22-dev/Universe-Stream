@@ -426,7 +426,7 @@ const panelFS = `
   uniform sampler2D map; uniform float reveal, time, opacity, bright; uniform vec3 tint; varying vec2 vUv;
   void main(){
     vec2 uv = vUv;
-    if (uv.x > reveal + 0.002) discard;
+    if (reveal < 0.001 || uv.x > reveal + 0.002) discard;
     vec3 c = texture2D(map, uv).rgb * bright;
     c *= 0.93 + 0.07 * sin(uv.y * 900.0 - time * 12.0);
     vec2 e = min(uv, 1.0 - uv) * vec2(16.0/9.0, 1.0);
@@ -837,7 +837,9 @@ function renderAt(t) {
   }
 
   // ---- post
-  const flash = Math.max(Math.exp(-Math.pow((t - 11.55) * 9, 2)), 0.45 * Math.exp(-Math.pow((t - 2.32) * 14, 2)), 0.35 * Math.exp(-Math.pow((t - 4.62) * 12, 2)), 0.25 * Math.exp(-Math.pow((t - 12.3) * 10, 2)));
+  const rawFlash = Math.max(Math.exp(-Math.pow((t - 11.55) * 11, 2)), 0.4 * Math.exp(-Math.pow((t - 2.32) * 30, 2)), 0.3 * Math.exp(-Math.pow((t - 4.62) * 30, 2)), 0.2 * Math.exp(-Math.pow((t - 12.3) * 22, 2)));
+  // flash is mixed in before tone mapping, so even small tails read as grey haze: cut them off
+  const flash = clamp((rawFlash - 0.02) / 0.98);
   finalPass.uniforms.flash.value = clamp(flash);
   finalPass.uniforms.flashTint.value.set(t > 11 ? 0.85 : 0.8, 0.85, 1.0);
   finalPass.uniforms.aberr.value = 0.0015 + clamp(camSpeed / 900, 0, 0.012) + 0.01 * flash;
